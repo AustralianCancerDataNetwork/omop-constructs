@@ -1,2 +1,5 @@
 ## 0.1.1
 - created services layer for functions that execute queries and return data / session-bound
+
+## 0.1.2
+- condition modifier queries and factories

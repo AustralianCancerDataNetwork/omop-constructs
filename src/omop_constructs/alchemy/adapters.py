@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import sqlalchemy.orm as so
 from typing import Type
 from .source_factories import make_source_lookup
 from sqlalchemy.sql.type_api import TypeEngine
@@ -28,6 +29,9 @@ def map_lookup_view(
             "__table__": subquery,
             "__mapper_args__": {
                 "primary_key": [subquery.c[c] for c in pk_cols]
+            },
+            "__annotations__": {
+                col.name: so.Mapped[object] for col in subquery.c
             },
         },
     )

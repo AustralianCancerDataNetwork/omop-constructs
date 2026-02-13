@@ -1,8 +1,6 @@
 from typing import Type
 import sqlalchemy as sa
-from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.type_api import TypeEngine
-
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable
