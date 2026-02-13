@@ -1,0 +1,51 @@
+site_name: OMOP Constructs
+site_description:  For building complex constructs on top of the omop-alchemy library 
+site_url: https://AustralianCancerDataNetwork.github.io/omop-constructs
+repo_url: https://github.com/AustralianCancerDataNetwork/omop-constructs
+repo_name: omop-constructs
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - tables
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - js/mermaid-init.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - omop_constructs
+          options:
+            show_source: false
+            docstring_style: numpy
+            merge_init_into_class: true
+            separate_signature: true
+            show_signature_annotations: true
+
+nav:
+  - Home: index.md

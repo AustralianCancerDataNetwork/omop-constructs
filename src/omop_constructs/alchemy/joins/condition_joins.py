@@ -14,16 +14,3 @@ condition_window = (
     .subquery()
 )
 
-
-condition_source_lookup = (
-    sa.select(
-        Condition_Occurrence.person_id, 
-        Condition_Occurrence.condition_occurrence_id,
-        Condition_Occurrence.condition_concept_id,
-        Condition_Occurrence.condition_start_date,
-        Condition_Occurrence.condition_end_date,
-        sa.cast(Condition_Occurrence.condition_status_source_value, sa.Integer).label('med_id')
-    )
-    .subquery()
-)
-
