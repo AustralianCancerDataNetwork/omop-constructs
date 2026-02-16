@@ -9,3 +9,6 @@
 
 ## 0.1.4
 - added in runtime lookups and support for concept resolver registry
+
+## 0.1.5 
+- typing
