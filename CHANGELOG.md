@@ -12,3 +12,6 @@
 
 ## 0.1.5 
 - typing
+
+## 0.1.5
+- changed modifier field to correct one

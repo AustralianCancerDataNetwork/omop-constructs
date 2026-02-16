@@ -18,8 +18,8 @@ class StageColumns:
     stage_datetime = sa.Column(sa.DateTime)
     stage_concept_id = sa.Column(sa.Integer)
     stage_label = sa.Column(sa.String)
-    modifier_of_event_id = sa.Column(sa.Integer)
-    modifier_of_field_concept_id = sa.Column(sa.Integer)
+    measurement_event_id = sa.Column(sa.Integer)
+    meas_event_field_concept_id = sa.Column(sa.Integer)
 
 class MeasModCols:
     __table_args__ = {"extend_existing": True}
@@ -28,8 +28,8 @@ class MeasModCols:
     measurement_id = sa.Column(primary_key=True)
     measurement_date = sa.Column(sa.Date)
     concept_name = sa.Column(sa.String)
-    modifier_of_event_id = sa.Column(sa.Integer)
-    modifier_of_field_concept_id = sa.Column(sa.Integer)
+    measurement_event_id = sa.Column(sa.Integer)
+    meas_event_field_concept_id = sa.Column(sa.Integer)
 
 """
 Each of the following mapper classes are guaranteed to return exactly 1 or zero
