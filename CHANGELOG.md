@@ -18,3 +18,6 @@
 
 ## 0.1.7
 - modifier field
+
+## 0.1.8
+- bugfix

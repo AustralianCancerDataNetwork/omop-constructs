@@ -17,8 +17,9 @@ def get_eav_modifier_query(
     return (
         sa.select(
             Measurement.person_id,
-            Measurement.modifier_of_event_id,
-            Measurement.modifier_of_field_concept_id,
+            Measurement.measurement_event_id,
+            Measurement.meas_event_field_concept_id,
+            Measurement.measurement_concept_id, 
             Measurement.measurement_id, 
             Measurement.measurement_date, 
             modifier_concept.concept_name,
@@ -36,8 +37,8 @@ def get_direct_modifier_query(
     return (
         sa.select(
             Measurement.person_id,
-            Measurement.modifier_of_event_id,
-            Measurement.modifier_of_field_concept_id,
+            Measurement.measurement_event_id,
+            Measurement.meas_event_field_concept_id,
             Measurement.measurement_concept_id,
             Measurement.measurement_id, 
             Measurement.measurement_date, 
@@ -57,7 +58,7 @@ def earliest_modifier(
             *starting_query.c,
             sa.func.row_number()
             .over(
-                partition_by=starting_query.c.modifier_of_event_id,
+                partition_by=starting_query.c.measurement_event_id,
                 order_by=starting_query.c.measurement_date.asc()
             )
             .label('rn')
@@ -86,8 +87,8 @@ def get_query_per_stage_type(
             Measurement.measurement_date.label("stage_date"),
             Measurement.measurement_datetime.label("stage_datetime"),
             Measurement.measurement_concept_id.label("stage_concept_id"),
-            Measurement.modifier_of_event_id,
-            Measurement.modifier_of_field_concept_id,
+            Measurement.measurement_event_id,
+            Measurement.meas_event_field_concept_id,
             modifier_concept.concept_name.label("stage_label"),
             sa.case(
                 (
@@ -114,7 +115,7 @@ def get_query_per_stage_type(
             *i.c,
             sa.func.row_number()
             .over(
-                partition_by=i.c.modifier_of_event_id,
+                partition_by=i.c.measurement_event_id,
                 order_by=[i.c.stage_type, i.c.stage_date.asc()],
             )
             .label("rn"),
