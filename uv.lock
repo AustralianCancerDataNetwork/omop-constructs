@@ -864,7 +864,7 @@ wheels = [
 
 [[package]]
 name = "omop-constructs"
-version = "0.1.6"
+version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "omop-alchemy" },

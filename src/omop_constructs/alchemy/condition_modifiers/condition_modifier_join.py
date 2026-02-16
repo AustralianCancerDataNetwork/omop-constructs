@@ -65,56 +65,56 @@ modified_conditions_join = (
     .join(
         TStage, 
         sa.and_(
-            TStage.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==TStage.modifier_of_event_id
+            TStage.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==TStage.measurement_event_id
         ),
         isouter=True
     )
     .join(
         NStage, 
         sa.and_(
-            NStage.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==NStage.modifier_of_event_id
+            NStage.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==NStage.measurement_event_id
         ),
         isouter=True
     )
     .join(
         MStage, 
         sa.and_(
-            MStage.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==MStage.modifier_of_event_id
+            MStage.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==MStage.measurement_event_id
         ),
         isouter=True
     )
     .join(
         GroupStage, 
         sa.and_(
-            GroupStage.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==GroupStage.modifier_of_event_id
+            GroupStage.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==GroupStage.measurement_event_id
         ),
         isouter=True
     )
     .join(
         GradeModifier, 
         sa.and_(
-            GradeModifier.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==GradeModifier.modifier_of_event_id
+            GradeModifier.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==GradeModifier.measurement_event_id
         ),
         isouter=True
     )
     .join(
         SizeModifier, 
         sa.and_(
-            SizeModifier.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==SizeModifier.modifier_of_event_id
+            SizeModifier.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==SizeModifier.measurement_event_id
         ),
         isouter=True
     )
     .join(
         LatModifier, 
         sa.and_(
-            LatModifier.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id==LatModifier.modifier_of_event_id
+            LatModifier.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==LatModifier.measurement_event_id
         ),
         isouter=True
     )
