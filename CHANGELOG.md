@@ -6,3 +6,6 @@
 
 ## 0.1.3
 - refactored condition modifier queries and factories
+
+## 0.1.4
+- added in runtime lookups and support for concept resolver registry
