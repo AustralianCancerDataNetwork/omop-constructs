@@ -848,7 +848,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "0.5.7"
+version = "0.5.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "orm-loader" },
@@ -857,14 +857,14 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/3d/4126c4b45badba2648c11aa20c5842b00de6667c569d575ef5f5d3b31fe4/omop_alchemy-0.5.7.tar.gz", hash = "sha256:599164efe2b750353ce021c84a9a01ded7d6307d4541436f4cac31634be1344a", size = 38251, upload-time = "2026-02-06T02:57:33.461Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/27/92b3ca68f6b9dc547efefb41a0ff36b50fa5336a37a58f83223fcb1df72a/omop_alchemy-0.5.11.tar.gz", hash = "sha256:4c88130638f3caa26d45f695de6dea6f4ac0fd6bb4fb727ceaa74a6ad9e5a2aa", size = 42205, upload-time = "2026-02-16T02:02:38.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/77/023e42924fed0ba09b5f59f215173449e22e975aa71154ed6a51ef9d730a/omop_alchemy-0.5.7-py3-none-any.whl", hash = "sha256:0acf3cda303610bc3411207aac6f1f4540e183a0600ff094df91834eaee6eb5a", size = 60654, upload-time = "2026-02-06T02:57:31.796Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/cd/e427b93b13a9fdd001cb0112af9a768e1e38a1c709ca812551aebc04e07d/omop_alchemy-0.5.11-py3-none-any.whl", hash = "sha256:9659e5647c365201818a444a697fa1ea037e4926575a3a864adbe17c9a0bbf99", size = 66255, upload-time = "2026-02-16T02:02:37.089Z" },
 ]
 
 [[package]]
 name = "omop-constructs"
-version = "0.1.2"
+version = "0.1.3"
 source = { editable = "." }
 dependencies = [
     { name = "omop-alchemy" },
@@ -875,15 +875,15 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "omop-alchemy", specifier = "==0.5.7" },
-    { name = "omop-semantics", specifier = "==0.1.7" },
+    { name = "omop-alchemy", specifier = "==0.5.11" },
+    { name = "omop-semantics", specifier = "==0.1.8" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
     { name = "urllib3", specifier = ">=2.6.3" },
 ]
 
 [[package]]
 name = "omop-semantics"
-version = "0.1.7"
+version = "0.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -893,9 +893,9 @@ dependencies = [
     { name = "ruamel-yaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dc/4e/40e71990349dd04747755a5169832af81db6d6ebc107d17012251c5d3254/omop_semantics-0.1.7.tar.gz", hash = "sha256:64170f92f77a2f2b185c64aaec26b4647dfb40f951d2d72fd58acf123c2b2b89", size = 38638, upload-time = "2026-02-12T08:38:48.807Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/5a/d40625f4cdece34cbb4966454876e6f35b951b44e99be3b8f1fb095d410f/omop_semantics-0.1.8.tar.gz", hash = "sha256:2970c8c0d75632d1adf54982866f8442eae21b2655b43e026b870233dd63afe5", size = 40256, upload-time = "2026-02-16T00:55:12.964Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/a1/05c0c9675268ac43e3baf47009fb3e91b7847a9fef91d795a02f23949de4/omop_semantics-0.1.7-py3-none-any.whl", hash = "sha256:6c1c451c0f99ab37d20d2a5e823ecbef48cde01e706b44245fef78830ca90cdd", size = 63593, upload-time = "2026-02-12T08:38:47.366Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/e2/77978624287ededbf53251a4f9da395926c85eace064fcdf6ec27f40e9ef/omop_semantics-0.1.8-py3-none-any.whl", hash = "sha256:6b6d2ff62974532a57b1defdacd937b689415dc8ceeec4072991341dda490bf6", size = 65434, upload-time = "2026-02-16T00:55:11.326Z" },
 ]
 
 [[package]]

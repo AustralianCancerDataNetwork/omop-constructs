@@ -3,3 +3,6 @@
 
 ## 0.1.2
 - condition modifier queries and factories
+
+## 0.1.3
+- refactored condition modifier queries and factories
