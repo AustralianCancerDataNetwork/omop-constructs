@@ -1,10 +1,9 @@
 import sqlalchemy.orm as so
 from collections import defaultdict
 from orm_loader.helpers import get_logger
-from ..alchemy.joins.concept_standardisation import Standard_Concept_Mapper
+from ..alchemy.concepts.concept_mappers import Standard_Concept_Mapper
 
 logger = get_logger(__name__)
-
 
 def get_standard_concept_lookup(sess: so.Session, to_standardise: list[int]) -> dict[int, int]:
     standard_concept_lookup = (

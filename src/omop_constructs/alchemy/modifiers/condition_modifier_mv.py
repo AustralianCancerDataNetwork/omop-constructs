@@ -2,14 +2,33 @@ import sqlalchemy as sa
 from orm_loader.helpers import Base
 from .condition_modifier_join import modified_conditions_join
 from ...core.materialized import MaterializedViewMixin
+from ...core.constructs import register_construct
+from .modifier_mappers import (
+    TStageMV, 
+    NStageMV, 
+    MStageMV,   
+    GroupStageMV,
+    GradeModifierMV,
+    SizeModifierMV,
+    LateralityModifierMV
+)
 
-
+@register_construct
 class ModifiedCondition(MaterializedViewMixin, Base):
     __mv_name__ = 'modified_conditions_mv'
     __mv_select__ = modified_conditions_join.select()
     __mv_pk__ = ["mv_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__
+    __deps__ = (
+        TStageMV.__mv_name__,
+        NStageMV.__mv_name__,
+        MStageMV.__mv_name__,
+        GroupStageMV.__mv_name__,
+        GradeModifierMV.__mv_name__,
+        SizeModifierMV.__mv_name__,
+        LateralityModifierMV.__mv_name__,
+    )
 
     mv_id = sa.Column(primary_key=True)
     person_id = sa.Column(sa.Integer)
