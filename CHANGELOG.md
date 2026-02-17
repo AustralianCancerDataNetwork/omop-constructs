@@ -25,3 +25,6 @@
 ## 0.2.0
 - bumped to beta with matview registry proper usage
 - the depth of nested matview under condition mods really does need everything under it to be a matview too
+
+## 0.2.1
+- bumped constrained versions of omop-alchemy and semantics
