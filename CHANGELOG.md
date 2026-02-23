@@ -31,3 +31,6 @@
 
 ## 0.2.2
 - created initial episode views for disease eps
+
+## 0.2.3
+- added eps as module
