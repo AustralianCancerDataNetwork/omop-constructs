@@ -36,3 +36,8 @@ grade_select = earliest_modifier(
     get_direct_modifier_query(list(registry['tumor_grade'].all_concepts), name="tumor_grade"),
     name="tumor_grade_earliest"
 )
+
+mets_select = earliest_modifier(
+    get_direct_modifier_query(list(registry['metastatic_disease'].all_concepts), name="metastatic_disease"),
+    name="metastatic_disease_earliest"
+)

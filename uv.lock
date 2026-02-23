@@ -848,7 +848,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "0.5.11"
+version = "0.5.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "orm-loader" },
@@ -857,14 +857,14 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/27/92b3ca68f6b9dc547efefb41a0ff36b50fa5336a37a58f83223fcb1df72a/omop_alchemy-0.5.11.tar.gz", hash = "sha256:4c88130638f3caa26d45f695de6dea6f4ac0fd6bb4fb727ceaa74a6ad9e5a2aa", size = 42205, upload-time = "2026-02-16T02:02:38.443Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/8f/96074945b47bf60550496df43e60c3f378ee1e57d431756cabd00ecd7774/omop_alchemy-0.5.12.tar.gz", hash = "sha256:4ff57dbba7830a3ddc6888995d4e647a4923cb44fbe77f5b59c87a7bd01dda71", size = 42704, upload-time = "2026-02-23T04:40:32.635Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/cd/e427b93b13a9fdd001cb0112af9a768e1e38a1c709ca812551aebc04e07d/omop_alchemy-0.5.11-py3-none-any.whl", hash = "sha256:9659e5647c365201818a444a697fa1ea037e4926575a3a864adbe17c9a0bbf99", size = 66255, upload-time = "2026-02-16T02:02:37.089Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/84/8d99fc5ff78d1013e1d2829a80f903a1a738f1bbada32b1ef8ef63c17962/omop_alchemy-0.5.12-py3-none-any.whl", hash = "sha256:d0e4c45f731a192406e76d9d018a0f354188a46479653e06ecf40b8767a894ec", size = 67122, upload-time = "2026-02-23T04:40:31.099Z" },
 ]
 
 [[package]]
 name = "omop-constructs"
-version = "0.2.1"
+version = "0.2.2"
 source = { editable = "." }
 dependencies = [
     { name = "omop-alchemy" },
@@ -876,7 +876,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "omop-alchemy", specifier = ">=0.5.11" },
+    { name = "omop-alchemy", specifier = ">=0.5.12" },
     { name = "omop-semantics", specifier = ">=0.1.8" },
     { name = "psycopg2-binary", specifier = ">=2.9.11" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
@@ -914,7 +914,7 @@ wheels = [
 
 [[package]]
 name = "orm-loader"
-version = "0.3.21"
+version = "0.3.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "chardet" },
@@ -923,9 +923,9 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "sqlalchemy-utils" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c7/26/f4b4d632be7688023befcd922315e9c9c38a3cbd72d9e5ba90bf3c111b06/orm_loader-0.3.21.tar.gz", hash = "sha256:ef93f3ee5994eccada82ec68710b8a461612963ce049e884d6ff2e4de88edb84", size = 30929, upload-time = "2026-02-08T21:13:02.15Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/d8/3fe9fc8d6d264f7d9e772a5847ab8dc0f5eb869e0823d67bcc9567cf97f3/orm_loader-0.3.22.tar.gz", hash = "sha256:72c0d0b8c798c07cdca1468a815f78120e8e5afa02914ee2b53452c573b4d55a", size = 31662, upload-time = "2026-02-19T05:23:47.893Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/83/bdc89ea3bfee78edf85cdb393f79f2b213a1f579a75bbcddcd7fb490ad83/orm_loader-0.3.21-py3-none-any.whl", hash = "sha256:e0e040031e7a5d70d1de378a7bdbcf426c204883cf2dca6e446d795b87a1b17d", size = 42359, upload-time = "2026-02-08T21:13:00.58Z" },
+    { url = "https://files.pythonhosted.org/packages/13/2e/2cae413c8e6b235acbff96c04ceb1045c1ffe33566acab37bb1f723d0202/orm_loader-0.3.22-py3-none-any.whl", hash = "sha256:cd5e4c5f8c636695f61b5738590857905459003dce29c7eb4ca436a6256ec8ac", size = 43454, upload-time = "2026-02-19T05:23:45.043Z" },
 ]
 
 [[package]]

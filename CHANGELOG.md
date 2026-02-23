@@ -28,3 +28,6 @@
 
 ## 0.2.1
 - bumped constrained versions of omop-alchemy and semantics
+
+## 0.2.2
+- created initial episode views for disease eps

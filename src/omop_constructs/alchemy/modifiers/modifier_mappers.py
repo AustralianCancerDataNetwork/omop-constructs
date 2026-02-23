@@ -8,6 +8,7 @@ from .modifier_joins import (
     laterality_select,
     size_select,
     grade_select,
+    mets_select
 )
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
@@ -102,37 +103,12 @@ class LateralityModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
+
+@register_construct
+class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
+    __mv_name__ = "metastatic_disease_modifier_mv"
+    __mv_select__ = mets_select.select()
+    __mv_index__ = "measurement_event_id"
+    __deps__ = ()
+    __tablename__ = __mv_name__
     value_as_concept_id = sa.Column(sa.Integer)
-
-# class TStage(StageColumns, Base):
-#     __table__ = t_stage_select
-#     __tablename__ = 't_stage'
-
-# class NStage(StageColumns, Base):
-#     __table__ = n_stage_select
-#     __tablename__ = 'n_stage'
-    
-# class MStage(StageColumns, Base):
-#     __table__ = m_stage_select
-#     __tablename__ = 'm_stage'
-
-# class GroupStage(StageColumns, Base):
-#     __table__ = group_stage_select
-#     __tablename__ = 'group_stage'
-    
-# class SizeModifier(MeasModCols, Base):
-#     __table__ = size_select
-#     __tablename__ = 'size_modifier'
-#     value_as_number = size_select.c.value_as_number
-#     unit_concept_id = size_select.c.unit_concept_id
-    
-# class GradeModifier(MeasModCols, Base):
-#     __table__ = grade_select
-#     __tablename__ = 'grade_modifier'
-#     measurement_concept_id = grade_select.c.measurement_concept_id
-
-# class LatModifier(MeasModCols, Base):
-#     __table__ = laterality_select
-#     __tablename__ = 'laterality_modifier'
-#     value_as_concept_id = laterality_select.c.value_as_concept_id
-
