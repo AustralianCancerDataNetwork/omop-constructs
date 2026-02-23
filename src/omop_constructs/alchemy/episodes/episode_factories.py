@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from typing import Iterable
+from sqlalchemy.sql import ColumnElement
+from typing import Iterable, Any
 from omop_alchemy.cdm.model import (
     Condition_Occurrence,
     Episode,
@@ -40,28 +41,6 @@ def get_episode_query(
         )
         .where(Episode.episode_concept_id.in_(list(episode_concept_ids)))
         .subquery(name=name)
-    )
-
-def require_condition_anchor(
-    episode_subq: sa.Subquery,
-    name: str | None = None,
-) -> sa.Subquery:
-    """
-    Filters an Episode subquery to only episodes with at least one
-    linked Condition_Occurrence via Episode_Event.
-    """
-    exists_condition = sa.exists().where(
-        sa.and_(
-            Episode_Event.episode_id == episode_subq.c.episode_id,
-            Episode_Event.episode_event_field_concept_id
-            == runtime.modifiers.modifier_fields.condition_occurrence_id,
-            Condition_Occurrence.condition_occurrence_id == Episode_Event.event_id,
-        )
-    )
-    return (
-        sa.select(*episode_subq.c)
-        .where(exists_condition)
-        .subquery(name=name or episode_subq.name)
     )
 
 
