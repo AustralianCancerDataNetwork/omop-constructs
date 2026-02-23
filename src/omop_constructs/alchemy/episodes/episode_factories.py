@@ -76,18 +76,18 @@ def get_episode_hierarchy_query(
 
     return (
         sa.select(
-            parent_episode_subq.c.episode_id.label("parent_episode_id"),
+            parent_episode_subq.c.episode_id.label("disease_episode_id"),
             parent_episode_subq.c.person_id.label("person_id"),
-            parent_episode_subq.c.episode_concept_id.label("parent_episode_concept_id"),
-            parent_episode_subq.c.episode_label.label("parent_episode_label"),
-            parent_episode_subq.c.episode_start_date.label("parent_start_date"),
-            parent_episode_subq.c.episode_end_date.label("parent_end_date"),
+            parent_episode_subq.c.episode_concept_id.label("disease_episode_concept_id"),
+            parent_episode_subq.c.episode_label.label("disease_episode_label"),
+            parent_episode_subq.c.episode_start_date.label("disease_episode_start_date"),
+            parent_episode_subq.c.episode_end_date.label("disease_episode_end_date"),
 
-            child_episode_subq.c.episode_id.label("child_episode_id"),
-            child_episode_subq.c.episode_concept_id.label("child_episode_concept_id"),
-            child_episode_subq.c.episode_label.label("child_episode_label"),
-            child_episode_subq.c.episode_start_date.label("child_start_date"),
-            child_episode_subq.c.episode_end_date.label("child_end_date"),
+            child_episode_subq.c.episode_id.label("extent_episode_id"),
+            child_episode_subq.c.episode_concept_id.label("extent_episode_concept_id"),
+            child_episode_subq.c.episode_label.label("extent_episode_label"),
+            child_episode_subq.c.episode_start_date.label("extent_start_date"),
+            child_episode_subq.c.episode_end_date.label("extent_end_date"),
         )
         .join(
             child_episode_subq,

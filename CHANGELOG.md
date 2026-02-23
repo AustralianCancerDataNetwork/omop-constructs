@@ -34,3 +34,6 @@
 
 ## 0.2.3
 - added eps as module
+
+## 0.2.4 
+- upversion semantics
