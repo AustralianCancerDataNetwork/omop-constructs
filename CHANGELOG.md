@@ -43,3 +43,6 @@
 
 ## 0.2.6
 - update col for treatment eps
+
+## 0.2.7
+- episode cols dynamic name correction

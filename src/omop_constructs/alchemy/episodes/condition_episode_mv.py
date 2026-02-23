@@ -39,8 +39,8 @@ class OverarchingDiseaseEpisodeMV(
     extent_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     extent_episode_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
 
-    extent_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
-    extent_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    extent_episode_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    extent_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
     def __repr__(self) -> str:
         if self.has_extent:
@@ -62,7 +62,7 @@ class OverarchingDiseaseEpisodeMV(
     def extent_interval(self):
         if self.extent_episode_id is None:
             return None
-        return (self.extent_start_date, self.extent_end_date)
+        return (self.extent_episode_start_date, self.extent_episode_end_date)
     
 @register_construct
 class TreatmentRegimenCycleMV(
@@ -89,15 +89,15 @@ class TreatmentRegimenCycleMV(
     regimen_episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     regimen_episode_label: so.Mapped[str] = so.mapped_column(sa.String)
 
-    regimen_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
-    regimen_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    regimen_episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
+    regimen_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
     cycle_episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     cycle_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     cycle_episode_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
 
-    cycle_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
-    cycle_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    cycle_episode_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    cycle_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
 
     def __repr__(self) -> str:
@@ -114,10 +114,10 @@ class TreatmentRegimenCycleMV(
 
     @property
     def regimen_interval(self):
-        return (self.regimen_start_date, self.regimen_end_date)
+        return (self.regimen_episode_start_date, self.regimen_episode_end_date)
 
     @property
     def cycle_interval(self):
         if self.cycle_episode_id is None:
             return None
-        return (self.cycle_start_date, self.cycle_end_date)
+        return (self.cycle_episode_start_date, self.cycle_episode_end_date)
