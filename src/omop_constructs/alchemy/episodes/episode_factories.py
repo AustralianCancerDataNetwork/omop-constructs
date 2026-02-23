@@ -48,6 +48,8 @@ def get_episode_hierarchy_query(
     parent_episode_subq: sa.Subquery,
     child_episode_subq: sa.Subquery,
     name: str = "episode_optional_children",
+    parent_label: str = 'disease',
+    child_label: str = 'extent'
 ) -> sa.Subquery:
     """
     Expands an episode subquery to optionally include child episodes.
@@ -55,18 +57,18 @@ def get_episode_hierarchy_query(
 
     return (
         sa.select(
-            parent_episode_subq.c.episode_id.label("disease_episode_id"),
+            parent_episode_subq.c.episode_id.label(f"{parent_label}_episode_id"),
             parent_episode_subq.c.person_id.label("person_id"),
-            parent_episode_subq.c.episode_concept_id.label("disease_episode_concept_id"),
-            parent_episode_subq.c.episode_label.label("disease_episode_label"),
-            parent_episode_subq.c.episode_start_date.label("disease_episode_start_date"),
-            parent_episode_subq.c.episode_end_date.label("disease_episode_end_date"),
+            parent_episode_subq.c.episode_concept_id.label(f"{parent_label}_episode_concept_id"),
+            parent_episode_subq.c.episode_label.label(f"{parent_label}_episode_label"),
+            parent_episode_subq.c.episode_start_date.label(f"{parent_label}_episode_start_date"),
+            parent_episode_subq.c.episode_end_date.label(f"{parent_label}_episode_end_date"),
 
-            child_episode_subq.c.episode_id.label("extent_episode_id"),
-            child_episode_subq.c.episode_concept_id.label("extent_episode_concept_id"),
-            child_episode_subq.c.episode_label.label("extent_episode_label"),
-            child_episode_subq.c.episode_start_date.label("extent_start_date"),
-            child_episode_subq.c.episode_end_date.label("extent_end_date"),
+            child_episode_subq.c.episode_id.label(f"{child_label}_episode_id"),
+            child_episode_subq.c.episode_concept_id.label(f"{child_label}_episode_concept_id"),
+            child_episode_subq.c.episode_label.label(f"{child_label}_episode_label"),
+            child_episode_subq.c.episode_start_date.label(f"{child_label}_start_date"),
+            child_episode_subq.c.episode_end_date.label(f"{child_label}_end_date"),
         )
         .join(
             child_episode_subq,

@@ -40,3 +40,6 @@
 
 ## 0.2.5
 - treatment eps
+
+## 0.2.6
+- update col for treatment eps

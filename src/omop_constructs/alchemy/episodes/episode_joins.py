@@ -31,4 +31,6 @@ treatment_regimen_with_cycles = get_episode_hierarchy_query(
     parent_episode_subq=treatment_regimen_select,
     child_episode_subq=treatment_cycle_select,
     name="treatment_regimen_with_cycles",
+    parent_label="regimen",
+    child_label="cycle"
 )
