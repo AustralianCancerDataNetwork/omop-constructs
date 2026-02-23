@@ -37,3 +37,6 @@
 
 ## 0.2.4 
 - upversion semantics
+
+## 0.2.5
+- treatment eps
