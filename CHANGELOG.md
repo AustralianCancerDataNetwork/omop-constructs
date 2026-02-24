@@ -49,3 +49,6 @@
 
 ## 0.2.8
 - condition episode object mapper
+
+## 0.2.9
+- measurements mat view
