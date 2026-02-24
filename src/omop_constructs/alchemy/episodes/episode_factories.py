@@ -1,14 +1,10 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from sqlalchemy.sql import ColumnElement
-from typing import Iterable, Any
+from typing import Iterable
 from omop_alchemy.cdm.model import (
-    Condition_Occurrence,
     Episode,
-    Concept,
-    Episode_Event
+    Concept
 )
-from omop_semantics.runtime.default_valuesets import runtime
 
 episode_concept = so.aliased(Concept, name="episode_concept")
 

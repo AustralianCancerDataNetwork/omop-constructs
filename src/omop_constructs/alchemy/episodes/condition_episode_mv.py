@@ -3,28 +3,11 @@ import sqlalchemy.orm as so
 from orm_loader.helpers import Base
 from datetime import date
 from typing import Optional
-from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles
+from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles, condition_episode_select
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 
-@register_construct
-class OverarchingDiseaseEpisodeMV(
-    MaterializedViewMixin,
-    Base,
-):
-    """
-    Materialized view representing overarching disease episodes
-    with optional child disease-extent episodes.
-
-    One row per (episode_of_care, disease_extent_episode?) pair.
-    """
-
-    __mv_name__ = "overarching_disease_episode_mv"
-    __mv_select__ = overarching_disease_episode.select()
-    __mv_index__ = "disease_episode_id"
-    __deps__ = ()
-    __tablename__ = __mv_name__
-    __table_args__ = {"extend_existing": True}
+class DiseaseEpisodeCols:
 
     disease_episode_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
     person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
@@ -34,6 +17,47 @@ class OverarchingDiseaseEpisodeMV(
 
     disease_episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
     disease_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+
+@register_construct
+class ConditionEpisodeMV(
+    DiseaseEpisodeCols,
+    MaterializedViewMixin,
+    Base,
+):
+    """
+    Materialized view representing all disease episodes (irrespective of type).
+
+    Used for resolving linkages between clinical events and disease episodes 
+    when there is no explicit link in the source data, and we must therefore use
+    time-windowing logic.
+    """
+    __mv_name__ = "condition_episode_mv"
+    __mv_select__ = condition_episode_select.select()
+    __mv_index__ = "disease_episode_id"
+    __deps__ = ()
+    __tablename__ = __mv_name__
+    __table_args__ = {"extend_existing": True}
+
+
+@register_construct
+class OverarchingDiseaseEpisodeMV(
+    DiseaseEpisodeCols,
+    MaterializedViewMixin,
+    Base,
+):
+    """
+    Materialized view representing overarching disease episodes
+    with optional child disease-extent episodes.
+
+    One row per (episode_of_care, disease_extent_episode) pair.
+    """
+
+    __mv_name__ = "overarching_disease_episode_mv"
+    __mv_select__ = overarching_disease_episode.select()
+    __mv_index__ = "disease_episode_id"
+    __deps__ = ()
+    __tablename__ = __mv_name__
+    __table_args__ = {"extend_existing": True}
 
     extent_episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     extent_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)

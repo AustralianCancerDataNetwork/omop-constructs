@@ -46,3 +46,6 @@
 
 ## 0.2.7
 - episode cols dynamic name correction
+
+## 0.2.8
+- condition episode object mapper
