@@ -58,3 +58,6 @@
 
 ## 0.2.11
 - upversion semantics
+
+## 0.2.12
+- demography

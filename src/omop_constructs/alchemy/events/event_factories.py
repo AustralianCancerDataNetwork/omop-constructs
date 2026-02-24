@@ -16,6 +16,7 @@ def attach_to_condition_episode_via_episode_event(
     base_event_subq: sa.Subquery,
     *,
     event_id_col: ColumnElement[Any],
+    date_col: ColumnElement[Any],
     name: str,
 ) -> sa.Subquery:
     """
@@ -29,6 +30,7 @@ def attach_to_condition_episode_via_episode_event(
             ConditionEpisodeMV.disease_episode_label,
             ConditionEpisodeMV.disease_episode_start_date,
             ConditionEpisodeMV.disease_episode_end_date,
+            (date_col - ConditionEpisodeMV.disease_episode_start_date).label("episode_delta_days"),
         )
         .join(
             Episode_Event,
@@ -97,6 +99,7 @@ def attach_to_condition_episode(
     """
     explicit = attach_to_condition_episode_via_episode_event(
         base_event_subq,
+        date_col=date_col,
         event_id_col=event_id_col,
         name=f"{name}_explicit",
     )
