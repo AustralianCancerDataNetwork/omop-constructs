@@ -10,7 +10,8 @@ from .modifier_mappers import (
     GroupStageMV,
     GradeModifierMV,
     SizeModifierMV,
-    LateralityModifierMV
+    LateralityModifierMV,
+    MetastaticDiseaseModifierMV
 )
 
 @register_construct
@@ -28,6 +29,7 @@ class ModifiedCondition(MaterializedViewMixin, Base):
         GradeModifierMV.__mv_name__,
         SizeModifierMV.__mv_name__,
         LateralityModifierMV.__mv_name__,
+        MetastaticDiseaseModifierMV.__mv_name__
     )
 
     mv_id = sa.Column(primary_key=True)
@@ -54,3 +56,7 @@ class ModifiedCondition(MaterializedViewMixin, Base):
     laterality_date = sa.Column(sa.Date)
     laterality_concept_id = sa.Column(sa.Integer)
     laterality_label = sa.Column(sa.String)
+    metastatic_disease_id = sa.Column(sa.Integer)
+    metastatic_disease_date = sa.Column(sa.Date)
+    metastatic_disease_concept_id = sa.Column(sa.Integer)
+    metastatic_disease_label = sa.Column(sa.String)

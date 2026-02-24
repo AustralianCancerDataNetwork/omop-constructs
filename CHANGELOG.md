@@ -73,3 +73,6 @@
 
 ## 0.2.16
 - mets col adapt
+
+## 0.2.17
+- mets cols thru to condition mods

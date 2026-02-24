@@ -125,5 +125,13 @@ modified_conditions_join = (
         ),
         isouter=True
     )
+    .join(
+        MetastaticDiseaseModifierMV, 
+        sa.and_(
+            MetastaticDiseaseModifierMV.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==MetastaticDiseaseModifierMV.measurement_event_id
+        ),
+        isouter=True
+    )
     .join(condition_concept, condition_concept.concept_id==Condition_Occurrence.condition_concept_id)
 )
