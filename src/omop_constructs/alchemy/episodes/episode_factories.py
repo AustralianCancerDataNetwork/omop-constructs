@@ -8,9 +8,10 @@ from omop_alchemy.cdm.model import (
 
 episode_concept = so.aliased(Concept, name="episode_concept")
 
+
 def get_episode_query(
     episode_concept_ids: Iterable[int],
-    name: str = "episode_construct",
+    name: str = "disease_episode",
 ) -> sa.Subquery:
     """
     Base query for Episode-derived constructs.
@@ -18,14 +19,14 @@ def get_episode_query(
     """
     return (
         sa.select(
-            Episode.episode_id,
+            Episode.episode_id.label(f"{name}_id"),
             Episode.person_id,
-            Episode.episode_start_date,
-            Episode.episode_start_datetime,
-            Episode.episode_end_date,
-            Episode.episode_end_datetime,
+            Episode.episode_start_date.label(f"{name}_start_date"),
+            Episode.episode_start_datetime.label(f"{name}_start_datetime"),
+            Episode.episode_end_date.label(f"{name}_end_date"),
+            Episode.episode_end_datetime.label(f"{name}_end_datetime"),
             Episode.episode_concept_id,
-            episode_concept.concept_name.label("episode_label"),
+            episode_concept.concept_name.label(f"{name}_label"),
             Episode.episode_object_concept_id,
             Episode.episode_type_concept_id,
             Episode.episode_parent_id,
