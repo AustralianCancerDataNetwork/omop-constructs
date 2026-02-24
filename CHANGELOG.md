@@ -67,3 +67,6 @@
 
 ## 0.2.14
 - simplified ep naming
+
+## 0.2.15
+- fix label name
