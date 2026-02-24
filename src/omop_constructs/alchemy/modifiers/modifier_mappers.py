@@ -112,3 +112,4 @@ class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __deps__ = ()
     __tablename__ = __mv_name__
     value_as_concept_id = sa.Column(sa.Integer)
+    measurement_concept_id = sa.Column(sa.Integer)

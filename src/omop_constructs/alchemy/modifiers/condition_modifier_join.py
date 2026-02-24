@@ -13,6 +13,7 @@ from .modifier_mappers import (
     GradeModifierMV,
     SizeModifierMV,
     LateralityModifierMV,
+    MetastaticDiseaseModifierMV
 )
 
 condition_concept = so.aliased(Concept, name='condition_concept')
@@ -45,14 +46,20 @@ modified_conditions_join = (
     	GroupStageMV.stage_label.label('group_stage_label'),
         GradeModifierMV.measurement_id.label('grade_id'),
     	GradeModifierMV.measurement_date.label('grade_date'),
+    	GradeModifierMV.measurement_concept_id.label('grade_concept_id'),
     	GradeModifierMV.concept_name.label('grade_concept'),
     	SizeModifierMV.measurement_id.label('size_id'),
     	SizeModifierMV.measurement_date.label('size_date'),
-    	SizeModifierMV.value_as_number.label('size_value'),
     	SizeModifierMV.concept_name.label('size_concept'),
+    	SizeModifierMV.value_as_number.label('size_value'),
+    	SizeModifierMV.unit_concept_id.label('unit_concept_id'),
     	LateralityModifierMV.measurement_id.label('laterality_id'),
     	LateralityModifierMV.measurement_date.label('laterality_date'),
     	LateralityModifierMV.concept_name.label('laterality_concept'),
+    	MetastaticDiseaseModifierMV.measurement_id.label('metastatic_disease_id'),
+    	MetastaticDiseaseModifierMV.measurement_date.label('metastatic_disease_date'),
+    	MetastaticDiseaseModifierMV.measurement_concept_id.label('metastatic_disease_concept_id'),
+    	MetastaticDiseaseModifierMV.concept_name.label('metastatic_disease_concept'),
     )
     .join(
         Episode_Event, 
