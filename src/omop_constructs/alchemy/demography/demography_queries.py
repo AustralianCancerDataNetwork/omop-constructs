@@ -45,8 +45,8 @@ demographics_join = (
         Person.gender_concept_id,
         Person.person_source_value.label("mrn"),
 
-        ConditionEpisodeMV.disease_episode_id.label("episode_id"),
-        ConditionEpisodeMV.disease_episode_start_date.label("episode_start_date"),
+        ConditionEpisodeMV.episode_id.label("episode_id"),
+        ConditionEpisodeMV.episode_start_date.label("episode_start_date"),
 
         Concept.concept_name.label("sex"),
         person_lang.c.language_spoken,

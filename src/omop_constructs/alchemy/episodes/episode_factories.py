@@ -11,7 +11,7 @@ episode_concept = so.aliased(Concept, name="episode_concept")
 
 def get_episode_query(
     episode_concept_ids: Iterable[int],
-    name: str = "disease_episode",
+    name: str = "episode_construct",
 ) -> sa.Subquery:
     """
     Base query for Episode-derived constructs.
@@ -19,12 +19,14 @@ def get_episode_query(
     """
     return (
         sa.select(
-            Episode.episode_id.label(f"{name}_id"),
+            Episode.episode_id,
             Episode.person_id,
-            Episode.episode_start_date.label(f"{name}_start_date"),
-            Episode.episode_start_datetime.label(f"{name}_start_datetime"),
-            Episode.episode_end_date.label(f"{name}_end_date"),
-            Episode.episode_end_datetime.label(f"{name}_end_datetime"),
+            Episode.episode_start_date,
+            Episode.episode_start_datetime,
+            Episode.episode_end_date,
+            Episode.episode_end_datetime,
+            Episode.episode_concept_id,
+            Episode.episode_end_datetime,
             Episode.episode_concept_id,
             episode_concept.concept_name.label(f"{name}_label"),
             Episode.episode_object_concept_id,
@@ -45,7 +47,6 @@ def get_episode_hierarchy_query(
     parent_episode_subq: sa.Subquery,
     child_episode_subq: sa.Subquery,
     name: str = "episode_optional_children",
-    parent_label: str = 'disease_episode',
     child_label: str = 'extent_episode'
 ) -> sa.Subquery:
     """
@@ -54,12 +55,12 @@ def get_episode_hierarchy_query(
 
     return (
         sa.select(
-            parent_episode_subq.c.episode_id.label(f"{parent_label}_id"),
+            parent_episode_subq.c.episode_id,
             parent_episode_subq.c.person_id.label("person_id"),
-            parent_episode_subq.c.episode_concept_id.label(f"{parent_label}_concept_id"),
-            parent_episode_subq.c.episode_label.label(f"{parent_label}_label"),
-            parent_episode_subq.c.episode_start_date.label(f"{parent_label}_start_date"),
-            parent_episode_subq.c.episode_end_date.label(f"{parent_label}_end_date"),
+            parent_episode_subq.c.episode_concept_id,
+            parent_episode_subq.c.episode_label,
+            parent_episode_subq.c.episode_start_date,
+            parent_episode_subq.c.episode_end_date,
 
             child_episode_subq.c.episode_id.label(f"{child_label}_id"),
             child_episode_subq.c.episode_concept_id.label(f"{child_label}_concept_id"),

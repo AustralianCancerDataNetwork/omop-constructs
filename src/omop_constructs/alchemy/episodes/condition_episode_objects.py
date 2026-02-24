@@ -19,7 +19,7 @@ class ConditionEpisodeObject(ConditionEpisodeMV):
     # All Episode_Event rows for this episode
     episode_events: so.Mapped[List[Episode_Event]] = so.relationship(
         Episode_Event,
-        primaryjoin=ConditionEpisodeMV.disease_episode_id == so.foreign(Episode_Event.episode_id),
+        primaryjoin=ConditionEpisodeMV.episode_id == so.foreign(Episode_Event.episode_id),
         viewonly=True,
         lazy="selectin",
     )
@@ -28,7 +28,7 @@ class ConditionEpisodeObject(ConditionEpisodeMV):
     condition_events: so.Mapped[List[Episode_Event]] = so.relationship(
         Episode_Event,
         primaryjoin=sa.and_(
-            ConditionEpisodeMV.disease_episode_id == so.foreign(Episode_Event.episode_id),
+            ConditionEpisodeMV.episode_id == so.foreign(Episode_Event.episode_id),
             Episode_Event.episode_event_field_concept_id
             == runtime.modifiers.modifier_fields.condition_occurrence_id,
         ),
@@ -40,7 +40,7 @@ class ConditionEpisodeObject(ConditionEpisodeMV):
     modified_conditions: so.Mapped[List[ModifiedCondition]] = so.relationship(
         ModifiedCondition,
         secondary=Episode_Event.__table__,
-        primaryjoin=ConditionEpisodeMV.disease_episode_id == so.foreign(Episode_Event.episode_id),
+        primaryjoin=ConditionEpisodeMV.episode_id == so.foreign(Episode_Event.episode_id),
         secondaryjoin=sa.and_(
             so.foreign(Episode_Event.event_id) == ModifiedCondition.condition_occurrence_id,
             Episode_Event.episode_event_field_concept_id

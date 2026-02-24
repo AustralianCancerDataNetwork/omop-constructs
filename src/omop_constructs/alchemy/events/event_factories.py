@@ -25,12 +25,12 @@ def attach_to_condition_episode_via_episode_event(
     return (
         sa.select(
             *base_event_subq.c,
-            ConditionEpisodeMV.disease_episode_id,
-            ConditionEpisodeMV.disease_episode_concept_id,
-            ConditionEpisodeMV.disease_episode_label,
-            ConditionEpisodeMV.disease_episode_start_date,
-            ConditionEpisodeMV.disease_episode_end_date,
-            (date_col - ConditionEpisodeMV.disease_episode_start_date).label("episode_delta_days"),
+            ConditionEpisodeMV.episode_id,
+            ConditionEpisodeMV.episode_concept_id,
+            ConditionEpisodeMV.episode_label,
+            ConditionEpisodeMV.episode_start_date,
+            ConditionEpisodeMV.episode_end_date,
+            (date_col - ConditionEpisodeMV.episode_start_date).label("episode_delta_days"),
         )
         .join(
             Episode_Event,
@@ -42,7 +42,7 @@ def attach_to_condition_episode_via_episode_event(
         )
         .join(
             ConditionEpisodeMV,
-            ConditionEpisodeMV.disease_episode_id == Episode_Event.episode_id,
+            ConditionEpisodeMV.episode_id == Episode_Event.episode_id,
         )
         .subquery(name=name)
     )   
@@ -61,21 +61,21 @@ def attach_to_condition_episode_by_time_window(
         sa.select(
             *base_event_subq.c,
 
-            ConditionEpisodeMV.disease_episode_id,
-            ConditionEpisodeMV.disease_episode_concept_id,
-            ConditionEpisodeMV.disease_episode_label,
-            ConditionEpisodeMV.disease_episode_start_date,
-            ConditionEpisodeMV.disease_episode_end_date,
-            (date_col - ConditionEpisodeMV.disease_episode_start_date).label("episode_delta_days"),
+            ConditionEpisodeMV.episode_id,
+            ConditionEpisodeMV.episode_concept_id,
+            ConditionEpisodeMV.episode_label,
+            ConditionEpisodeMV.episode_start_date,
+            ConditionEpisodeMV.episode_end_date,
+            (date_col - ConditionEpisodeMV.episode_start_date).label("episode_delta_days"),
         )
         .join(
             ConditionEpisodeMV,
             sa.and_(
                 ConditionEpisodeMV.person_id == person_col,
-                date_col >= ConditionEpisodeMV.disease_episode_start_date,
+                date_col >= ConditionEpisodeMV.episode_start_date,
                 sa.or_(
-                    ConditionEpisodeMV.disease_episode_end_date == None,
-                    date_col <= ConditionEpisodeMV.disease_episode_end_date,
+                    ConditionEpisodeMV.episode_end_date == None,
+                    date_col <= ConditionEpisodeMV.episode_end_date,
                 ),
             ),
             isouter=True,

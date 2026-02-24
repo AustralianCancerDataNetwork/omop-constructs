@@ -35,12 +35,12 @@ class ConditionEpisodeMeasurementCols:
     value_as_number: so.Mapped[Optional[float]] = so.mapped_column(sa.Float, nullable=True)
     unit_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
 
-    disease_episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
-    disease_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
-    disease_episode_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
+    episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
+    episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
+    episode_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
 
-    disease_episode_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
-    disease_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    episode_start_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
     episode_delta_days: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
 

@@ -64,3 +64,6 @@
 
 ## 0.2.13
 - added cols for condition ep
+
+## 0.2.14
+- simplified ep naming

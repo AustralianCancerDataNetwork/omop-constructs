@@ -9,14 +9,14 @@ from ...core.constructs import register_construct
 
 class DiseaseEpisodeCols:
 
-    disease_episode_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
+    episode_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
     person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
 
-    disease_episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
-    disease_episode_label: so.Mapped[str] = so.mapped_column(sa.String)
+    episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+    episode_label: so.Mapped[str] = so.mapped_column(sa.String)
 
-    disease_episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
-    disease_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
+    episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
 @register_construct
 class ConditionEpisodeMV(
@@ -33,7 +33,7 @@ class ConditionEpisodeMV(
     """
     __mv_name__ = "condition_episode_mv"
     __mv_select__ = condition_episode_select.select()
-    __mv_index__ = "disease_episode_id"
+    __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
@@ -54,7 +54,7 @@ class OverarchingDiseaseEpisodeMV(
 
     __mv_name__ = "overarching_disease_episode_mv"
     __mv_select__ = overarching_disease_episode.select()
-    __mv_index__ = "disease_episode_id"
+    __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
@@ -70,9 +70,9 @@ class OverarchingDiseaseEpisodeMV(
         if self.has_extent:
             return (
                 f"<OverarchingDiseaseEpisode "
-                f"{self.disease_episode_id} -> extent {self.extent_episode_id}>"
+                f"{self.episode_id} -> extent {self.extent_episode_id}>"
             )
-        return f"<OverarchingDiseaseEpisode {self.disease_episode_id}>"
+        return f"<OverarchingDiseaseEpisode {self.episode_id}>"
     
     @property
     def has_extent(self) -> bool:
@@ -80,7 +80,7 @@ class OverarchingDiseaseEpisodeMV(
 
     @property
     def disease_interval(self):
-        return (self.disease_episode_start_date, self.disease_episode_end_date)
+        return (self.episode_start_date, self.episode_end_date)
 
     @property
     def extent_interval(self):
@@ -102,19 +102,19 @@ class TreatmentRegimenCycleMV(
 
     __mv_name__ = "treatment_regimen_cycle_mv"
     __mv_select__ = treatment_regimen_with_cycles.select()
-    __mv_index__ = "regimen_episode_id"
+    __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 
-    regimen_episode_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
+    episode_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
     person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
 
-    regimen_episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
-    regimen_episode_label: so.Mapped[str] = so.mapped_column(sa.String)
+    episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+    episode_label: so.Mapped[str] = so.mapped_column(sa.String)
 
-    regimen_episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
-    regimen_episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
+    episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
+    episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
     cycle_episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     cycle_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
@@ -128,19 +128,18 @@ class TreatmentRegimenCycleMV(
         if self.has_cycle:
             return (
                 f"<TreatmentRegimenCycle "
-                f"{self.regimen_episode_id} -> cycle {self.cycle_episode_id}>"
+                f"{self.episode_id} -> cycle {self.cycle_episode_id}>"
             )
-        return f"<TreatmentRegimenCycle {self.regimen_episode_id}>"
+        return f"<TreatmentRegimenCycle {self.episode_id}>"
     
     @property
     def has_cycle(self) -> bool:
         return self.cycle_episode_id is not None
 
     @property
-    def regimen_interval(self):
-        return (self.regimen_episode_start_date, self.regimen_episode_end_date)
-
-    @property
+    def episode_interval(self):
+        return (self.episode_start_date, self.episode_end_date)
+    
     def cycle_interval(self):
         if self.cycle_episode_id is None:
             return None
