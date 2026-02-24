@@ -52,3 +52,6 @@
 
 ## 0.2.9
 - measurements mat view
+
+## 0.2.10
+- missed checkin
