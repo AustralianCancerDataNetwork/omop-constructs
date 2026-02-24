@@ -55,3 +55,6 @@
 
 ## 0.2.10
 - missed checkin
+
+## 0.2.11
+- upversion semantics
