@@ -18,8 +18,12 @@ from .event_queries import (
     fev1_dx,
     dtherm_dx,
     ecog_dx,
-    pyh_dx
+    pyh_dx,
+    dx_all_measurements
 )
+
+
+
 
 class ConditionEpisodeMeasurementCols:
     __table_args__ = {"extend_existing": True}
@@ -168,3 +172,14 @@ class SmokingPYHDxMV(
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
+
+@register_construct
+class DxMeasurementMV(ConditionEpisodeMeasurementCols, MaterializedViewMixin, Base):
+    # todo: the other measurement MVs could be slices of this one instead of 
+    # re-creating from fresh joins every time...
+    __mv_name__ = "dx_measurement_mv"
+    __mv_select__ = dx_all_measurements.select()
+    __mv_index__ = "person_id"
+    __deps__ = (ConditionEpisodeMV.__mv_name__,)
+    __tablename__ = __mv_name__
+    value_as_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)

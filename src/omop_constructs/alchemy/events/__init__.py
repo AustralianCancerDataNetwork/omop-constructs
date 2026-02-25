@@ -9,6 +9,7 @@ from .dx_linked_event_mv import (
     DistressThermometerDxMV,
     ECOGDxMV,
     SmokingPYHDxMV,
+    DxMeasurementMV
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "FEV1DxMV",
     "DistressThermometerDxMV",
     "ECOGDxMV",
-    "SmokingPYHDxMV"
+    "SmokingPYHDxMV",
+    "DxMeasurementMV"
 ]

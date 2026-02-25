@@ -73,3 +73,19 @@ fev1_dx = episode_relevant_window(fev1_query, max_days_post=90, max_days_prior=3
 dtherm_dx = episode_relevant_window(distress_thermometer_query, max_days_post=90, max_days_prior=30, name="dtherm_dx")
 ecog_dx = episode_relevant_window(ecog_query, max_days_post=90, max_days_prior=30, name="ecog_dx")
 pyh_dx = episode_relevant_window(smoking_pyh_query, max_days_post=90, max_days_prior=30, name="pyh_dx")
+
+dx_all_measurements = episode_relevant_window(
+    measurement_attached_to_condition_episode(
+        concept_ids=None,  
+        include_cols=[
+            Measurement.value_as_number,
+            Measurement.value_as_concept_id,
+            Measurement.unit_concept_id,
+        ],
+        name="dx_all_measurements",
+        unlinked_only=False,  
+    ),
+    max_days_post=90,
+    max_days_prior=30,
+    name="dx_all_measurements_windowed",
+)

@@ -85,3 +85,6 @@
 
 ## 0.3.2
 - some treatment mappers
+
+## 0.3.3
+- general case measurement mapper
