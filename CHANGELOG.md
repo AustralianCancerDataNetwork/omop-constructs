@@ -79,3 +79,6 @@
 
 ## 0.3.0
 - all stage modifier mapper
+
+## 0.3.1
+- fixed all stage cols

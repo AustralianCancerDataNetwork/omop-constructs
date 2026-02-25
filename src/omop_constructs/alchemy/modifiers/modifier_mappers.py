@@ -116,7 +116,7 @@ class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
     measurement_concept_id = sa.Column(sa.Integer)
 
 @register_construct
-class AllStageModifierMV(StageColumns, MaterializedViewMixin, Base):
+class AllStageModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "all_stage_modifier_mv"
     __mv_select__ = all_stage_select.select()
     __mv_index__ = "measurement_event_id"

@@ -18,6 +18,7 @@ from .modifier_mappers import (
 )
 
 condition_concept = so.aliased(Concept, name='condition_concept')
+stage_concept = so.aliased(Concept, name='stage_concept')
 
 modified_conditions_join = (
     sa.select(
@@ -147,10 +148,10 @@ all_stage_join = (
         Condition_Occurrence.condition_concept_id,
         condition_concept.concept_name.label('condition_concept'),
         Episode_Event.episode_id.label('condition_episode'),
-    	AllStageModifierMV.stage_id.label('stage_id'),
-    	AllStageModifierMV.stage_date.label('stage_date'),
-    	AllStageModifierMV.stage_concept_id.label('stage_concept_id'),
-    	AllStageModifierMV.stage_label.label('stage_label'),
+    	AllStageModifierMV.measurement_id.label('stage_id'),
+    	AllStageModifierMV.measurement_date.label('stage_date'),
+    	AllStageModifierMV.measurement_concept_id.label('stage_concept_id'),
+    	stage_concept.concept_name.label('stage_label'),
     )
     .join(
         Episode_Event, 
@@ -169,4 +170,5 @@ all_stage_join = (
         isouter=True
     )
     .join(condition_concept, condition_concept.concept_id==Condition_Occurrence.condition_concept_id)
+    .join(stage_concept, stage_concept.concept_id==AllStageModifierMV.measurement_concept_id)
 )
