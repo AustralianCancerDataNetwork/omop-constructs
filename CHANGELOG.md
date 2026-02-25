@@ -94,3 +94,6 @@
 
 ## 0.3.5
 - generic procedure mapper
+
+## 0.3.6
+- generic observation mapper

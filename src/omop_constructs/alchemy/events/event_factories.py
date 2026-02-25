@@ -5,13 +5,14 @@ from typing import Iterable, Any, Sequence, Union
 from omop_constructs.alchemy.episodes import ConditionEpisodeMV
 from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
-from omop_alchemy.cdm.model import Measurement, Concept, Procedure_Occurrence
+from omop_alchemy.cdm.model import Measurement, Concept, Procedure_Occurrence, Observation
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 SQLExpr = Union[ColumnElement[Any], InstrumentedAttribute[Any]]
 
 modifier_concept = so.aliased(Concept, name="modifier_concept")
 procedure_concept = so.aliased(Concept, name="procedure_concept")
+observation_concept = so.aliased(Concept, name="observation_concept")
 
 def attach_to_condition_episode_via_episode_event(
     base_event_subq: sa.Subquery,
@@ -228,6 +229,66 @@ def measurement_attached_to_condition_episode(
         date_col=core.c.event_date,
         person_col=core.c.person_id,
         name=name,
+    )
+
+def observation_event_core(
+    *,
+    concept_ids: Iterable[int] | None = None,
+    name: str = "observation_core",
+    include_cols: Sequence[SQLExpr] = (),
+    unlinked_only: bool = True,
+) -> sa.Subquery:
+    """
+    Minimal observation event surface (person/id/date/concept/label + extras).
+    """
+    q = (
+        sa.select(
+            Observation.person_id.label("person_id"),
+            Observation.observation_id.label("event_id"),
+            Observation.observation_date.label("event_date"),
+            Observation.observation_concept_id.label("event_concept_id"),
+            observation_concept.concept_name.label("event_label"),
+            Observation.value_as_concept_id.label("value_concept_id"),
+            Observation.qualifier_concept_id.label("qualifier_concept_id"),
+            *include_cols,
+        )
+        .join(
+            observation_concept,
+            observation_concept.concept_id == Observation.observation_concept_id,
+            isouter=True,
+        )
+    )
+
+    if unlinked_only:
+        q = q.where(Observation.observation_event_id == None)
+
+    if concept_ids is not None:
+        q = q.where(Observation.observation_concept_id.in_(list(concept_ids)))
+
+    return q.subquery(name=name)
+
+def observation_attached_to_condition_episode(
+    *,
+    concept_ids: Iterable[int] | None = None,
+    include_cols: Sequence[SQLExpr] = (),
+    name: str,
+    unlinked_only: bool = True,
+    prefer_explicit_link: bool = True,
+) -> sa.Subquery:
+    core = observation_event_core(
+        concept_ids=concept_ids,
+        include_cols=include_cols,
+        name=f"{name}_core",
+        unlinked_only=unlinked_only,
+    )
+
+    return attach_to_condition_episode(
+        core,
+        event_id_col=core.c.event_id,
+        date_col=core.c.event_date,
+        person_col=core.c.person_id,
+        name=name,
+        prefer_explicit_link=prefer_explicit_link,
     )
 
 def episode_relevant_window(
