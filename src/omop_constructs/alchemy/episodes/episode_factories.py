@@ -6,8 +6,9 @@ from omop_alchemy.cdm.model import (
     Concept
 )
 
-episode_concept = so.aliased(Concept, name="episode_concept")
+from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 
+episode_concept = so.aliased(Concept, name="episode_concept")
 
 def get_episode_query(
     episode_concept_ids: Iterable[int],
@@ -24,8 +25,6 @@ def get_episode_query(
             Episode.episode_start_date,
             Episode.episode_start_datetime,
             Episode.episode_end_date,
-            Episode.episode_end_datetime,
-            Episode.episode_concept_id,
             Episode.episode_end_datetime,
             Episode.episode_concept_id,
             episode_concept.concept_name.label(f"episode_label"),
@@ -74,4 +73,33 @@ def get_episode_hierarchy_query(
             isouter=True,  
         )
         .subquery(name=name)        
+    )
+
+def dx_treatment_window(name="dx_treat_window"):
+    Diagnosis = Episode
+    Regimen = so.aliased(Episode, name="regimen")
+
+    return (
+        sa.select(
+            Diagnosis.episode_id.label("dx_episode_id"),
+            Diagnosis.person_id,
+            Diagnosis.episode_start_date.label("dx_start_date"),
+            sa.func.min(Regimen.episode_start_date).label("treatment_start"),
+            sa.func.max(Regimen.episode_end_date).label("treatment_end"),
+            sa.func.count(sa.distinct(Regimen.episode_id)).label("treatment_regimen_count"),
+        )
+        .join(
+            Regimen,
+            Regimen.episode_parent_id == Diagnosis.episode_id,
+        )
+        .where(
+            Diagnosis.episode_concept_id.in_(runtime.types.disease_episode_types.ids),
+            Regimen.episode_concept_id.in_(runtime.types.treatment_episode_types.ids),
+        )
+        .group_by(
+            Diagnosis.episode_id,
+            Diagnosis.person_id,
+            Diagnosis.episode_start_date,
+        )
+        .subquery(name)
     )

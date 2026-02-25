@@ -3,7 +3,7 @@ import sqlalchemy.orm as so
 from orm_loader.helpers import Base
 from datetime import date
 from typing import Optional
-from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles, condition_episode_select
+from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles, condition_episode_select, dx_window_select
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 
@@ -116,6 +116,8 @@ class TreatmentRegimenCycleMV(
     episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
     episode_end_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date, nullable=True)
 
+    episode_parent_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
+
     cycle_episode_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     cycle_episode_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     cycle_episode_label: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
@@ -144,3 +146,20 @@ class TreatmentRegimenCycleMV(
         if self.cycle_episode_id is None:
             return None
         return (self.cycle_episode_start_date, self.cycle_episode_end_date)
+    
+
+@register_construct
+class DxTreatStartMV(MaterializedViewMixin, Base):
+    __mv_name__ = "dx_treat_start_mv"
+    __mv_select__ = dx_window_select.select()
+    __mv_index__ = "dx_episode_id"
+    __deps__ = (ConditionEpisodeMV.__mv_name__, TreatmentRegimenCycleMV.__mv_name__,)
+    __tablename__ = __mv_name__
+
+    dx_episode_id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+    dx_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
+
+    treatment_start: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
+    treatment_end: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
+    treatment_regimen_count: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)

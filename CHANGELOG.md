@@ -82,3 +82,6 @@
 
 ## 0.3.1
 - fixed all stage cols
+
+## 0.3.2
+- some treatment mappers
