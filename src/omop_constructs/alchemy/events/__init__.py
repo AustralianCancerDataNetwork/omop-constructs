@@ -12,6 +12,10 @@ from .dx_linked_event_mv import (
     DxMeasurementMV
 )
 
+from .dx_linked_procedure_mv import (
+    DxProcedureMV,
+)
+
 __all__ = [
     "WeightDxMV",
     "WeightChangeDxMV",         
@@ -23,5 +27,6 @@ __all__ = [
     "DistressThermometerDxMV",
     "ECOGDxMV",
     "SmokingPYHDxMV",
-    "DxMeasurementMV"
+    "DxMeasurementMV",
+    "DxProcedureMV",
 ]

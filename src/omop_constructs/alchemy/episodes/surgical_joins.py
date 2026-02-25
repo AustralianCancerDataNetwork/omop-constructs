@@ -78,7 +78,6 @@ all_cancer_relevant_surg = (
     .subquery(name="all_cancer_relevant_surg")
 )
 
-
 cancer_relevant_surg_select = (
     sa.select(
         sa.func.row_number().over().label("mv_id"),

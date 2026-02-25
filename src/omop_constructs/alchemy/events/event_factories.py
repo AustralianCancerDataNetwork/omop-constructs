@@ -5,12 +5,13 @@ from typing import Iterable, Any, Sequence, Union
 from omop_constructs.alchemy.episodes import ConditionEpisodeMV
 from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
-from omop_alchemy.cdm.model import Measurement, Concept
-
+from omop_alchemy.cdm.model import Measurement, Concept, Procedure_Occurrence
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+
 SQLExpr = Union[ColumnElement[Any], InstrumentedAttribute[Any]]
 
 modifier_concept = so.aliased(Concept, name="modifier_concept")
+procedure_concept = so.aliased(Concept, name="procedure_concept")
 
 def attach_to_condition_episode_via_episode_event(
     base_event_subq: sa.Subquery,
@@ -119,6 +120,59 @@ def attach_to_condition_episode(
         .union_all(sa.select(*fallback.c))
         .subquery(name=name)
     )
+
+def procedure_event_core(
+    *,
+    concept_ids: Iterable[int] | None = None,
+    name: str = "procedure_core",
+    include_cols: Sequence[SQLExpr] = (),
+) -> sa.Subquery:
+    """
+    Minimal procedure event surface (person/id/date/concept/label + extras).
+    """
+    q = (
+        sa.select(
+            Procedure_Occurrence.person_id.label("person_id"),
+            Procedure_Occurrence.procedure_occurrence_id.label("event_id"),
+            Procedure_Occurrence.procedure_date.label("event_date"),
+            Procedure_Occurrence.procedure_concept_id.label("event_concept_id"),
+            procedure_concept.concept_name.label("event_label"),
+            *include_cols,
+        )
+        .join(
+            procedure_concept,
+            procedure_concept.concept_id == Procedure_Occurrence.procedure_concept_id,
+            isouter=True,
+        )
+    )
+
+    if concept_ids is not None:
+        q = q.where(Procedure_Occurrence.procedure_concept_id.in_(list(concept_ids)))
+
+    return q.subquery(name=name)
+
+def procedure_attached_to_condition_episode(
+    *,
+    concept_ids: Iterable[int] | None = None,
+    include_cols: Sequence[SQLExpr] = (),
+    name: str,
+    prefer_explicit_link: bool = True,
+) -> sa.Subquery:
+    core = procedure_event_core(
+        concept_ids=concept_ids,
+        include_cols=include_cols,
+        name=f"{name}_core",
+    )
+
+    return attach_to_condition_episode(
+        core,
+        event_id_col=core.c.event_id,
+        date_col=core.c.event_date,
+        person_col=core.c.person_id,
+        name=name,
+        prefer_explicit_link=prefer_explicit_link,
+    )
+
 
 def measurement_event_core(
     *,

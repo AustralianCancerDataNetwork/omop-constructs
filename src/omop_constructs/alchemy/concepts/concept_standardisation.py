@@ -1,5 +1,4 @@
-from orm_loader.helpers import Base
-from collections import defaultdict
+
 import sqlalchemy.orm as so
 import sqlalchemy as sa
 from omop_alchemy.cdm.model.vocabulary import Concept, Concept_Relationship

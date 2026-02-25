@@ -91,3 +91,6 @@
 
 ## 0.3.4
 - nulltype on staging pk col
+
+## 0.3.5
+- generic procedure mapper

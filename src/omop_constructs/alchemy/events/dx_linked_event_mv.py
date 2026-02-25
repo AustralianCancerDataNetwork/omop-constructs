@@ -22,9 +22,6 @@ from .event_queries import (
     dx_all_measurements
 )
 
-
-
-
 class ConditionEpisodeMeasurementCols:
     __table_args__ = {"extend_existing": True}
 
