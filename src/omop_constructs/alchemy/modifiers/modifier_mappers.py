@@ -27,7 +27,7 @@ diagnosis, bespoke queries and/or mapper objects will be necessary.
 class StageColumns:
     __table_args__ = {"extend_existing": True}
     person_id = sa.Column(sa.Integer)
-    stage_id = sa.Column(primary_key=True)
+    stage_id = sa.Column(sa.Integer, primary_key=True) 
     stage_date = sa.Column(sa.Date)
     stage_datetime = sa.Column(sa.DateTime)
     stage_concept_id = sa.Column(sa.Integer)

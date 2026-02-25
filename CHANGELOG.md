@@ -88,3 +88,6 @@
 
 ## 0.3.3
 - general case measurement mapper
+
+## 0.3.4
+- nulltype on staging pk col
