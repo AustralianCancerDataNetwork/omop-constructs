@@ -8,7 +8,8 @@ from .modifier_joins import (
     laterality_select,
     size_select,
     grade_select,
-    mets_select
+    mets_select,
+    all_stage_select
 )
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
@@ -112,4 +113,13 @@ class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __deps__ = ()
     __tablename__ = __mv_name__
     value_as_concept_id = sa.Column(sa.Integer)
+    measurement_concept_id = sa.Column(sa.Integer)
+
+@register_construct
+class AllStageModifierMV(StageColumns, MaterializedViewMixin, Base):
+    __mv_name__ = "all_stage_modifier_mv"
+    __mv_select__ = all_stage_select.select()
+    __mv_index__ = "measurement_event_id"
+    __deps__ = ()
+    __tablename__ = __mv_name__
     measurement_concept_id = sa.Column(sa.Integer)

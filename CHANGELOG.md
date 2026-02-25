@@ -76,3 +76,6 @@
 
 ## 0.2.17
 - mets cols thru to condition mods
+
+## 0.3.0
+- all stage modifier mapper

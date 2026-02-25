@@ -6,7 +6,8 @@ from .modifier_mappers import (
     GradeModifierMV, 
     LateralityModifierMV, 
     SizeModifierMV,
-    MetastaticDiseaseModifierMV
+    MetastaticDiseaseModifierMV,
+    AllStageModifierMV
 )
 from .condition_modifier_mv import ModifiedCondition
 
@@ -19,5 +20,6 @@ __all__ = [
     "LateralityModifierMV",
     "SizeModifierMV",
     "ModifiedCondition",
-    "MetastaticDiseaseModifierMV"
+    "MetastaticDiseaseModifierMV",
+    "AllStageModifierMV"
 ]

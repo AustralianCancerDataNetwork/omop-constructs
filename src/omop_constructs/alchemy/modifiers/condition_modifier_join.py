@@ -13,7 +13,8 @@ from .modifier_mappers import (
     GradeModifierMV,
     SizeModifierMV,
     LateralityModifierMV,
-    MetastaticDiseaseModifierMV
+    MetastaticDiseaseModifierMV,
+    AllStageModifierMV
 )
 
 condition_concept = so.aliased(Concept, name='condition_concept')
@@ -130,6 +131,40 @@ modified_conditions_join = (
         sa.and_(
             MetastaticDiseaseModifierMV.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
             Condition_Occurrence.condition_occurrence_id==MetastaticDiseaseModifierMV.measurement_event_id
+        ),
+        isouter=True
+    )
+    .join(condition_concept, condition_concept.concept_id==Condition_Occurrence.condition_concept_id)
+)
+
+all_stage_join = (
+    sa.select(
+        sa.func.row_number().over().label('mv_id'),
+        Condition_Occurrence.person_id,
+        Condition_Occurrence.condition_start_date, 
+        Condition_Occurrence.condition_occurrence_id,
+        Condition_Occurrence.condition_source_value,
+        Condition_Occurrence.condition_concept_id,
+        condition_concept.concept_name.label('condition_concept'),
+        Episode_Event.episode_id.label('condition_episode'),
+    	AllStageModifierMV.stage_id.label('stage_id'),
+    	AllStageModifierMV.stage_date.label('stage_date'),
+    	AllStageModifierMV.stage_concept_id.label('stage_concept_id'),
+    	AllStageModifierMV.stage_label.label('stage_label'),
+    )
+    .join(
+        Episode_Event, 
+        sa.and_(
+            Episode_Event.event_id==Condition_Occurrence.condition_occurrence_id,
+            Episode_Event.episode_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id
+        ),
+        isouter=True
+    )
+    .join(
+        AllStageModifierMV, 
+        sa.and_(
+            AllStageModifierMV.meas_event_field_concept_id==runtime.modifiers.modifier_fields.condition_occurrence_id,
+            Condition_Occurrence.condition_occurrence_id==AllStageModifierMV.measurement_event_id
         ),
         isouter=True
     )

@@ -41,3 +41,13 @@ mets_select = earliest_modifier(
     get_direct_modifier_query(list(registry['metastatic_disease'].all_concepts), name="metastatic_disease"),
     name="metastatic_disease_earliest"
 )
+
+all_stage_select = get_direct_modifier_query(
+    (
+        list(
+                registry['tnm_t_stage'].all_concepts | registry['tnm_n_stage'].all_concepts | 
+                registry['tnm_m_stage'].all_concepts | registry['tnm_group_stage'].all_concepts
+            )
+    ),
+    name="all_stage_modifiers"
+)
