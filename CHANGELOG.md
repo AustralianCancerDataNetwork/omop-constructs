@@ -103,3 +103,6 @@
 
 ## 0.3.8
 - added in condition code for substring matchers
+
+## 0.3.9
+- condition code for mod condition and stage condition

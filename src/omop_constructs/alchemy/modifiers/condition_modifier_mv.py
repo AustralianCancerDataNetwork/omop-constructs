@@ -68,6 +68,7 @@ class ModifiedCondition(MaterializedViewMixin, Base):
     condition_source_value = sa.Column(sa.String)
     condition_concept_id = sa.Column(sa.Integer)
     condition_concept = sa.Column(sa.String)
+    condition_code = sa.Column(sa.String)
     condition_episode = sa.Column(sa.Integer)
     t_stage_id = sa.Column(sa.Integer)
     t_stage_date = sa.Column(sa.Date)
