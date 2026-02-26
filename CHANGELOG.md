@@ -99,4 +99,7 @@
 - generic observation mapper
 
 ## 0.3.7
-- full-service condition-treatment-summarisation mapper
+- fullly specified condition-treatment-summarisation mapper
+
+## 0.3.8
+- added in condition code for substring matchers

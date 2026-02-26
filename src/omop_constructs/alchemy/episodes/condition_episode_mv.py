@@ -163,3 +163,4 @@ class DxTreatStartMV(MaterializedViewMixin, Base):
     treatment_start: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
     treatment_end: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
     treatment_regimen_count: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
+

@@ -29,6 +29,7 @@ modified_conditions_join = (
         Condition_Occurrence.condition_source_value,
         Condition_Occurrence.condition_concept_id,
         condition_concept.concept_name.label('condition_concept'),
+        condition_concept.concept_code.label('condition_code'),
         Episode_Event.episode_id.label('condition_episode'),
     	TStageMV.stage_id.label('t_stage_id'),
     	TStageMV.stage_date.label('t_stage_date'),

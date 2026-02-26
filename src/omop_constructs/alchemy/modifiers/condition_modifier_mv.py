@@ -29,13 +29,14 @@ class StageModifier(MaterializedViewMixin, Base):
     __deps__ = (
         AllStageModifierMV.__mv_name__,
      )
-    mv_id = sa.Column(primary_key=True)
+    mv_id = sa.Column(sa.Integer, primary_key=True)
     person_id = sa.Column(sa.Integer)
     condition_start_date = sa.Column(sa.Date)
     condition_occurrence_id = sa.Column(sa.Integer)
     condition_source_value = sa.Column(sa.String)
     condition_concept_id = sa.Column(sa.Integer)
     condition_concept = sa.Column(sa.String)
+    condition_code = sa.Column(sa.String)
     condition_episode = sa.Column(sa.Integer)
     stage_id = sa.Column(sa.Integer)
     stage_date = sa.Column(sa.Date)
