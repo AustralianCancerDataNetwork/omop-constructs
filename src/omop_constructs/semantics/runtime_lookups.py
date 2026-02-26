@@ -38,6 +38,14 @@ DEFAULT_RESOLVER_BUILDERS = {
         parent_list=list(runtime.condition_modifiers.tumor_grade.ids),
         resolver_name="tumor_grade",
     ),
+    "rt_procedures": lambda session: build_parent_resolver(
+        session,
+        parent_list=[
+            runtime.cancer_procedures.cancer_procedure_types.rt_externalbeam, # type: ignore
+            runtime.cancer_procedures.cancer_procedure_types.rt_procedure
+        ],
+        resolver_name="rt_procedures",
+    )
 }
 
 def get_registry_engine(env_path: str = __file__):

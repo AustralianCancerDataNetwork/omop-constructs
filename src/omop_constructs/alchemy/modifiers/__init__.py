@@ -10,6 +10,9 @@ from .modifier_mappers import (
     AllStageModifierMV
 )
 from .condition_modifier_mv import ModifiedCondition, StageModifier
+from .procedure_modifier_mv import (
+    ModifiedProcedure,
+)
 
 __all__ = [
     "TStageMV",
@@ -22,5 +25,6 @@ __all__ = [
     "ModifiedCondition",
     "MetastaticDiseaseModifierMV",
     "AllStageModifierMV",
-    "StageModifier"
+    "StageModifier",
+    "ModifiedProcedure"
 ]

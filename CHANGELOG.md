@@ -97,3 +97,6 @@
 
 ## 0.3.6
 - generic observation mapper
+
+## 0.3.7
+- full-service condition-treatment-summarisation mapper
