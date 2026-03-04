@@ -47,12 +47,12 @@ class ConditionTreatmentEpisode(
     regimen_count: so.Mapped[int] = so.mapped_column(sa.Integer)
 
 
-from ..demography import PersonDemography
+# from ..demography import PersonDemography
 
-sa.select(
-    ConditionTreatmentEpisode,
-    PersonDemography,
-).where(
-    ConditionTreatmentEpisode.condition_episode_id == PersonDemography.episode_id
-)
+# sa.select(
+#     ConditionTreatmentEpisode,
+#     PersonDemography,
+# ).where(
+#     ConditionTreatmentEpisode.condition_episode_id == PersonDemography.episode_id
+# )
 

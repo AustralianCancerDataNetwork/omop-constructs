@@ -112,3 +112,6 @@
 
 ## 0.3.11
 - modify mv creation api
+
+## 0.3.12
+- bugfix
