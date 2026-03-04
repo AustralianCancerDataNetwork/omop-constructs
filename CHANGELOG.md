@@ -121,3 +121,6 @@
 
 ## 0.3.14
 - fix mod proc cols
+
+## 0.3.15
+- treatment envelope

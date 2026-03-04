@@ -45,14 +45,3 @@ class ConditionTreatmentEpisode(
     sact_intent_concept: so.Mapped[int] = so.mapped_column(sa.Integer)
     exposure_count: so.Mapped[int] = so.mapped_column(sa.Integer)
     regimen_count: so.Mapped[int] = so.mapped_column(sa.Integer)
-
-
-# from ..demography import PersonDemography
-
-# sa.select(
-#     ConditionTreatmentEpisode,
-#     PersonDemography,
-# ).where(
-#     ConditionTreatmentEpisode.condition_episode_id == PersonDemography.episode_id
-# )
-
