@@ -5,7 +5,8 @@ from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from .demography_queries import demographics_join
 from ..episodes import ConditionEpisodeMV
-
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import date, datetime
 
 @register_construct
 class PersonDemography(MaterializedViewMixin, Base):
@@ -22,19 +23,19 @@ class PersonDemography(MaterializedViewMixin, Base):
     __tablename__ = __mv_name__
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
 
-    mv_id = sa.Column(primary_key=True)
+    mv_id: Mapped[int] = mapped_column(primary_key=True)
 
-    person_id = sa.Column(sa.Integer)
-    episode_id = sa.Column(sa.Integer)
-    episode_start_date = sa.Column(sa.Date)
+    person_id: Mapped[int] = mapped_column(sa.Integer)
+    episode_id: Mapped[int] = mapped_column(sa.Integer)
+    episode_start_date: Mapped[date | None] = mapped_column(sa.Date)
 
-    gender_concept_id = sa.Column(sa.Integer)
-    mrn = sa.Column(sa.String)
-    sex = sa.Column(sa.String)
+    gender_concept_id: Mapped[int | None] = mapped_column(sa.Integer)
+    mrn: Mapped[str | None] = mapped_column(sa.String)
+    sex: Mapped[str | None] = mapped_column(sa.String)
 
-    year_of_birth = sa.Column(sa.Integer)
-    death_datetime = sa.Column(sa.DateTime)
+    year_of_birth: Mapped[int | None] = mapped_column(sa.Integer)
+    death_datetime: Mapped[datetime | None] = mapped_column(sa.DateTime)
 
-    language_spoken = sa.Column(sa.String)
-    country_of_birth = sa.Column(sa.String)
-    post_code = sa.Column(sa.Integer)
+    language_spoken: Mapped[str | None] = mapped_column(sa.String)
+    country_of_birth: Mapped[str | None] = mapped_column(sa.String)
+    post_code: Mapped[int | None] = mapped_column(sa.Integer)

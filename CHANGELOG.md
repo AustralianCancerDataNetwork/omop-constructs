@@ -106,3 +106,6 @@
 
 ## 0.3.9
 - condition code for mod condition and stage condition
+
+## 0.3.10
+- sqlalchemy v2 mappings for demography columns
