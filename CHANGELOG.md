@@ -124,3 +124,6 @@
 
 ## 0.3.15
 - treatment envelope
+
+## 0.3.16
+- correcting fraction filter

@@ -33,5 +33,5 @@ fraction_join = (
     )
     .join(Episode, Episode.episode_id==Episode_Event.episode_id)
     .join(fraction_concept, fraction_concept.concept_id==Episode.episode_object_concept_id)
-    .filter(ModifiedProcedure.procedure_concept_id.in_(list(registry['metastatic_disease'].all_concepts)))
+    .filter(ModifiedProcedure.procedure_concept_id.in_(list(registry['rt_procedures'].all_concepts)))
 )
