@@ -27,4 +27,3 @@ class ModifiedProcedure(MaterializedViewMixin, Base):
     intent_datetime = sa.Column(sa.Date)
     intent_concept_id = sa.Column(sa.Integer)
     intent_concept = sa.Column(sa.String)
-    stage_label = sa.Column(sa.String)
