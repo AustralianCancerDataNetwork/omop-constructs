@@ -109,3 +109,6 @@
 
 ## 0.3.10
 - sqlalchemy v2 mappings for demography columns
+
+## 0.3.11
+- modify mv creation api

@@ -3,6 +3,7 @@ import sqlalchemy.orm as so
 from orm_loader.helpers import Base
 from datetime import date
 from .fraction_joins import fraction_join
+from ..modifiers import ModifiedProcedure
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 
@@ -14,7 +15,7 @@ class FractionMV(
     __mv_name__ = "fraction_mv"
     __mv_select__ = fraction_join.select()
     __mv_index__ = "fraction_id"
-    __deps__ = ()
+    __deps__ = (ModifiedProcedure.__mv_name__,)
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 

@@ -62,7 +62,10 @@ class ConstructRegistry:
     def drop_all(self, bind, *, cascade: bool = False) -> None:
         # drop reverse order
         for item in reversed(self.plan()):
-            self._constructs[item.name].drop_mv(bind, cascade=cascade)
+            try:
+                self._constructs[item.name].drop_mv(bind, cascade=cascade)
+            except Exception as e:
+                print(f"Error dropping {item.name}: {e}")
 
     def create_missing(self, bind, *, with_data: bool = True, schema: str = "public") -> list[str]:
         """
