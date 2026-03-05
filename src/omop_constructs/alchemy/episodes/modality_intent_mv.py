@@ -69,7 +69,7 @@ class ConditionTreatmentIntentMV(
     MaterializedViewMixin,
     Base,
 ):
-    __mv_name__ = "condition_episode_treatment_mv"
+    __mv_name__ = "condition_episode_intent_mv"
     __mv_select__ = episode_summary_select
     __mv_index__ = "episode_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__, TreatmentIntentMV.__mv_name__)
