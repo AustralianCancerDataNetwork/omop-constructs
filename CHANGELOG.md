@@ -127,3 +127,6 @@
 
 ## 0.3.16
 - correcting fraction filter
+
+## 0.3.17
+- modality treatment join
