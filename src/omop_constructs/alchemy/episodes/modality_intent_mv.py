@@ -13,7 +13,7 @@ class TreatmentIntentMV(
 ):
     __mv_name__ = "episode_treatment_mv"
     __mv_select__ = episode_join.select()
-    __mv_index__ = "episode_id"
+    __mv_index__ = "treatment_episode_id"
     __deps__ = ()
 
     __tablename__ = __mv_name__

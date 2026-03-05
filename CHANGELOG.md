@@ -136,3 +136,6 @@
 
 ## 0.3.19
 - correcting duplicated mv name
+
+## 0.3.20
+- bugfix
