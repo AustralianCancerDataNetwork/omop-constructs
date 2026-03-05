@@ -130,3 +130,6 @@
 
 ## 0.3.17
 - modality treatment join
+
+## 0.3.18
+- modailty treatment now linked to condition

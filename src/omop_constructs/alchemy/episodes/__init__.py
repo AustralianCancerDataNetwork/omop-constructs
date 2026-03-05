@@ -7,7 +7,8 @@ from .course_mv import RTCourseMV
 from .fraction_mv import FractionMV
 from .treatment_summary_mv import ConditionTreatmentEpisode
 from .treatment_envelope_mv import TreatmentEnvelopeMV
-from .modality_intent_mv import EpisodeTreatmentMV
+from .modality_intent_mv import TreatmentIntentMV, ConditionTreatmentIntentMV
+
 __all__ = [
     "OverarchingDiseaseEpisodeMV",
     "TreatmentRegimenCycleMV",
@@ -21,5 +22,6 @@ __all__ = [
     "FractionMV",
     "ConditionTreatmentEpisode",
     "TreatmentEnvelopeMV",
-    "EpisodeTreatmentMV",
+    "TreatmentIntentMV",
+    "ConditionTreatmentIntentMV",
 ]

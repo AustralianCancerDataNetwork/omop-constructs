@@ -21,6 +21,7 @@ modality_sact = (
     .distinct(Episode_Event.episode_id)
     .subquery()
 )
+
 modality_rt = (
     sa.select(
         sa.literal(True).label('rt'),
@@ -39,11 +40,13 @@ modality_rt = (
     .distinct(Episode_Event.episode_id)
     .subquery()
 )
+
 episode_intent = (
     sa.select(
         Episode.episode_id,
         Episode.episode_start_date,
         Episode.episode_end_date,
+        Episode.episode_parent_id,
         Measurement.measurement_concept_id,
         intent_concept.concept_name,
     )
@@ -55,17 +58,21 @@ episode_intent = (
         )
     )
     .join(intent_concept, intent_concept.concept_id==Measurement.measurement_concept_id)
+    .filter(
+        Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
+    )
     .subquery()
 )
 
 episode_join = (
     sa.select(
         sa.func.row_number().over().label("mv_id"),
-        episode_intent.c.episode_id,
-        episode_intent.c.episode_start_date,
-        episode_intent.c.episode_end_date,
-        episode_intent.c.measurement_concept_id,
-        episode_intent.c.concept_name,
+        episode_intent.c.episode_id.label('treatment_episode_id'),
+        episode_intent.c.episode_start_date.label('treatment_episode_start_date'),
+        episode_intent.c.episode_end_date.label('treatment_episode_end_date'),
+        episode_intent.c.episode_parent_id.label('treatment_episode_parent_id'),
+        episode_intent.c.measurement_concept_id.label('treatment_intent_concept_id'),
+        episode_intent.c.concept_name.label('treatment_intent_name'),
         modality_rt.c.rt,
         modality_sact.c.sact,
         sa.and_(
