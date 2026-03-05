@@ -2,6 +2,8 @@ import sqlalchemy as sa
 from omop_alchemy.cdm.model.clinical import Person, Observation, Death
 from omop_alchemy.cdm.model.vocabulary import Concept
 from ..episodes import ConditionEpisodeMV
+from ...semantics import registry
+
 
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 
@@ -20,7 +22,7 @@ person_cob = (
         Concept.concept_name.label("country_of_birth"),
     )
     .join(Concept, Concept.concept_id == Observation.value_as_concept_id)
-    .where(Observation.observation_concept_id == runtime.observations.demography_concepts.country_of_birth)
+    .where(Observation.observation_concept_id.in_(list(registry['country_of_birth'].all_concepts)))
     .subquery()
 )
 

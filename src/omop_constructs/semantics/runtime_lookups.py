@@ -45,7 +45,12 @@ DEFAULT_RESOLVER_BUILDERS = {
             runtime.cancer_procedures.cancer_procedure_types.rt_procedure
         ],
         resolver_name="rt_procedures",
-    )
+    ),
+    "country_of_birth": lambda session: build_parent_resolver(
+        session,
+        parent_list=list(runtime.observations.demography_concepts.country_of_birth), # type: ignore
+        resolver_name="country_of_birth",
+    ),
 }
 
 def get_registry_engine(env_path: str = __file__):

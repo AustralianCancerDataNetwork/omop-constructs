@@ -145,3 +145,6 @@
 
 ## 0.3.22
 - clashing mv names
+
+## 0.3.23
+- country of birth not EAV
