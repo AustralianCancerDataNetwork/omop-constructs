@@ -133,3 +133,6 @@
 
 ## 0.3.18
 - modailty treatment now linked to condition
+
+## 0.3.19
+- correcting duplicated mv name
