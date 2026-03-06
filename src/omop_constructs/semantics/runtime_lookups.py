@@ -48,7 +48,7 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
     "country_of_birth": lambda session: build_parent_resolver(
         session,
-        parent_list=list(runtime.observations.demography_concepts.country_of_birth), # type: ignore
+        parent_list=[runtime.observations.demography_concepts.country_of_birth], # type: ignore
         resolver_name="country_of_birth",
     ),
 }

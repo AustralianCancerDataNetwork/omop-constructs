@@ -148,3 +148,6 @@
 
 ## 0.3.23
 - country of birth not EAV
+
+## 0.3.24
+- country of birth lookup fix
