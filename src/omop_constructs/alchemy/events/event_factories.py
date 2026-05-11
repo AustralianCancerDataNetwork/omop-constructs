@@ -64,7 +64,7 @@ def attach_to_condition_episode_by_time_window(
     Time-window attach to ConditionEpisodeMV (fallback when no Episode_Event link exists).
 
     If an episode has no end date, treat it as open for a bounded interval of
-    365 days after the episode start date.
+    DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS days after the episode start date.
     """
     episode_end_bound = sa.func.coalesce(
         ConditionEpisodeMV.episode_end_date,
