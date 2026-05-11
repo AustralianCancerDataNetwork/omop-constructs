@@ -1,6 +1,6 @@
 [project]
 name = "omop-constructs"
-version = "0.3.24"
+version = "0.4.0"
 description = "For building complex constructs on top of the omop-alchemy library."
 readme = "README.md"
 authors = [
@@ -8,11 +8,28 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "omop-alchemy>=0.5.12",
+    "omop-alchemy>=0.6.1",
     "omop-semantics>=0.1.13",
     "psycopg2-binary>=2.9.11",
     "sqlalchemy>=2.0.45",
     "urllib3>=2.6.3",
+    "requests>=2.33.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipython>=9.8.0",
+    "mypy>=1.19.1",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.0.0",
+    "tornado>=6.5.5",
+    "mkdocs<2.0",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-mermaid2-plugin",
+    "mkdocs-table-reader-plugin",
+    "mkdocs-macros-plugin", 
+    "Pygments>=2.20.0"
 ]
 
 [project.scripts]

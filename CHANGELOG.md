@@ -151,3 +151,9 @@
 
 ## 0.3.24
 - country of birth lookup fix
+
+## 0.4.0
+- changed functionality for handling of date windows 
+- where no explicit event link exists, we now give either explicit date window of -90 < t < 365 days, or use episode window
+- if episode window has no end date, we use episode start + 365 days
+- date windowing can now be handled flexibly by downstream consumers
