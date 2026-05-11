@@ -65,6 +65,10 @@ def attach_to_condition_episode_by_time_window(
 
     If an episode has no end date, treat it as open for a bounded interval of
     DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS days after the episode start date.
+    If episode end date is present, only allow attachment up to that end date (assumed explicit episode closure). 
+
+    Always allow a DEFAULT_EPISODE_WINDOW_DAYS_PRIOR day lookback prior to episode start for potential attachment, 
+    to allow for pre-episode events that may be relevant to the episode (e.g. diagnostic procedures, measurements, etc.).
     """
     episode_end_bound = sa.func.coalesce(
         ConditionEpisodeMV.episode_end_date,

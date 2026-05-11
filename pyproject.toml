@@ -26,7 +26,7 @@ dev = [
     "mkdocstrings[python]",
     "mkdocs-mermaid2-plugin",
     "mkdocs-table-reader-plugin",
-    "mkdocs-macros-plugin", 
+    "mkdocs-macros-plugin",
     "pygments>=2.20.0"
 ]
 
