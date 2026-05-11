@@ -86,7 +86,7 @@ def attach_to_condition_episode_by_time_window(
             ConditionEpisodeMV,
             sa.and_(
                 ConditionEpisodeMV.person_id == person_col,
-                date_col >= ConditionEpisodeMV.episode_start_date - 90,
+                date_col >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
                 date_col <= episode_end_bound,
             ),
             isouter=True,
