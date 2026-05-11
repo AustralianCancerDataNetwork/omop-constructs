@@ -4,6 +4,7 @@ from orm_loader.helpers import Base
 from datetime import date
 from typing import Optional
 from .treatment_summary_joins import condition_treatment_join
+from .treatment_envelope_mv import TreatmentEnvelopeMV
 from .course_mv import RTCourseMV
 from .systemic_treatment_mv import SACTRegimenMV
 from ...core.materialized import MaterializedViewMixin
