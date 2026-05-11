@@ -9,11 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "omop-alchemy>=0.6.1",
-    "omop-semantics>=0.1.13",
+    "omop-semantics>=0.1.14",
     "psycopg2-binary>=2.9.11",
     "sqlalchemy>=2.0.45",
-    "urllib3>=2.6.3",
-    "requests>=2.33.0"
 ]
 
 [project.optional-dependencies]
@@ -29,7 +27,7 @@ dev = [
     "mkdocs-mermaid2-plugin",
     "mkdocs-table-reader-plugin",
     "mkdocs-macros-plugin", 
-    "Pygments>=2.20.0"
+    "pygments>=2.20.0"
 ]
 
 [project.scripts]

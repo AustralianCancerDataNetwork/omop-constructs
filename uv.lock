@@ -1402,15 +1402,13 @@ wheels = [
 
 [[package]]
 name = "omop-constructs"
-version = "0.3.24"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "omop-alchemy" },
     { name = "omop-semantics" },
     { name = "psycopg2-binary" },
-    { name = "requests" },
     { name = "sqlalchemy" },
-    { name = "urllib3" },
 ]
 
 [package.optional-dependencies]
@@ -1440,21 +1438,19 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.1" },
     { name = "omop-alchemy", specifier = ">=0.6.1" },
-    { name = "omop-semantics", specifier = ">=0.1.13" },
+    { name = "omop-semantics", specifier = ">=0.1.14" },
     { name = "psycopg2-binary", specifier = ">=2.9.11" },
     { name = "pygments", marker = "extra == 'dev'", specifier = ">=2.20.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "requests", specifier = ">=2.33.0" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
     { name = "tornado", marker = "extra == 'dev'", specifier = ">=6.5.5" },
-    { name = "urllib3", specifier = ">=2.6.3" },
 ]
 provides-extras = ["dev"]
 
 [[package]]
 name = "omop-semantics"
-version = "0.1.13"
+version = "0.1.14"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -1463,10 +1459,11 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "ruamel-yaml" },
     { name = "typing-extensions" },
+    { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/e1/5dfefe9b756ee56419f66c2a4eb10914d43190cef5ab5e780dfb7be659c0/omop_semantics-0.1.13.tar.gz", hash = "sha256:ad9abde6108b691c6f28082a4956c645a3a4a89128fe99377925b7f75b497752", size = 40508, upload-time = "2026-02-24T04:50:36.167Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/40/082f5b6c6e4405aba1d4b8e73e90d648ef56553c7b8f17ce1bd8d9d2fc72/omop_semantics-0.1.14.tar.gz", hash = "sha256:c7ff11ce4b2a4f2cf8f27ee47e63f963856305188969d2f585fd9a6603c8e475", size = 40553, upload-time = "2026-05-11T01:42:50.703Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/d3/773ebf86b8f399a8429e257990057c1f8dfaa6dccadb42fc7ad79f157f11/omop_semantics-0.1.13-py3-none-any.whl", hash = "sha256:b6465f574f52eee9999e5546b3d3bfc25105509fec16fae6e3949ee7c4eb1ee6", size = 65740, upload-time = "2026-02-24T04:50:34.826Z" },
+    { url = "https://files.pythonhosted.org/packages/20/11/6dc09259a6cbd137eb7817e67803c077cbf16bbd2ee3f5f1adb313eef3d0/omop_semantics-0.1.14-py3-none-any.whl", hash = "sha256:2ffe965802104e2c8dd70b6ad562621a7c9525d4e2ba3cb93f74b00ca51ee8a4", size = 65782, upload-time = "2026-05-11T01:42:48.99Z" },
 ]
 
 [[package]]
