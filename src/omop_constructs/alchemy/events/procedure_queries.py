@@ -6,7 +6,5 @@ dx_all_procedures = episode_relevant_window(
         include_cols=[],
         name="dx_all_procedures",
     ),
-    max_days_post=90,
-    max_days_prior=30,
     name="dx_all_procedures_windowed",
 )
