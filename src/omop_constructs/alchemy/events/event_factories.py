@@ -10,6 +10,10 @@ from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 SQLExpr = Union[ColumnElement[Any], InstrumentedAttribute[Any]]
 
+DEFAULT_EPISODE_WINDOW_DAYS_POST = 365
+DEFAULT_EPISODE_WINDOW_DAYS_PRIOR = 90
+DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS = 365
+
 modifier_concept = so.aliased(Concept, name="modifier_concept")
 procedure_concept = so.aliased(Concept, name="procedure_concept")
 observation_concept = so.aliased(Concept, name="observation_concept")
@@ -58,7 +62,19 @@ def attach_to_condition_episode_by_time_window(
 ) -> sa.Subquery:
     """
     Time-window attach to ConditionEpisodeMV (fallback when no Episode_Event link exists).
+
+    If an episode has no end date, treat it as open for a bounded interval of
+    DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS days after the episode start date.
+    If episode end date is present, only allow attachment up to that end date (assumed explicit episode closure). 
+
+    Always allow a DEFAULT_EPISODE_WINDOW_DAYS_PRIOR day lookback prior to episode start for potential attachment, 
+    to allow for pre-episode events that may be relevant to the episode (e.g. diagnostic procedures, measurements, etc.).
     """
+    episode_end_bound = sa.func.coalesce(
+        ConditionEpisodeMV.episode_end_date,
+        ConditionEpisodeMV.episode_start_date + DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS,
+    )
+
     return (
         sa.select(
             *base_event_subq.c,
@@ -74,11 +90,8 @@ def attach_to_condition_episode_by_time_window(
             ConditionEpisodeMV,
             sa.and_(
                 ConditionEpisodeMV.person_id == person_col,
-                date_col >= ConditionEpisodeMV.episode_start_date,
-                sa.or_(
-                    ConditionEpisodeMV.episode_end_date == None,
-                    date_col <= ConditionEpisodeMV.episode_end_date,
-                ),
+                date_col >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
+                date_col <= episode_end_bound,
             ),
             isouter=True,
         )
@@ -294,8 +307,8 @@ def observation_attached_to_condition_episode(
 def episode_relevant_window(
     starting_query: sa.Subquery,
     *,
-    max_days_post: int = 90,
-    max_days_prior: int = 30,
+    max_days_post: int = DEFAULT_EPISODE_WINDOW_DAYS_POST,
+    max_days_prior: int = DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
     name: str | None = None,
 ) -> sa.Subquery:
     return (

@@ -63,16 +63,16 @@ smoking_pyh_query = measurement_attached_to_condition_episode(
 )
 
 
-weight_dx = episode_relevant_window(weight_query, max_days_post=90, max_days_prior=30, name="weight_dx")
-weight_change_dx = episode_relevant_window(weight_change_query, max_days_post=90, max_days_prior=30, name="weight_change_dx")
-height_dx = episode_relevant_window(height_query, max_days_post=90, max_days_prior=30, name="height_dx")
-bsa_dx = episode_relevant_window(bsa_query, max_days_post=90, max_days_prior=30, name="bsa_dx")
-creat_dx = episode_relevant_window(creatinine_clearance_query, max_days_post=90, max_days_prior=30, name="creat_dx")
-egfr_dx = episode_relevant_window(est_gfr_query, max_days_post=90, max_days_prior=30, name="egfr_dx")
-fev1_dx = episode_relevant_window(fev1_query, max_days_post=90, max_days_prior=30, name="fev1_dx")
-dtherm_dx = episode_relevant_window(distress_thermometer_query, max_days_post=90, max_days_prior=30, name="dtherm_dx")
-ecog_dx = episode_relevant_window(ecog_query, max_days_post=90, max_days_prior=30, name="ecog_dx")
-pyh_dx = episode_relevant_window(smoking_pyh_query, max_days_post=90, max_days_prior=30, name="pyh_dx")
+weight_dx = episode_relevant_window(weight_query, name="weight_dx")
+weight_change_dx = episode_relevant_window(weight_change_query, name="weight_change_dx")
+height_dx = episode_relevant_window(height_query, name="height_dx")
+bsa_dx = episode_relevant_window(bsa_query, name="bsa_dx")
+creat_dx = episode_relevant_window(creatinine_clearance_query, name="creat_dx")
+egfr_dx = episode_relevant_window(est_gfr_query, name="egfr_dx")
+fev1_dx = episode_relevant_window(fev1_query, name="fev1_dx")
+dtherm_dx = episode_relevant_window(distress_thermometer_query, name="dtherm_dx")
+ecog_dx = episode_relevant_window(ecog_query, name="ecog_dx")
+pyh_dx = episode_relevant_window(smoking_pyh_query, name="pyh_dx")
 
 dx_all_measurements = episode_relevant_window(
     measurement_attached_to_condition_episode(
@@ -85,7 +85,5 @@ dx_all_measurements = episode_relevant_window(
         name="dx_all_measurements",
         unlinked_only=False,  
     ),
-    max_days_post=90,
-    max_days_prior=30,
     name="dx_all_measurements_windowed",
 )

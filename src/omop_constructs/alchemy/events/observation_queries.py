@@ -10,7 +10,5 @@ dx_all_observations = episode_relevant_window(
         name="dx_all_observations",
         unlinked_only=False,
     ),
-    max_days_post=365,
-    max_days_prior=30,
     name="dx_all_observations_windowed",
 )
