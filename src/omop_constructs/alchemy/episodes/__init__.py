@@ -8,6 +8,7 @@ from .fraction_mv import FractionMV
 from .treatment_summary_mv import ConditionTreatmentEpisode
 from .treatment_envelope_mv import TreatmentEnvelopeMV
 from .modality_intent_mv import TreatmentIntentMV, ConditionTreatmentIntentMV
+from .consult_window_mv import ConsultWindowMV
 
 __all__ = [
     "OverarchingDiseaseEpisodeMV",
@@ -24,4 +25,5 @@ __all__ = [
     "TreatmentEnvelopeMV",
     "TreatmentIntentMV",
     "ConditionTreatmentIntentMV",
+    "ConsultWindowMV",
 ]

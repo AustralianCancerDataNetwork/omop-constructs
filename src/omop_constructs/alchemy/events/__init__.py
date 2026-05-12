@@ -18,6 +18,9 @@ from .dx_linked_procedure_mv import (
 from .dx_linked_obs_mv import (
     DxObservationMV,
 )
+from .dx_linked_visit_mv import (
+    DxRelevantVisitMV,
+)
 
 __all__ = [
     "WeightDxMV",
@@ -33,4 +36,5 @@ __all__ = [
     "DxMeasurementMV",
     "DxProcedureMV",
     "DxObservationMV",
+    "DxRelevantVisitMV",
 ]

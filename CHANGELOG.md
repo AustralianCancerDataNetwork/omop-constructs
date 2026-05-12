@@ -157,3 +157,6 @@
 - where no explicit event link exists, we now give either explicit date window of -90 < t < 365 days, or use episode window
 - if episode window has no end date, we use episode start + 365 days
 - date windowing can now be handled flexibly by downstream consumers
+
+## 0.4.1
+- episode-linked specialist visit support
