@@ -1438,7 +1438,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.1" },
     { name = "omop-alchemy", specifier = ">=0.6.1" },
-    { name = "omop-semantics", specifier = ">=0.1.14" },
+    { name = "omop-semantics", specifier = ">=0.1.15" },
     { name = "psycopg2-binary", specifier = ">=2.9.11" },
     { name = "pygments", marker = "extra == 'dev'", specifier = ">=2.20.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
@@ -1450,7 +1450,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "omop-semantics"
-version = "0.1.14"
+version = "0.1.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -1461,9 +1461,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/40/082f5b6c6e4405aba1d4b8e73e90d648ef56553c7b8f17ce1bd8d9d2fc72/omop_semantics-0.1.14.tar.gz", hash = "sha256:c7ff11ce4b2a4f2cf8f27ee47e63f963856305188969d2f585fd9a6603c8e475", size = 40553, upload-time = "2026-05-11T01:42:50.703Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/a3/92c682413abb37257cd0d440e31371ca58a832d881d5c5e297f9f6b87073/omop_semantics-0.1.15.tar.gz", hash = "sha256:741eac3e33389407b6f56fb3f162abf96e2a1fb61cf003a2feaca40776ee4300", size = 40540, upload-time = "2026-05-12T01:42:29.013Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/11/6dc09259a6cbd137eb7817e67803c077cbf16bbd2ee3f5f1adb313eef3d0/omop_semantics-0.1.14-py3-none-any.whl", hash = "sha256:2ffe965802104e2c8dd70b6ad562621a7c9525d4e2ba3cb93f74b00ca51ee8a4", size = 65782, upload-time = "2026-05-11T01:42:48.99Z" },
+    { url = "https://files.pythonhosted.org/packages/36/64/6630fc366bf499b8676d5252cac897c2813143fd1806031bc96286179d71/omop_semantics-0.1.15-py3-none-any.whl", hash = "sha256:b18d49b7232080943f0ca19b22e7a84415cd7c4567155509e0d11819b77c2a02", size = 65783, upload-time = "2026-05-12T01:42:27.459Z" },
 ]
 
 [[package]]
@@ -2707,11 +2707,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.6.3"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602, upload-time = "2026-05-07T16:13:18.596Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
 ]
 
 [[package]]
