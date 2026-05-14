@@ -18,6 +18,9 @@ class MaterializedViewMixin:
 
     @classmethod
     def create_mv(cls, bind, *, with_data: bool = True) -> None:
+        """
+        Create the backing materialized view for this mapped class.
+        """
         ddl = CreateMaterializedView(cls.__mv_name__, cls.__mv_select__, with_data=with_data)
         bind.execute(ddl)
         if cls.__mv_index__ is not None:
@@ -25,6 +28,9 @@ class MaterializedViewMixin:
 
     @classmethod
     def refresh_mv(cls, bind, *, concurrently: bool = False):
+        """
+        Refresh the backing materialized view.
+        """
         suffix = " CONCURRENTLY" if concurrently else ""
         bind.execute(
             sa.text(f"REFRESH MATERIALIZED VIEW{suffix} {cls.__mv_name__}")
@@ -32,11 +38,17 @@ class MaterializedViewMixin:
 
     @classmethod
     def drop_mv(cls, bind, *, cascade: bool = False):
+        """
+        Drop the backing materialized view.
+        """
         ddl = DropMaterializedView(cls.__mv_name__, cascade=cascade)
         bind.execute(ddl)
 
     @classmethod
     def create_index(cls, bind, index_colname: str):
+        """
+        Create the configured helper index for the materialized view if needed.
+        """
         bind.execute(sa.text(
             f"CREATE INDEX IF NOT EXISTS {cls.__mv_name__}_{index_colname}_idx "
             f"ON {cls.__mv_name__} ({index_colname})"

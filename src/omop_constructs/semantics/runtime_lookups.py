@@ -54,12 +54,21 @@ DEFAULT_RESOLVER_BUILDERS = {
 }
 
 def get_registry_engine(env_path: str = __file__):
+    """
+    Build the engine used for runtime resolver lookup.
+
+    If ``ENGINE`` is not already defined in the environment, the function asks
+    ``omop-alchemy`` to load environment configuration relative to ``env_path``.
+    """
     if os.environ.get("ENGINE") is None:
         load_environment(env_path)
     engine_string = get_engine_name()
     return sa.create_engine(engine_string, future=True, echo=False)
 
 def get_runtime_resolvers(engine: sa.Engine) -> ConceptResolverRegistry:
+    """
+    Return a resolver registry populated with the default resolver builders.
+    """
     resolver_registry = get_concept_resolver_registry(engine)
 
     # Register all known resolvers up-front (lazy build)

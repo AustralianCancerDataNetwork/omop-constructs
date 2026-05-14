@@ -11,6 +11,9 @@ from .visit_queries import dx_relevant_visits
 
 
 class ConditionEpisodeVisitCols:
+    """
+    Shared mapped columns for diagnosis-relevant visit materialized views.
+    """
     __table_args__ = {"extend_existing": True}
 
     mv_id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -40,6 +43,12 @@ class ConditionEpisodeVisitCols:
 
 @register_construct
 class DxRelevantVisitMV(ConditionEpisodeVisitCols, MaterializedViewMixin, Base):
+    """
+    Provider-specialty visits linked to diagnosis episodes.
+
+    This view uses ranked episode assignment logic tailored to specialist visit
+    analysis rather than the generic event factory time-window attachment path.
+    """
     __mv_name__ = "dx_visit_mv"
     __mv_select__ = dx_relevant_visits.select()
     __mv_index__ = "person_id"

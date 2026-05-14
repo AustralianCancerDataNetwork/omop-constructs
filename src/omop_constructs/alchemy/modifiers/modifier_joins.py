@@ -1,14 +1,16 @@
+"""
+Resolver-backed query fragments for staging and condition modifier selection.
+
+Importing this module is not a pure no-op. At module import time it resolves the
+configured semantics-backed resolver sets and uses them to build the stage and
+modifier query fragments that feed the modifier materialized views.
+"""
+
 from omop_constructs.semantics import registry
 from omop_alchemy.cdm.model.clinical import Measurement
 from omop_semantics.runtime.default_valuesets import runtime
 from .modifier_factories import get_query_per_stage_type, get_eav_modifier_query, earliest_modifier, get_direct_modifier_query
-"""
-These calls have side effects of building the resolvers and querying the database to 
-cache the required concepts in memory, but this is necessary to create the correct 
-subqueries for staging modifiers. 
 
-TODO: we may want to refactor to separate out the resolver construction from the concept retrieval?
-"""
 t_stage_select = get_query_per_stage_type(registry['tnm_t_stage'].all_concepts, name="t_stage")
 n_stage_select = get_query_per_stage_type(registry['tnm_n_stage'].all_concepts, name="n_stage")
 m_stage_select = get_query_per_stage_type(registry['tnm_m_stage'].all_concepts, name="m_stage")

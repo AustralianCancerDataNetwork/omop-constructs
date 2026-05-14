@@ -1,3 +1,11 @@
+"""
+Query fragments for linking visit occurrences to disease episodes by specialty.
+
+These queries support specialist consult-style measures where visit/provider
+specialty is part of the derivation and generic event-attachment helpers are not
+quite expressive enough.
+"""
+
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 

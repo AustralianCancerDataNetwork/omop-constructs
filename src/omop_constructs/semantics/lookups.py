@@ -14,6 +14,9 @@ from typing import Callable
 # as a pre-processing step
 
 def get_concept_resolver_registry(engine: sa.engine.Engine) -> ConceptResolverRegistry:
+    """
+    Create a resolver registry bound to the supplied SQLAlchemy engine.
+    """
     return ConceptResolverRegistry(engine)
 
 
@@ -25,6 +28,9 @@ def build_parent_resolver(
         corrections: list[Callable] = [],
         unknown_concept_id: int = UNKNOWN["generic"].concept_id
 ) -> ConceptResolver:
+    """
+    Build a resolver from one or more OMOP parent concepts.
+    """
     return make_concept_resolver(
         session,
         name=resolver_name,
@@ -40,6 +46,9 @@ def build_stage_resolver(
         parent_list: list[int], 
         stage_name: str
 ) -> ConceptResolver:
+    """
+    Build a staging resolver with the standard TNM correction pipeline.
+    """
     return build_parent_resolver(
         session,
         resolver_name=f"tnm_{stage_name}_stage",

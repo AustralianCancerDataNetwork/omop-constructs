@@ -1,3 +1,11 @@
+"""
+Episode-level consult and referral window query fragments.
+
+The current implementation combines episode-of-care anchors, diagnosis-linked
+consult observations, ranked specialist visits, and the treatment envelope to
+derive referral-to-specialist and referral-to-treatment windows.
+"""
+
 import sqlalchemy as sa
 from sqlalchemy.sql import ColumnElement
 
@@ -13,6 +21,9 @@ def days_between(
     end_date: ColumnElement,
     start_date: ColumnElement,
 ) -> ColumnElement:
+    """
+    Return the interval between two date-like expressions in days.
+    """
     return sa.func.extract(
         "epoch",
         sa.cast(end_date, sa.DateTime) - sa.cast(start_date, sa.DateTime),
@@ -24,6 +35,7 @@ episode_of_care = (
         Episode.person_id,
         Episode.episode_id,
         Episode.episode_start_date,
+        Episode.episode_concept_id,
     )
     .where(
         Episode.episode_concept_id
@@ -141,6 +153,7 @@ specialist_trajectory = (
         episode_of_care.c.person_id,
         episode_of_care.c.episode_id,
         episode_of_care.c.episode_start_date,
+        episode_of_care.c.episode_concept_id,
         first_specialist.c.first_specialist_consult,
         first_specialist.c.last_specialist_consult,
         specialist_visit.c.first_specialist_visit,
@@ -183,6 +196,7 @@ consult_window = (
         specialist_trajectory.c.episode_id,
         specialist_trajectory.c.episode_start_date,
         specialist_trajectory.c.initial_gp_referral,
+        specialist_trajectory.c.episode_concept_id,
         sa.func.least(
             specialist_trajectory.c.first_specialist_consult,
             specialist_trajectory.c.first_specialist_visit,
