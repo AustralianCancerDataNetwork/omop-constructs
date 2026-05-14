@@ -7,11 +7,20 @@ from .errors import DependencyCycleError
 
 @dataclass(frozen=True)
 class ConstructNode:
+    """
+    Lightweight dependency node used when building construct execution plans.
+    """
     name: str
     deps: tuple[str, ...] = ()
     kind: str = "materialized_view"
 
 def topo_sort(nodes: list[ConstructNode]) -> list[ConstructNode]:
+    """
+    Topologically sort construct nodes by their declared dependencies.
+
+    Dependencies that point outside the provided node set are treated as
+    external and ignored for ordering purposes.
+    """
     by_name = {n.name: n for n in nodes}
     indeg = {n.name: 0 for n in nodes}
     adj = defaultdict(list)

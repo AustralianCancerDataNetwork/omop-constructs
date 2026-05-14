@@ -12,3 +12,4 @@ wheels/
 *old*
 .env
 .DS_Store
+_temp

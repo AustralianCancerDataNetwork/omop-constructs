@@ -9,12 +9,18 @@ from ..typing import SupportsMaterializedView
 
 @dataclass(frozen=True)
 class ConstructPlanItem:
+    """
+    Serializable view of a construct's name, kind, and declared dependencies.
+    """
     name: str
     kind: str
     deps: tuple[str, ...]
 
 
 def materialized_view_exists(bind, name: str, schema: str = "public") -> bool:
+    """
+    Check whether a PostgreSQL materialized view already exists.
+    """
     sql = sa.text("""
         SELECT EXISTS (
             SELECT 1
@@ -34,15 +40,24 @@ class ConstructRegistry:
     _constructs: dict[str, Type[SupportsMaterializedView]]
 
     def __init__(self, constructs: Iterable[type[SupportsMaterializedView]]):
+        """
+        Build a registry over an iterable of construct classes.
+        """
         self._constructs = {c.__mv_name__: c for c in constructs}
         
     def __iter__(self) -> Iterator[type[SupportsMaterializedView]]:
         return iter(self._constructs.values())
 
     def get(self, name: str) -> type[SupportsMaterializedView]:
+        """
+        Return a registered construct class by materialized view name.
+        """
         return self._constructs[name]
 
     def plan(self) -> tuple[ConstructPlanItem, ...]:
+        """
+        Return constructs in dependency order.
+        """
         nodes = [
             ConstructNode(name=k, deps=v.__deps__, kind=getattr(v.__construct__, "kind", "materialized_view"))
             for k, v in self._constructs.items()
@@ -51,6 +66,9 @@ class ConstructRegistry:
         return tuple(ConstructPlanItem(n.name, n.kind, n.deps) for n in ordered)
     
     def create_all(self, bind, *, with_data: bool = True):
+        """
+        Create every registered materialized view in dependency order.
+        """
         for item in self.plan():
             cls = self._constructs[item.name]
             cls.create_mv(bind, with_data=with_data)
@@ -60,6 +78,9 @@ class ConstructRegistry:
             self._constructs[item.name].refresh_mv(bind, concurrently=concurrently)
 
     def drop_all(self, bind, *, cascade: bool = False) -> None:
+        """
+        Drop every registered materialized view in reverse dependency order.
+        """
         # drop reverse order
         for item in reversed(self.plan()):
             try:
@@ -221,6 +242,9 @@ class ConstructRegistry:
     
 
     def describe(self, full: bool = False) -> str:
+        """
+        Render a text description of the registry dependency graph.
+        """
         try:
             items = self.plan()
         except Exception:

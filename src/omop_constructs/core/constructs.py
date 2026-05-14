@@ -9,7 +9,11 @@ _CONSTRUCTS: Dict[str, Type[SupportsMaterializedView]] = {}
 
 def register_construct(cls: T) -> T:
     """
-    Decorator to register a materialized view / construct class.
+    Register a materialized view-backed construct class.
+
+    Registration is import-driven: any module that defines construct classes and
+    imports this decorator will add those classes to the in-process registry as
+    soon as the module is imported.
     """
     name = getattr(cls, "__mv_name__", None)
     if not name:
@@ -24,4 +28,12 @@ def register_construct(cls: T) -> T:
     return cls
 
 def get_construct_registry() -> ConstructRegistry:
+    """
+    Return a registry view over all construct classes imported so far.
+
+    Notes
+    -----
+    The returned registry reflects the current Python process. If a construct
+    module has not yet been imported, its classes will not appear here.
+    """
     return ConstructRegistry(_CONSTRUCTS.values())

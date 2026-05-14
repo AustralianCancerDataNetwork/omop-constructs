@@ -15,6 +15,13 @@ from .treatment_envelope_mv import TreatmentEnvelopeMV
 
 @register_construct
 class ConsultWindowMV(MaterializedViewMixin, Base):
+    """
+    Episode-of-care consult and referral window summary.
+
+    The materialized view exposes the earliest specialist contact and the
+    derived scalar windows currently used downstream for referral timing
+    analysis.
+    """
     __mv_name__ = "consult_window_mv"
     __mv_select__ = consult_window.select()
     __mv_index__ = "episode_id"
@@ -30,6 +37,7 @@ class ConsultWindowMV(MaterializedViewMixin, Base):
     person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     episode_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
+    episode_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     initial_gp_referral: so.Mapped[Optional[date]] = so.mapped_column(
         sa.Date, nullable=True
     )
