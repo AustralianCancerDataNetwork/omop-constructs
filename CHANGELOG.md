@@ -160,3 +160,6 @@
 
 ## 0.4.1
 - episode-linked specialist visit support
+
+## 0.4.2
+- set version window for orm-loader
