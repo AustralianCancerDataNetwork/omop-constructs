@@ -46,6 +46,4 @@ class DxObservationMV(ConditionEpisodeObservationCols, MaterializedViewMixin, Ba
     __tablename__ = __mv_name__
 
     observation_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
-    observation_date: so.Mapped[Optional[date]] = so.mapped_column(sa.DateTime)
-    value_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
-    qualifier_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
+    observation_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)

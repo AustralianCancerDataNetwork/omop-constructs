@@ -163,3 +163,6 @@
 
 ## 0.4.2
 - set version window for orm-loader
+
+## 0.4.3
+- fixing the inclusion of downstream domain-specific columns in episode_relevant_window factory
