@@ -6,6 +6,8 @@ dx_all_observations = episode_relevant_window(
         include_cols=[
             Observation.value_as_number,
             Observation.qualifier_concept_id,
+            Observation.observation_concept_id.label("observation_concept_id"),
+            Observation.observation_date.label("observation_date"),
         ],
         name="dx_all_observations",
         unlinked_only=False,
