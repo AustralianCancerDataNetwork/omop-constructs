@@ -44,10 +44,16 @@ class ConditionEpisodeVisitCols:
 @register_construct
 class DxRelevantVisitMV(ConditionEpisodeVisitCols, MaterializedViewMixin, Base):
     """
-    Provider-specialty visits linked to diagnosis episodes.
+    Each row is one visit occurrence assigned to one episode. A visit may appear
+    more than once if it falls within 180 days of multiple episodes (episode_prior == 1);
+    the ``rank`` column indicates the highest-priority episode assignment for that visit
+    (rank=1 is the best match). Multiple visits per episode appear as separate rows —
+    there is no within-episode aggregation.
 
-    This view uses ranked episode assignment logic tailored to specialist visit
-    analysis rather than the generic event factory time-window attachment path.
+    Each row carries a single atomic specialty concept. Specialty grouping (e.g.
+    combining radiation oncology + medical oncology) is the responsibility of
+    downstream measure engines; this construct does not group specialties.
+
     """
     __mv_name__ = "dx_visit_mv"
     __mv_select__ = dx_relevant_visits.select()

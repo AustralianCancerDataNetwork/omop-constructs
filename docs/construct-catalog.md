@@ -57,7 +57,11 @@ From `omop_constructs.alchemy.events`:
 - `DxProcedureMV`
   Diagnosis-linked procedures
 - `DxRelevantVisitMV`
-  Episode-linked provider-specialty visits used by consult-window logic
+  episode-linked visits with resolved provider-specialty included.
+  Each row is one visit occurrence assigned to one episode, carrying a single
+  atomic specialty concept. Multiple visits per episode appear as separate rows;
+  no specialty grouping or within-episode aggregation occurs here.
+
 
 ## Modifier Constructs
 

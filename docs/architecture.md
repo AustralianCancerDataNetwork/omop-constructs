@@ -90,13 +90,19 @@ This keeps downstream event MVs consistent:
 
 Visits are handled differently from observations and measurements.
 
-`DxRelevantVisitMV` uses a ranked specialty-visit linking approach derived from the older specialist-visit construct lineage:
+`DxRelevantVisitMV` exposes provider-specialty visits linked to disease episodes. 
+It uses a ranked proximity approach rather than the generic event-factory time-window 
+attachment path:
 
-- prioritize visits close to the episode start
-- otherwise prefer the nearest prior episode
-- otherwise fall back to the closest episode by distance
+- visits within ±180 days of the episode start (`episode_prior == 1`) are always included
+- for each visit, `rank=1` identifies its single highest-priority episode assignment,
+  ordered by proximity tier then absolute day distance
+- multiple visits per episode appear as separate rows
+- each row carries one atomic specialty concept — no specialty grouping occurs here
 
-This is why the consult-window path has a dedicated visit construct rather than reusing the generic event-factory windowing logic.
+This design means a downstream measurable can filter `DxRelevantVisitMV` by
+`provider_specialty_concept_id` and treat the result as an event stream, with all
+grouping, de-duplication, and timing composition deferred to the measure engine.
 
 ## Treatment Window And Consult Window Pattern
 
@@ -105,22 +111,83 @@ The episode layer currently exposes two important scalar-style constructs:
 - `TreatmentEnvelopeMV`
   earliest/latest treatment and treatment-derived scalar windows
 - `ConsultWindowMV`
-  referral-derived specialist and treatment windows
+  referral-derived specialist and treatment windows (scalar convenience layer —
+  see below)
 
 `ConsultWindowMV` is built by combining:
 
 - episode-of-care anchors
-- diagnosis-linked consult observations
-- episode-linked provider-specialty visits
+- diagnosis-linked consult observations from `DxObservationMV`
+- episode-linked provider-specialty visits from `DxRelevantVisitMV`
 - earliest treatment from `TreatmentEnvelopeMV`
 
-## Current Design Bias
+### ConsultWindowMV vs DxRelevantVisitMV
 
-The current codebase is strongly biased toward:
+| | `DxRelevantVisitMV` | `ConsultWindowMV` |
+|---|---|---|
+| Shape | one row per (visit, episode) | one scalar row per episode |
+| Specialty | atomic concept per row | groups hardcoded specialty sets |
+| Aggregation | none | `min(visit_start_date)` across specialty groups |
+| Purpose | reusable event surface | oncology referral-timing scalars |
+| Status | active, first-class | retained pending downstream migration |
 
-- oncology use cases
-- disease episode resolution
-- materialized views as the main reusable output shape
-- semantics-backed concept grouping instead of hard-coded concept lists in downstream consumers
+`ConsultWindowMV` is a **scalar convenience layer** specific to oncology
+referral-timing indicators. Its timing logic is superseded by the
+temporal-window pattern in `oa_cohorts`. It must remain in place until
+downstream measures complete migration; it should not be extended with new
+specialty groups or timing variants.
 
-The docs in this folder describe that current bias rather than a hypothetical generic construct framework.
+## Two-Measurable Temporal-Window Pattern
+
+The preferred pattern for referral-timing indicators is:
+
+1. Define an observation measurable from `DxObservationMV` — e.g. GP oncology referral
+   (filtered by `event_concept_id`) — as the **anchor event**.
+2. Define one or more visit measurables from `DxRelevantVisitMV` — e.g. one per
+   specialist specialty concept — as **candidate events**.
+3. Pass all candidate measurables to `measure_temporal_window` in `oa_cohorts`.
+   The window engine takes the minimum over all candidates and computes the
+   elapsed days against the anchor.
+
+Example — "GP referral to first oncology specialist" indicator:
+
+```
+# Anchor: GP oncology referral observation
+referral_obs = ObservationMeasurable(
+    construct=DxObservationMV,
+    person_id_attr="person_id",
+    episode_id_attr="episode_id",
+    event_date_attr="event_date",
+    value_concept_attr="event_concept_id",
+    concept_filter=[oncology_referral_concept_id],
+)
+
+# Candidates: specialist visits by specialty
+medonc_visit = VisitMeasurable(
+    construct=DxRelevantVisitMV,
+    person_id_attr="person_id",
+    episode_id_attr="episode_id",
+    event_date_attr="visit_start_date",
+    value_concept_attr="provider_specialty_concept_id",
+    concept_filter=[medonc_concept_id],
+)
+
+radonc_visit = VisitMeasurable(
+    construct=DxRelevantVisitMV,
+    ...
+    concept_filter=[radonc_concept_id],
+)
+
+haematology_visit = VisitMeasurable(
+    construct=DxRelevantVisitMV,
+    ...
+    concept_filter=[haematologist_concept_id],
+)
+
+# Window engine (in oa_cohorts) combines candidates and measures against anchor
+measure_temporal_window(
+    anchor=referral_obs,
+    candidates=[medonc_visit, radonc_visit, haematology_visit],
+    threshold_days=X,
+)
+```

@@ -1,8 +1,8 @@
 """
 Episode-level consult and referral window query fragments.
 
-The current implementation combines episode-of-care anchors, diagnosis-linked
-consult observations, ranked specialist visits, and the treatment envelope to
+This combines episode-of-care anchors, diagnosis-linked consult 
+observations, ranked specialist visits, and the treatment envelope to
 derive referral-to-specialist and referral-to-treatment windows.
 """
 
