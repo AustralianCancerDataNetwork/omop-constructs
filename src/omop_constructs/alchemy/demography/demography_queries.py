@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from omop_alchemy.cdm.model.clinical import Person, Observation, Death
 from omop_alchemy.cdm.model.vocabulary import Concept
-from ..episodes import ConditionEpisodeMV
+from ..episodes.condition_episode_mv import ConditionEpisodeMV
 from ...semantics import registry
 
 
@@ -68,4 +68,3 @@ demographics_join = (
     .join(person_cob, person_cob.c.person_id == Person.person_id, isouter=True)
     .join(person_postcode, person_postcode.c.person_id == Person.person_id, isouter=True)
 )
-

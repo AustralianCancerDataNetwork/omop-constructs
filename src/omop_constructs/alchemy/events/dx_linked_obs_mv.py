@@ -7,7 +7,6 @@ from orm_loader.helpers import Base
 from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
-from ..episodes import ConditionEpisodeMV
 from .observation_queries import (
     dx_all_observations
 )
@@ -46,4 +45,6 @@ class DxObservationMV(ConditionEpisodeObservationCols, MaterializedViewMixin, Ba
     __tablename__ = __mv_name__
 
     observation_concept_id: so.Mapped[int] = so.mapped_column(sa.Integer)
-    observation_date: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
+    observation_date: so.Mapped[Optional[date]] = so.mapped_column(sa.DateTime)
+    value_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
+    qualifier_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)

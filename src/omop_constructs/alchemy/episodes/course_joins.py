@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from omop_alchemy.cdm.model import Episode, Episode_Event, Concept
 from omop_semantics.runtime.default_valuesets import runtime
-from ..modifiers import ModifiedProcedure
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from .fraction_mv import FractionMV
 
 

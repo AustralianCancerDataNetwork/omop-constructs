@@ -7,7 +7,6 @@ from orm_loader.helpers import Base
 from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
-from ..episodes import ConditionEpisodeMV
 from .procedure_queries import (
     dx_all_procedures
 )

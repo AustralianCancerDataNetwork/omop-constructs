@@ -7,7 +7,7 @@ from .treatment_envelope_query import treatment_envelope_with_scalars
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 
-from ..modifiers import ModifiedCondition
+from ..modifiers.condition_modifier_mv import ModifiedCondition
 from .surgical_procedure_mv import SurgicalProcedureMV
 from .systemic_treatment_mv import SACTRegimenMV
 from .course_mv import RTCourseMV

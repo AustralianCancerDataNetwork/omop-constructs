@@ -4,7 +4,7 @@ from orm_loader.helpers import Base
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from .demography_queries import demographics_join
-from ..episodes import ConditionEpisodeMV
+from ..episodes.condition_episode_mv import ConditionEpisodeMV
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import date, datetime
 

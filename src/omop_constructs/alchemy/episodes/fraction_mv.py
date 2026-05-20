@@ -3,7 +3,7 @@ import sqlalchemy.orm as so
 from orm_loader.helpers import Base
 from datetime import date
 from .fraction_joins import fraction_join
-from ..modifiers import ModifiedProcedure
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 

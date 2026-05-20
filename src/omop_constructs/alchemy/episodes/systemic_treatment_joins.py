@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from omop_alchemy.cdm.model import Episode, Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime
-from ..modifiers import ModifiedProcedure
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from .cycle_mv import CycleMV
 
 

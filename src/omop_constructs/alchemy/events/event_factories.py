@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from sqlalchemy.sql import ColumnElement
 from typing import Iterable, Any, Sequence, Union
-from omop_constructs.alchemy.episodes import ConditionEpisodeMV
+from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
 from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 from omop_alchemy.cdm.model import Measurement, Concept, Procedure_Occurrence, Observation

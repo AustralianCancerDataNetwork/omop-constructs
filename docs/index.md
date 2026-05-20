@@ -51,13 +51,12 @@ stmt = (
 
 ### 2. Registry-driven materialized view management
 
-Construct classes register themselves when their modules are imported. Once the relevant construct families are imported, `ConstructRegistry` can plan, create, refresh, inspect, or validate the registered materialized views.
+Construct classes register themselves when their modules are imported. The package now provides a bootstrap helper for loading the full construct surface without relying on broad package `__init__` imports. Once the relevant construct families are imported, `ConstructRegistry` can plan, create, refresh, inspect, or validate the registered materialized views.
 
 ```python
-from omop_constructs.alchemy import events, episodes, modifiers, demography  # noqa: F401
-from omop_constructs.core import get_construct_registry
+from omop_constructs.bootstrap import get_cdm_construct_registry
 
-registry = get_construct_registry()
+registry = get_cdm_construct_registry()
 plan = registry.plan()
 ```
 
@@ -65,6 +64,8 @@ plan = registry.plan()
 
 - Registration is import-driven.
   `get_construct_registry()` only sees construct classes from modules that have already been imported in the current process.
+- The full-registry helper is bootstrap-driven.
+  `get_cdm_construct_registry()` loads family-specific bootstrap modules instead of package `__init__` files.
 - The modifier layer is semantics-backed.
   Importing parts of `omop_constructs.alchemy.modifiers` can trigger runtime resolver setup through `omop_constructs.semantics`.
 - Materialized view lifecycle helpers are PostgreSQL-oriented.

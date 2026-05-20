@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from omop_alchemy.cdm.model import Death
-from ..modifiers import ModifiedCondition
+from ..modifiers.condition_modifier_mv import ModifiedCondition
 from .surgical_procedure_mv import SurgicalProcedureMV
 from .systemic_treatment_mv import SACTRegimenMV
 from .course_mv import RTCourseMV

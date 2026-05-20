@@ -25,7 +25,15 @@ registry = get_construct_registry()
 
 is not enough on its own in a fresh process.
 
-Import the families you want first:
+If you want the full construct registry, use the bootstrap helper:
+
+```python
+from omop_constructs.bootstrap import get_cdm_construct_registry
+
+registry = get_cdm_construct_registry()
+```
+
+If you want only a subset, import the families you need first:
 
 ```python
 from omop_constructs.alchemy import events, episodes, modifiers, demography  # noqa: F401
@@ -39,10 +47,9 @@ If you only need a subset, import only those modules. The registry will then con
 ## Inspecting The Registry
 
 ```python
-from omop_constructs.alchemy import events, episodes, modifiers, demography  # noqa: F401
-from omop_constructs.core import get_construct_registry
+from omop_constructs.bootstrap import get_cdm_construct_registry
 
-registry = get_construct_registry()
+registry = get_cdm_construct_registry()
 
 print(registry.describe())
 print(registry.plan())
@@ -126,7 +133,7 @@ to compute episode-level referral-to-specialist and referral-to-treatment window
 ## Common Pitfalls
 
 - Empty registry after startup:
-  import the construct families before calling `get_construct_registry()`
+  use `get_cdm_construct_registry()` or import the construct families before calling `get_construct_registry()`
 - Import-time resolver errors:
   check semantics runtime configuration before importing modifier-heavy modules
 - Schema mismatch during validation:
