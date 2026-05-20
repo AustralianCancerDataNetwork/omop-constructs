@@ -166,3 +166,6 @@
 
 ## 0.4.3
 - fixing the inclusion of downstream domain-specific columns in episode_relevant_window factory
+
+## 0.4.4
+- added bootstrap-based complete registry loading and lazy package exports to reduce import fanout
