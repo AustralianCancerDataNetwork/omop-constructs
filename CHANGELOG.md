@@ -169,3 +169,6 @@
 
 ## 0.4.4
 - added bootstrap-based complete registry loading and lazy package exports to reduce import fanout
+
+## 0.4.5
+- bump version number
