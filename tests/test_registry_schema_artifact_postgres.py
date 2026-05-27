@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from orm_loader.helpers import Base
 
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.schema_snapshot import write_registry_schema_snapshot
@@ -19,6 +20,7 @@ ARTIFACT_PATH = Path(__file__).parent / "artifacts" / "construct_registry_schema
 def _clear_construct_import_state() -> None:
     constructs = importlib.import_module("omop_constructs.core.constructs")
     constructs._CONSTRUCTS.clear()
+    Base.metadata.clear()
 
     for module_name in list(sys.modules):
         if (

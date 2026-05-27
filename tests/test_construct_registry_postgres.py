@@ -4,6 +4,7 @@ import importlib
 import sys
 
 import pytest
+from orm_loader.helpers import Base
 
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.registry import materialized_view_exists
@@ -12,6 +13,7 @@ from omop_constructs.core.registry import materialized_view_exists
 def _clear_construct_import_state() -> None:
     constructs = importlib.import_module("omop_constructs.core.constructs")
     constructs._CONSTRUCTS.clear()
+    Base.metadata.clear()
 
     for module_name in list(sys.modules):
         if (
