@@ -31,7 +31,7 @@ SNAPSHOT_HEADERS = (
 def _column_type_name(column: sa.Column) -> str:
     try:
         compiled = column.type.compile(dialect=sa.engine.default.DefaultDialect()) # type: ignore
-    except:
+    except CompileError:
         compiled = 'UNKNOWN'
     return str(compiled)
 
