@@ -44,8 +44,8 @@ jobs:
           --health-retries 5
 
     env:
-      ENGINE_CDM: postgresql+psycopg2://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
-      ENGINE: postgresql+psycopg2://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
+      ENGINE_CDM: postgresql+psycopg://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
+      ENGINE: postgresql+psycopg://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
 
     steps:
       - uses: actions/checkout@v4
