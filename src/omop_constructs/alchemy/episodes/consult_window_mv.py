@@ -7,6 +7,7 @@ from orm_loader.helpers import Base
 
 from ...core.constructs import register_construct
 from ...core.materialized import MaterializedViewMixin
+from ...core.sql import select_all_columns
 from ..events.dx_linked_obs_mv import DxObservationMV
 from ..events.dx_linked_visit_mv import DxRelevantVisitMV
 from .consult_window_query import consult_window
@@ -23,7 +24,7 @@ class ConsultWindowMV(MaterializedViewMixin, Base):
     analysis.
     """
     __mv_name__ = "consult_window_mv"
-    __mv_select__ = consult_window.select()
+    __mv_select__ = select_all_columns(consult_window)
     __mv_index__ = "episode_id"
     __deps__ = (
         DxObservationMV.__mv_name__,

@@ -7,7 +7,7 @@
 uv run --extra dev pytest -m "not postgres"
 
 # PostgreSQL integration test
-export ENGINE_CDM='postgresql+psycopg2://user:pass@localhost:5432/dbname'
+export ENGINE_CDM='postgresql+psycopg://user:pass@localhost:5432/dbname'
 uv run --extra dev pytest -m postgres -v
 ```
 

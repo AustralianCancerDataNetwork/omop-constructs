@@ -7,6 +7,7 @@ from .systemic_treatment_joins import regimen_join
 from .cycle_mv import CycleMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 @register_construct
 class SACTRegimenMV(
@@ -14,7 +15,7 @@ class SACTRegimenMV(
     Base,
 ):
     __mv_name__ = "sact_treatment_mv"
-    __mv_select__ = regimen_join.select()
+    __mv_select__ = select_all_columns(regimen_join)
     __mv_index__ = "regimen_id"
     __deps__ = (CycleMV.__mv_name__,)
     __tablename__ = __mv_name__

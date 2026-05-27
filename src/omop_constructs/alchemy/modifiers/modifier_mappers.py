@@ -13,6 +13,7 @@ from .modifier_joins import (
 )
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 """
 Each of the following mapper classes are guaranteed to return exactly 1 or zero
@@ -49,7 +50,7 @@ class MeasModCols:
 @register_construct
 class TStageMV(StageColumns, MaterializedViewMixin, Base):
     __mv_name__ = "t_stage_mv"
-    __mv_select__ = t_stage_select.select()
+    __mv_select__ = select_all_columns(t_stage_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -57,7 +58,7 @@ class TStageMV(StageColumns, MaterializedViewMixin, Base):
 @register_construct
 class NStageMV(StageColumns, MaterializedViewMixin, Base):
     __mv_name__ = "n_stage_mv"
-    __mv_select__ = n_stage_select.select()
+    __mv_select__ = select_all_columns(n_stage_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -65,7 +66,7 @@ class NStageMV(StageColumns, MaterializedViewMixin, Base):
 @register_construct
 class MStageMV(StageColumns, MaterializedViewMixin, Base):
     __mv_name__ = "m_stage_mv"
-    __mv_select__ = m_stage_select.select()
+    __mv_select__ = select_all_columns(m_stage_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -73,7 +74,7 @@ class MStageMV(StageColumns, MaterializedViewMixin, Base):
 @register_construct
 class GroupStageMV(StageColumns, MaterializedViewMixin, Base):
     __mv_name__ = "group_stage_mv"
-    __mv_select__ = group_stage_select.select()
+    __mv_select__ = select_all_columns(group_stage_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -81,7 +82,7 @@ class GroupStageMV(StageColumns, MaterializedViewMixin, Base):
 @register_construct
 class SizeModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "size_modifier_mv"
-    __mv_select__ = size_select.select()
+    __mv_select__ = select_all_columns(size_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -92,7 +93,7 @@ class SizeModifierMV(MeasModCols, MaterializedViewMixin, Base):
 @register_construct
 class GradeModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "grade_modifier_mv"
-    __mv_select__ = grade_select.select()
+    __mv_select__ = select_all_columns(grade_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -101,7 +102,7 @@ class GradeModifierMV(MeasModCols, MaterializedViewMixin, Base):
 @register_construct
 class LateralityModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "laterality_modifier_mv"
-    __mv_select__ = laterality_select.select()
+    __mv_select__ = select_all_columns(laterality_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -110,7 +111,7 @@ class LateralityModifierMV(MeasModCols, MaterializedViewMixin, Base):
 @register_construct
 class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "metastatic_disease_modifier_mv"
-    __mv_select__ = mets_select.select()
+    __mv_select__ = select_all_columns(mets_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -120,7 +121,7 @@ class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):
 @register_construct
 class AllStageModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_name__ = "all_stage_modifier_mv"
-    __mv_select__ = all_stage_select.select()
+    __mv_select__ = select_all_columns(all_stage_select)
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__

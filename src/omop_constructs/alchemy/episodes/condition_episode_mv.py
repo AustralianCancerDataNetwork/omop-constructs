@@ -6,6 +6,7 @@ from typing import Optional
 from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles, condition_episode_select, dx_window_select
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 class DiseaseEpisodeCols:
 
@@ -32,7 +33,7 @@ class ConditionEpisodeMV(
     time-windowing logic.
     """
     __mv_name__ = "condition_episode_mv"
-    __mv_select__ = condition_episode_select.select()
+    __mv_select__ = select_all_columns(condition_episode_select)
     __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -53,7 +54,7 @@ class OverarchingDiseaseEpisodeMV(
     """
 
     __mv_name__ = "overarching_disease_episode_mv"
-    __mv_select__ = overarching_disease_episode.select()
+    __mv_select__ = select_all_columns(overarching_disease_episode)
     __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -101,7 +102,7 @@ class TreatmentRegimenCycleMV(
     """
 
     __mv_name__ = "treatment_regimen_cycle_mv"
-    __mv_select__ = treatment_regimen_with_cycles.select()
+    __mv_select__ = select_all_columns(treatment_regimen_with_cycles)
     __mv_index__ = "episode_id"
     __deps__ = ()
     __tablename__ = __mv_name__
@@ -151,7 +152,7 @@ class TreatmentRegimenCycleMV(
 @register_construct
 class DxTreatStartMV(MaterializedViewMixin, Base):
     __mv_name__ = "dx_treat_start_mv"
-    __mv_select__ = dx_window_select.select()
+    __mv_select__ = select_all_columns(dx_window_select)
     __mv_index__ = "dx_episode_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__, TreatmentRegimenCycleMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -163,4 +164,3 @@ class DxTreatStartMV(MaterializedViewMixin, Base):
     treatment_start: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
     treatment_end: so.Mapped[Optional[date]] = so.mapped_column(sa.Date)
     treatment_regimen_count: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer)
-

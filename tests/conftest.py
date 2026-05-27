@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 import sqlalchemy as sa
 from orm_loader.helpers import bootstrap
+from omop_alchemy.maintenance.create_tables import create_missing_tables
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,20 +67,17 @@ def _create_scratch_database(
     admin_engine: sa.Engine,
     *,
     source_name: str | None,
-    attempts: int = 10,
 ) -> str:
-    for _ in range(attempts):
-        database_name = _scratch_database_name(source_name)
-        if _database_exists(admin_engine, database_name):
-            continue
-        with admin_engine.connect() as conn:
-            conn.execute(sa.text(f'CREATE DATABASE "{database_name}"'))
-        return database_name
+    database_name = _scratch_database_name(source_name)
+    if _database_exists(admin_engine, database_name):
+        pytest.fail(
+            "Refusing to run PostgreSQL integration test because the scratch "
+            f"database '{database_name}' already exists."
+        )
 
-    pytest.fail(
-        "Unable to allocate a unique scratch PostgreSQL database name after "
-        f"{attempts} attempts."
-    )
+    with admin_engine.connect() as conn:
+        conn.execute(sa.text(f'CREATE DATABASE "{database_name}"'))
+    return database_name
 
 
 def _drop_database_if_exists(admin_engine: sa.Engine, database_name: str) -> None:
@@ -131,11 +129,12 @@ def pg_bootstrapped_engine(pg_engine):
     bootstraps OMOP tables there, points ``ENGINE`` at that scratch database for
     import-time resolver setup, and drops the scratch database on teardown.
     """
-    source_url = sa.engine.make_url(str(pg_engine.url))
-    admin_url = source_url.set(database="postgres")
+    source_url = sa.engine.make_url(
+        pg_engine.url.render_as_string(hide_password=False)
+    )
 
     admin_engine = sa.create_engine(
-        admin_url,
+        source_url,
         future=True,
         isolation_level="AUTOCOMMIT",
     )
@@ -150,11 +149,15 @@ def pg_bootstrapped_engine(pg_engine):
         )
         scratch_url = source_url.set(database=scratch_name)
 
-        scratch_engine = sa.create_engine(str(scratch_url), future=True)
+        scratch_engine = sa.create_engine(
+            scratch_url.render_as_string(hide_password=False),
+            future=True,
+        )
         _wait_for_engine(scratch_engine)
 
-        os.environ["ENGINE"] = str(scratch_url)
         bootstrap(scratch_engine, create=True)
+        create_missing_tables(scratch_engine, vocabulary_included=True)
+        os.environ["ENGINE"] = scratch_url.render_as_string(hide_password=False)
         yield scratch_engine
     finally:
         try:

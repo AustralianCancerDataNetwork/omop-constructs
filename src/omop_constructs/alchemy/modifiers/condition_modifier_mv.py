@@ -4,6 +4,7 @@ from .condition_modifier_join import modified_conditions_join,  all_stage_join
 from ..episodes import OverarchingDiseaseEpisodeMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .modifier_mappers import (
     TStageMV, 
     NStageMV, 
@@ -23,7 +24,7 @@ class StageModifier(MaterializedViewMixin, Base):
     clin / path stage etc - just a dump of all, along with the identifier to link to condition ep
     """
     __mv_name__ = 'stage_modifier_mv'
-    __mv_select__ = all_stage_join.select()
+    __mv_select__ = select_all_columns(all_stage_join)
     __mv_pk__ = ["stage_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__
@@ -47,7 +48,7 @@ class StageModifier(MaterializedViewMixin, Base):
 @register_construct
 class ModifiedCondition(MaterializedViewMixin, Base):
     __mv_name__ = 'modified_conditions_mv'
-    __mv_select__ = modified_conditions_join.select()
+    __mv_select__ = select_all_columns(modified_conditions_join)
     __mv_pk__ = ["mv_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__

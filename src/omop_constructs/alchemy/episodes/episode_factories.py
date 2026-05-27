@@ -60,6 +60,7 @@ def get_episode_hierarchy_query(
             parent_episode_subq.c.episode_label,
             parent_episode_subq.c.episode_start_date,
             parent_episode_subq.c.episode_end_date,
+            parent_episode_subq.c.episode_parent_id,
 
             child_episode_subq.c.episode_id.label(f"{child_label}_id"),
             child_episode_subq.c.episode_concept_id.label(f"{child_label}_concept_id"),

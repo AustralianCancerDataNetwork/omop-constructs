@@ -3,6 +3,7 @@ import sqlalchemy as sa
 from orm_loader.helpers import Base
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .demography_queries import demographics_join
 from ..episodes.condition_episode_mv import ConditionEpisodeMV
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,7 +18,7 @@ class PersonDemography(MaterializedViewMixin, Base):
     """
 
     __mv_name__ = "person_demography_mv"
-    __mv_select__ = demographics_join.select()
+    __mv_select__ = select_all_columns(demographics_join)
     __mv_pk__ = ["mv_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__

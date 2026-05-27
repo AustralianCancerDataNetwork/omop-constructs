@@ -6,6 +6,7 @@ from typing import Optional
 from .treatment_envelope_query import treatment_envelope_with_scalars
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 from ..modifiers.condition_modifier_mv import ModifiedCondition
 from .surgical_procedure_mv import SurgicalProcedureMV
@@ -19,7 +20,7 @@ class TreatmentEnvelopeMV(
     Base,
 ):
     __mv_name__ = "treatment_envelope_mv"
-    __mv_select__ = treatment_envelope_with_scalars.select()
+    __mv_select__ = select_all_columns(treatment_envelope_with_scalars)
     __mv_index__ = "mv_id"
     __deps__ = (
         ModifiedCondition.__mv_name__, 
