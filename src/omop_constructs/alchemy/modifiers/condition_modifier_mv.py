@@ -95,6 +95,8 @@ class ModifiedCondition(MaterializedViewMixin, Base):
     size_id = sa.Column(sa.Integer)
     size_date = sa.Column(sa.Date)
     size_concept_id = sa.Column(sa.Integer)
+    size_value = sa.Column(sa.Integer)
+    size_unit_concept_id = sa.Column(sa.Integer)
     size_label = sa.Column(sa.String)
     laterality_id = sa.Column(sa.Integer)
     laterality_date = sa.Column(sa.Date)
@@ -158,6 +160,8 @@ class PrimaryDiagnosisConditionMV(MaterializedViewMixin, Base):
             ModifiedCondition.size_id,
             ModifiedCondition.size_date,
             ModifiedCondition.size_concept_id,
+            ModifiedCondition.size_value,
+            ModifiedCondition.size_unit_concept_id,
             ModifiedCondition.size_label,
             ModifiedCondition.laterality_id,
             ModifiedCondition.laterality_date,
@@ -218,6 +222,8 @@ class PrimaryDiagnosisConditionMV(MaterializedViewMixin, Base):
     size_id = sa.Column(sa.Integer)
     size_date = sa.Column(sa.Date)
     size_concept_id = sa.Column(sa.Integer)
+    size_value = sa.Column(sa.Integer)
+    size_unit_concept_id = sa.Column(sa.Integer)
     size_label = sa.Column(sa.String)
     laterality_id = sa.Column(sa.Integer)
     laterality_date = sa.Column(sa.Date)
