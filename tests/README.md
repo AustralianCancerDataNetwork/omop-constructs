@@ -9,6 +9,13 @@ uv run --extra dev pytest -m "not postgres"
 # PostgreSQL integration test
 export ENGINE_CDM='postgresql+psycopg://user:pass@localhost:5432/dbname'
 uv run --extra dev pytest -m postgres -v
+
+# Registry schema snapshot artifact
+python -m omop_constructs.core.schema_snapshot tests/artifacts/construct_registry_schema.csv
+
+# Regenerate the checked-in full-registry artifact using the Postgres fixture
+UPDATE_REGISTRY_SCHEMA_SNAPSHOT=1 \
+uv run --extra dev pytest tests/test_registry_schema_artifact_postgres.py -m postgres -q
 ```
 
 ## PostgreSQL integration test
