@@ -8,9 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "omop-alchemy>=0.6.3",
+    "omop-alchemy[postgres]>=0.6.3",
     "omop-semantics>=0.1.15",
-    "psycopg-binary>=2.9.11",
     "sqlalchemy>=2.0.45",
 ]
 
