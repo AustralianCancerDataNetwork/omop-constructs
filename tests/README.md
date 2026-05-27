@@ -33,5 +33,5 @@ directly. Instead it:
 5. creates all materialized views with `WITH NO DATA`
 6. drops the scratch database on teardown
 
-If a generated scratch database name already exists, the fixture retries with a
-new name. It never drops a pre-existing database during setup.
+If a generated scratch database name already exists, the fixture will fail. 
+It never drops a pre-existing database during setup (...anymore...).
