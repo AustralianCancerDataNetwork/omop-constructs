@@ -1407,7 +1407,7 @@ postgres = [
 
 [[package]]
 name = "omop-constructs"
-version = "0.4.5"
+version = "0.4.6"
 source = { editable = "." }
 dependencies = [
     { name = "omop-alchemy", extra = ["postgres"] },
