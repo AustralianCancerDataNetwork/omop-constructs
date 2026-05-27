@@ -141,26 +141,30 @@ def pg_bootstrapped_engine(pg_engine):
     )
     original_engine = os.environ.get("ENGINE")
     scratch_engine = None
-    scratch_name = _create_scratch_database(
-        admin_engine,
-        source_name=source_url.database,
-    )
-    scratch_url = source_url.set(database=scratch_name)
-
-    scratch_engine = sa.create_engine(str(scratch_url), future=True)
-    _wait_for_engine(scratch_engine)
-
-    os.environ["ENGINE"] = str(scratch_url)
-    bootstrap(scratch_engine, create=True)
+    scratch_name = None
 
     try:
+        scratch_name = _create_scratch_database(
+            admin_engine,
+            source_name=source_url.database,
+        )
+        scratch_url = source_url.set(database=scratch_name)
+
+        scratch_engine = sa.create_engine(str(scratch_url), future=True)
+        _wait_for_engine(scratch_engine)
+
+        os.environ["ENGINE"] = str(scratch_url)
+        bootstrap(scratch_engine, create=True)
         yield scratch_engine
     finally:
-        if scratch_engine is not None:
-            scratch_engine.dispose()
-        _drop_database_if_exists(admin_engine, scratch_name)
-        admin_engine.dispose()
-        if original_engine is None:
-            os.environ.pop("ENGINE", None)
-        else:
-            os.environ["ENGINE"] = original_engine
+        try:
+            if scratch_engine is not None:
+                scratch_engine.dispose()
+            if scratch_name is not None:
+                _drop_database_if_exists(admin_engine, scratch_name)
+        finally:
+            admin_engine.dispose()
+            if original_engine is None:
+                os.environ.pop("ENGINE", None)
+            else:
+                os.environ["ENGINE"] = original_engine

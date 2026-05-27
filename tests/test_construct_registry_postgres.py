@@ -30,13 +30,14 @@ def test_full_construct_registry_compile_check_on_postgres(pg_bootstrapped_engin
     report = registry.compile_check()
     assert "primary_diagnosis_condition_mv" in report
 
-    created = []
-    try:
-        created = registry.create_missing(pg_bootstrapped_engine, with_data=False)
-        assert "primary_diagnosis_condition_mv" in created
-        assert materialized_view_exists(
-            pg_bootstrapped_engine,
-            "primary_diagnosis_condition_mv",
-        )
-    finally:
-        registry.drop_all(pg_bootstrapped_engine, cascade=True)
+    with pg_bootstrapped_engine.connect() as conn:
+        created = []
+        try:
+            created = registry.create_missing(conn, with_data=False)
+            assert "primary_diagnosis_condition_mv" in created
+            assert materialized_view_exists(
+                conn,
+                "primary_diagnosis_condition_mv",
+            )
+        finally:
+            registry.drop_all(conn, cascade=True)
