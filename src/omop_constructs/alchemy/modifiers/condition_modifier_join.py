@@ -53,7 +53,7 @@ modified_conditions_join = (
     	GradeModifierMV.concept_name.label('grade_label'),
     	SizeModifierMV.measurement_id.label('size_id'),
     	SizeModifierMV.measurement_date.label('size_date'),
-    	SizeModifierMV.unit_concept_id.label('size_concept_id'),
+    	SizeModifierMV.measurement_concept_id.label('size_concept_id'),
     	SizeModifierMV.value_as_number.label('size_value'),
     	SizeModifierMV.unit_concept_id.label('size_unit_concept_id'),
     	SizeModifierMV.concept_name.label('size_label'),
