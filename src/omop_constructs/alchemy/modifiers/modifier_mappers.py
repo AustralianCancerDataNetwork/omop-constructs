@@ -85,6 +85,7 @@ class SizeModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
+    measurement_concept_id = sa.Column(sa.Integer)
     value_as_number = sa.Column(sa.Integer)
     unit_concept_id = sa.Column(sa.Integer)
 
@@ -104,6 +105,7 @@ class LateralityModifierMV(MeasModCols, MaterializedViewMixin, Base):
     __mv_index__ = "measurement_event_id"
     __deps__ = ()
     __tablename__ = __mv_name__
+    measurement_concept_id = sa.Column(sa.Integer)
 
 @register_construct
 class MetastaticDiseaseModifierMV(MeasModCols, MaterializedViewMixin, Base):

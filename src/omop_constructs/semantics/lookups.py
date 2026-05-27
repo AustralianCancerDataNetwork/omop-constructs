@@ -1,7 +1,7 @@
 from omop_alchemy.cdm.handlers import make_concept_resolver, ConceptResolverRegistry
 from omop_alchemy.cdm.handlers.vocabs_and_mappers import ConceptResolver, strip_uicc, make_stage
 from omop_semantics.runtime.default_valuesets import runtime
-from omop_semantics.runtime.unknown_handlers import UNKNOWN
+from omop_semantics.unknowns import UNKNOWN
 import sqlalchemy.orm as so
 import sqlalchemy as sa
 from typing import Callable

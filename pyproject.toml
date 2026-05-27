@@ -36,3 +36,9 @@ omop-constructs = "omop_constructs.cli:main"
 [build-system]
 requires = ["uv_build>=0.9.2,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "postgres: requires a configured PostgreSQL database via ENGINE_CDM or ENGINE",
+]
