@@ -95,6 +95,30 @@ def test_compile_check_fails_for_invalid_index_name():
         registry.compile_check()
 
 
+def test_compile_check_fails_for_invalid_pk_name():
+    class Base(so.DeclarativeBase):
+        pass
+
+    class BrokenPkMV(MaterializedViewMixin, Base):
+        __tablename__ = "broken_pk_mv"
+        __mv_name__ = "broken_pk_mv"
+        __mv_select__ = sa.select(
+            sa.literal(1).label("mv_id"),
+            sa.literal(101).label("person_id"),
+        )
+        __mv_index__ = "mv_id"
+        __mv_pk__ = ["missing_pk"]
+        __deps__ = ()
+
+        mv_id: so.Mapped[int] = so.mapped_column(primary_key=True)
+        person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+
+    registry = ConstructRegistry([BrokenPkMV])
+
+    with pytest.raises(ConstructSpecError, match="invalid __mv_pk__ columns \\['missing_pk'\\]"):
+        registry.compile_check()
+
+
 def test_compile_check_fails_for_mapper_select_drift():
     class Base(so.DeclarativeBase):
         pass
@@ -113,4 +137,28 @@ def test_compile_check_fails_for_mapper_select_drift():
     registry = ConstructRegistry([DriftedMV])
 
     with pytest.raises(ConstructSpecError, match="missing mapped columns"):
+        registry.compile_check()
+
+
+def test_compile_check_includes_compile_failure_details():
+    class Base(so.DeclarativeBase):
+        pass
+
+    class BrokenSelect:
+        def compile(self, *args, **kwargs):
+            raise RuntimeError("boom")
+
+    class BrokenCompileMV(MaterializedViewMixin, Base):
+        __tablename__ = "broken_compile_mv"
+        __mv_name__ = "broken_compile_mv"
+        __mv_select__ = BrokenSelect()
+        __mv_index__ = "mv_id"
+        __mv_pk__ = ["mv_id"]
+        __deps__ = ()
+
+        mv_id: so.Mapped[int] = so.mapped_column(primary_key=True)
+
+    registry = ConstructRegistry([BrokenCompileMV])
+
+    with pytest.raises(ConstructSpecError, match="RuntimeError: boom"):
         registry.compile_check()

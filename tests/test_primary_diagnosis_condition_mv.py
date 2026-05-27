@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 import importlib
 import sys
@@ -192,3 +193,95 @@ def test_primary_diagnosis_condition_mv_select_anchors_to_primary_episode(monkey
     assert "primary_diagnosis_episode" in sql
     assert "SELECT DISTINCT" in sql
     assert "episode_start_date" in sql
+
+
+def test_primary_diagnosis_condition_mv_filters_to_primary_episode_rows(monkeypatch):
+    module, _, _ = _load_primary_dx_module(monkeypatch)
+    engine = sa.create_engine("sqlite:///:memory:", future=True)
+
+    with engine.begin() as conn:
+        conn.exec_driver_sql(
+            """
+            CREATE TABLE modified_conditions_mv (
+                mv_id INTEGER PRIMARY KEY,
+                person_id INTEGER,
+                condition_start_date TEXT,
+                condition_occurrence_id INTEGER,
+                condition_source_value TEXT,
+                condition_concept_id INTEGER,
+                condition_concept TEXT,
+                condition_code TEXT,
+                condition_episode INTEGER,
+                t_stage_id INTEGER,
+                t_stage_date TEXT,
+                t_stage_concept_id INTEGER,
+                t_stage_label TEXT,
+                n_stage_id INTEGER,
+                n_stage_date TEXT,
+                n_stage_concept_id INTEGER,
+                n_stage_label TEXT,
+                m_stage_id INTEGER,
+                m_stage_date TEXT,
+                m_stage_concept_id INTEGER,
+                m_stage_label TEXT,
+                group_stage_id INTEGER,
+                group_stage_date TEXT,
+                group_stage_concept_id INTEGER,
+                group_stage_label TEXT,
+                grade_id INTEGER,
+                grade_date TEXT,
+                grade_concept_id INTEGER,
+                grade_label TEXT,
+                size_id INTEGER,
+                size_date TEXT,
+                size_concept_id INTEGER,
+                size_label TEXT,
+                laterality_id INTEGER,
+                laterality_date TEXT,
+                laterality_concept_id INTEGER,
+                laterality_label TEXT,
+                metastatic_disease_id INTEGER,
+                metastatic_disease_date TEXT,
+                metastatic_disease_concept_id INTEGER,
+                metastatic_disease_label TEXT
+            )
+            """
+        )
+        conn.exec_driver_sql(
+            """
+            CREATE TABLE overarching_disease_episode_mv (
+                episode_id INTEGER PRIMARY KEY,
+                person_id INTEGER,
+                episode_start_date TEXT,
+                episode_end_date TEXT
+            )
+            """
+        )
+        conn.exec_driver_sql(
+            """
+            INSERT INTO modified_conditions_mv (
+                mv_id, person_id, condition_start_date, condition_occurrence_id,
+                condition_source_value, condition_concept_id, condition_concept,
+                condition_code, condition_episode
+            ) VALUES
+                (1, 100, NULL, 1001, 'primary', 1, 'concept', 'code', 10),
+                (2, 100, NULL, 1002, 'extent', 1, 'concept', 'code', 20)
+            """
+        )
+        conn.exec_driver_sql(
+            """
+            INSERT INTO overarching_disease_episode_mv (
+                episode_id, person_id, episode_start_date, episode_end_date
+            ) VALUES
+                (10, 100, '2024-01-01', '2024-01-31')
+            """
+        )
+
+        rows = conn.execute(
+            module.PrimaryDiagnosisConditionMV.__mv_select__.order_by(module.ModifiedCondition.mv_id)
+        ).mappings().all()
+
+    assert [row["mv_id"] for row in rows] == [1]
+    assert rows[0]["condition_episode"] == 10
+    assert rows[0]["episode_start_date"] == date(2024, 1, 1)
+    assert rows[0]["episode_end_date"] == date(2024, 1, 31)

@@ -159,7 +159,9 @@ class ConstructRegistry:
             )
 
         if errors:
-            raise ConstructSpecError("\n".join(lines))
+            detail_lines = ["", "<ConstructRegistry compile_check details>"]
+            detail_lines.extend(f"  - {error}" for error in errors)
+            raise ConstructSpecError("\n".join(lines + detail_lines))
 
         return "\n".join(lines)
     
