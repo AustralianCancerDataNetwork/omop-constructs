@@ -6,7 +6,6 @@ from uuid import uuid4
 
 import pytest
 import sqlalchemy as sa
-from orm_loader.helpers import bootstrap
 from omop_alchemy.maintenance.create_tables import create_missing_tables
 
 
@@ -155,7 +154,6 @@ def pg_bootstrapped_engine(pg_engine):
         )
         _wait_for_engine(scratch_engine)
 
-        bootstrap(scratch_engine, create=True)
         create_missing_tables(scratch_engine, vocabulary_included=True)
         os.environ["ENGINE"] = scratch_url.render_as_string(hide_password=False)
         yield scratch_engine

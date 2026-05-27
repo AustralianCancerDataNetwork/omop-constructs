@@ -27,7 +27,7 @@ def _build_registry() -> ConstructRegistry:
         )
         __mv_index__ = "person_id"
         __mv_pk__ = ["mv_id"]
-        __deps__ = ()
+        __deps__: tuple[str, ...] = ()
 
         mv_id: so.Mapped[int] = so.mapped_column(primary_key=True)
         person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
@@ -42,7 +42,7 @@ def _build_registry() -> ConstructRegistry:
         )
         __mv_index__ = "mv_id"
         __mv_pk__ = ["mv_id"]
-        __deps__ = ("root_mv",)
+        __deps__: tuple[str, ...] = ("root_mv",)
 
         mv_id: so.Mapped[int] = so.mapped_column(primary_key=True)
         person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
