@@ -302,14 +302,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.1.8"
+version = "8.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593, upload-time = "2024-12-21T18:38:44.339Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/98/518d8e5081007684232226f475082b30087d0f585e8457db087298259f49/click-8.4.1.tar.gz", hash = "sha256:918b5633eddf6b41c32d4f454bf0de810065c74e3f7dbf8ee5452f8be88d3e96", size = 353007, upload-time = "2026-05-22T04:08:37.769Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/d4/7ebdbd03970677812aac39c869717059dbb71a4cfc033ca6e5221787892c/click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2", size = 98188, upload-time = "2024-12-21T18:38:41.666Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/0d/67e5b4109ea4a837e80daa87c2c696711955e40449a97e8926672534def2/click-8.4.1-py3-none-any.whl", hash = "sha256:482be17c6991b8c19c5429a1e995d9b0efdbb63172824c41f99965dc0ade8ec2", size = 116639, upload-time = "2026-05-22T04:08:35.26Z" },
 ]
 
 [[package]]
@@ -916,7 +916,7 @@ wheels = [
 
 [[package]]
 name = "linkml"
-version = "1.9.6"
+version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
@@ -944,14 +944,14 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0d/52/1e4e6e0af2296074822bbb26d60761a5dbd0b977b843fe263da8cc0a4be1/linkml-1.9.6.tar.gz", hash = "sha256:d2ef74bbb52bf5e48b67b5d9319ca2e4acb8184dd40bf43d00635222b2dc1d4c", size = 42963392, upload-time = "2025-12-01T22:14:54.962Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/26/38e7340959cd4a87bfe5403cfcf5311d9fe2ff4382fa00e96008a1342760/linkml-1.11.1.tar.gz", hash = "sha256:2f6774e13628270cadaeecda3313db0437ecc15cd44ee35c6c2655dbe31c8524", size = 374853, upload-time = "2026-05-20T17:05:42.359Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/ff/b965a845fc0a9ca2331d8d6043e262cc834f5328ac0f1970db1622bac2cf/linkml-1.9.6-py3-none-any.whl", hash = "sha256:4ac3d2b7b6ea38c9da70e264a434977281a655f5e6040b33e65be76c63ab95cd", size = 402879, upload-time = "2025-12-01T22:14:52.579Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/fb/3068f649cc436be915f51b2f5ac0656c83dc9bcc6d4f8940633e295042c0/linkml-1.11.1-py3-none-any.whl", hash = "sha256:d1bbb97a8b1ea4a99b145007875733a5e5e89b3acfe3e9d1e369fa4a582990ed", size = 483751, upload-time = "2026-05-20T17:05:38.663Z" },
 ]
 
 [[package]]
 name = "linkml-runtime"
-version = "1.9.5"
+version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -968,9 +968,9 @@ dependencies = [
     { name = "rdflib" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/38/38ac19a5b81982f03709cda0a008327dc775d11f008d0cbdc0f2a5389e24/linkml_runtime-1.9.5.tar.gz", hash = "sha256:78dc1383adf11ad5f20bb11b6adde56ed566fbd2429a292d57699ad4596c738a", size = 480288, upload-time = "2025-08-15T22:22:51.098Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/7c/36332b49226f37d05d0dbfa4fb1c8017963d62ae722102c9c11c1f530696/linkml_runtime-1.11.1.tar.gz", hash = "sha256:e71300b596c4f35aeccd9dca096806678402213dbdb2c5e8e68f507e21320754", size = 556549, upload-time = "2026-05-20T17:05:43.633Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/34/28/cdcbe1f0521a98b891dd30249513eef1ddcc7bb406be953b4a8d7825e68f/linkml_runtime-1.9.5-py3-none-any.whl", hash = "sha256:fece3e8aa25a4246165c6528b6a7fe83a929b985d2ce1951cc8a0f4da1a30b90", size = 576405, upload-time = "2025-08-15T22:22:49.264Z" },
+    { url = "https://files.pythonhosted.org/packages/63/1d/600b0dd24aa61f03d35293a2e9a4695add1e94c03d8701436fb52d5daf4f/linkml_runtime-1.11.1-py3-none-any.whl", hash = "sha256:b22c77d8fd920d0f4f43a6ece31393dc0b28bb47790f3e1c114210318c36b3da", size = 654566, upload-time = "2026-05-20T17:05:40.526Z" },
 ]
 
 [[package]]
@@ -1442,7 +1442,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.1" },
     { name = "omop-alchemy", extras = ["postgres"], specifier = ">=0.6.3" },
-    { name = "omop-semantics", specifier = ">=0.1.15" },
+    { name = "omop-semantics", specifier = ">=0.2.0" },
     { name = "pygments", marker = "extra == 'dev'", specifier = ">=2.20.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
@@ -1453,7 +1453,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "omop-semantics"
-version = "0.1.15"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipykernel" },
@@ -1464,9 +1464,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ad/a3/92c682413abb37257cd0d440e31371ca58a832d881d5c5e297f9f6b87073/omop_semantics-0.1.15.tar.gz", hash = "sha256:741eac3e33389407b6f56fb3f162abf96e2a1fb61cf003a2feaca40776ee4300", size = 40540, upload-time = "2026-05-12T01:42:29.013Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/c3/91511c136a8482ae136d2188cd8e10798e4a62eee42cc69441ceb4fa2fa5/omop_semantics-0.2.0.tar.gz", hash = "sha256:5471443210f4c07dac1fef5f7b1c278f3bf4f942ec47052b688b252ec18765af", size = 29348, upload-time = "2026-05-27T08:23:15.002Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/64/6630fc366bf499b8676d5252cac897c2813143fd1806031bc96286179d71/omop_semantics-0.1.15-py3-none-any.whl", hash = "sha256:b18d49b7232080943f0ca19b22e7a84415cd7c4567155509e0d11819b77c2a02", size = 65783, upload-time = "2026-05-12T01:42:27.459Z" },
+    { url = "https://files.pythonhosted.org/packages/23/85/95690ff8c77699a6b3233e4f8f59a01b398af20c0dca3a32a01ece67182e/omop_semantics-0.2.0-py3-none-any.whl", hash = "sha256:eb81c5f737da1a52d271349090dca2e6adaf4eae4035f3e88e9333341740b76d", size = 47421, upload-time = "2026-05-27T08:23:13.832Z" },
 ]
 
 [[package]]
