@@ -7,6 +7,7 @@ from orm_loader.helpers import Base
 from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .event_queries import (
     weight_change_dx,
     weight_dx,
@@ -52,7 +53,7 @@ class WeightDxMV(
     Base,
 ):
     __mv_name__ = "weight_dx_mv"
-    __mv_select__ = weight_dx.select()
+    __mv_select__ = select_all_columns(weight_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -65,7 +66,7 @@ class WeightChangeDxMV(
     Base,
 ):
     __mv_name__ = "weight_change_dx_mv"
-    __mv_select__ = weight_change_dx.select()
+    __mv_select__ = select_all_columns(weight_change_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -78,7 +79,7 @@ class HeightDxMV(
     Base,
 ):
     __mv_name__ = "height_dx_mv"
-    __mv_select__ = height_dx.select()
+    __mv_select__ = select_all_columns(height_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -91,7 +92,7 @@ class BSADxMV(
     Base,
 ):
     __mv_name__ = "bsa_dx_mv"
-    __mv_select__ = bsa_dx.select()
+    __mv_select__ = select_all_columns(bsa_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -103,7 +104,7 @@ class CreatinineClearanceDxMV(
     Base,
 ):
     __mv_name__ = "creatinine_clearance_dx_mv"
-    __mv_select__ = creat_dx.select()
+    __mv_select__ = select_all_columns(creat_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -115,7 +116,7 @@ class EGFRDxMV(
     Base,
 ):
     __mv_name__ = "egfr_dx_mv"
-    __mv_select__ = egfr_dx.select()
+    __mv_select__ = select_all_columns(egfr_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__ 
@@ -128,7 +129,7 @@ class FEV1DxMV(
     Base,
 ):
     __mv_name__ = "fev1_dx_mv"
-    __mv_select__ = fev1_dx.select()
+    __mv_select__ = select_all_columns(fev1_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -140,7 +141,7 @@ class DistressThermometerDxMV(
     Base,
 ):
     __mv_name__ = "dtherm_dx_mv"
-    __mv_select__ = dtherm_dx.select()
+    __mv_select__ = select_all_columns(dtherm_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -152,7 +153,7 @@ class ECOGDxMV(
     Base,
 ):
     __mv_name__ = "ecog_dx_mv"
-    __mv_select__ = ecog_dx.select()
+    __mv_select__ = select_all_columns(ecog_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -164,7 +165,7 @@ class SmokingPYHDxMV(
     Base,
 ):
     __mv_name__ = "smoking_pyh_dx_mv"
-    __mv_select__ = pyh_dx.select()
+    __mv_select__ = select_all_columns(pyh_dx)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -174,7 +175,7 @@ class DxMeasurementMV(ConditionEpisodeMeasurementCols, MaterializedViewMixin, Ba
     # todo: the other measurement MVs could be slices of this one instead of 
     # re-creating from fresh joins every time...
     __mv_name__ = "dx_measurement_mv"
-    __mv_select__ = dx_all_measurements.select()
+    __mv_select__ = select_all_columns(dx_all_measurements)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__

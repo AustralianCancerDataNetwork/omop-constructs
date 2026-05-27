@@ -5,6 +5,7 @@ from datetime import date
 from .cycle_join import cycle_join
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 @register_construct
 class CycleMV(
@@ -12,7 +13,7 @@ class CycleMV(
     Base,
 ):
     __mv_name__ = "cycle_mv"
-    __mv_select__ = cycle_join.select()
+    __mv_select__ = select_all_columns(cycle_join)
     __mv_index__ = "cycle_id"
     __deps__ = ()
     __tablename__ = __mv_name__

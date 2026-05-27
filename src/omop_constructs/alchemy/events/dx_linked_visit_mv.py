@@ -7,6 +7,7 @@ from orm_loader.helpers import Base
 
 from ...core.constructs import register_construct
 from ...core.materialized import MaterializedViewMixin
+from ...core.sql import select_all_columns
 from .visit_queries import dx_relevant_visits
 
 
@@ -56,7 +57,7 @@ class DxRelevantVisitMV(ConditionEpisodeVisitCols, MaterializedViewMixin, Base):
 
     """
     __mv_name__ = "dx_visit_mv"
-    __mv_select__ = dx_relevant_visits.select()
+    __mv_select__ = select_all_columns(dx_relevant_visits)
     __mv_index__ = "person_id"
     __deps__ = ()
     __tablename__ = __mv_name__

@@ -5,6 +5,7 @@ from typing import Optional
 from orm_loader.helpers import Base
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .surgical_joins import all_cancer_relevant_surg, cancer_relevant_surg_select, radioisotope_select
 from .condition_episode_mv import ConditionEpisodeMV
 
@@ -12,7 +13,7 @@ from .condition_episode_mv import ConditionEpisodeMV
 @register_construct
 class SurgicalProcedureMV(MaterializedViewMixin, Base):
     __mv_name__ = "surgical_procedure_mv"
-    __mv_select__ = cancer_relevant_surg_select.select()
+    __mv_select__ = select_all_columns(cancer_relevant_surg_select)
     __mv_index__ = "mv_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
@@ -36,7 +37,7 @@ class SurgicalProcedureMV(MaterializedViewMixin, Base):
 @register_construct
 class RadioisotopeMV(MaterializedViewMixin, Base):
     __mv_name__ = "radioisotope_mv"
-    __mv_select__ = radioisotope_select.select()
+    __mv_select__ = select_all_columns(radioisotope_select)
     __mv_index__ = "mv_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__

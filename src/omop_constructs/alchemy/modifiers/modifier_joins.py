@@ -40,7 +40,11 @@ grade_select = earliest_modifier(
 )
 
 mets_select = earliest_modifier(
-    get_direct_modifier_query(list(registry['metastatic_disease'].all_concepts), name="metastatic_disease"),
+    get_direct_modifier_query(
+        list(registry['metastatic_disease'].all_concepts),
+        target_cols=[Measurement.value_as_concept_id],
+        name="metastatic_disease",
+    ),
     name="metastatic_disease_earliest"
 )
 

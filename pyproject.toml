@@ -8,9 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "omop-alchemy>=0.6.1",
-    "omop-semantics>=0.1.15",
-    "psycopg2-binary>=2.9.11",
+    "omop-alchemy[postgres]>=0.6.3",
+    "omop-semantics>=0.2.0",
     "sqlalchemy>=2.0.45",
 ]
 
@@ -36,3 +35,9 @@ omop-constructs = "omop_constructs.cli:main"
 [build-system]
 requires = ["uv_build>=0.9.2,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "postgres: requires a configured PostgreSQL database via ENGINE_CDM or ENGINE",
+]

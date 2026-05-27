@@ -4,7 +4,10 @@ from typing import Iterable, Iterator, Type
 import sqlalchemy as sa
 import json
 from datetime import datetime
+from sqlalchemy.dialects import postgresql
 from .plan import ConstructNode, topo_sort
+from .ddl import CreateMaterializedView
+from .errors import ConstructSpecError
 from ..typing import SupportsMaterializedView
 
 @dataclass(frozen=True)
@@ -64,6 +67,103 @@ class ConstructRegistry:
         ]
         ordered = topo_sort(nodes)
         return tuple(ConstructPlanItem(n.name, n.kind, n.deps) for n in ordered)
+
+    def compile_check(
+        self,
+        *,
+        dialect: sa.engine.Dialect | None = None,
+        literal_binds: bool = True,
+        require_internal_deps: bool = True,
+    ) -> str:
+        """
+        Compile every construct definition and validate basic registry metadata.
+
+        This is an explicit, non-executing validation pass intended for tests
+        and maintenance checks. It compiles each MV select/DDL in dependency
+        order and checks that:
+
+        - declared dependencies resolve within the registry
+        - ORM-declared columns are present in the MV selectable
+        - string-based helper columns such as ``__mv_index__`` and ``__mv_pk__``
+          refer to real columns on both the mapped class and the selectable
+        """
+        dialect = dialect or postgresql.dialect()
+        lines = ["<ConstructRegistry compile_check>"]
+        known = set(self._constructs)
+        errors: list[str] = []
+
+        for item in self.plan():
+            cls = self._constructs[item.name]
+            name = cls.__mv_name__
+
+            missing_deps = tuple(dep for dep in cls.__deps__ if dep not in known)
+            if require_internal_deps and missing_deps:
+                errors.append(f"{name}: unknown deps {list(missing_deps)}")
+                lines.append(f"  ✗ {name}: unknown deps {list(missing_deps)}")
+                continue
+
+            try:
+                sql = str(
+                    cls.__mv_select__.compile(
+                        dialect=dialect,
+                        compile_kwargs={"literal_binds": literal_binds},
+                    )
+                )
+                ddl = str(
+                    CreateMaterializedView(
+                        cls.__mv_name__,
+                        cls.__mv_select__,
+                    ).compile(dialect=dialect)
+                )
+            except Exception as exc:
+                errors.append(f"{name}: compile failed ({exc.__class__.__name__}: {exc})")
+                lines.append(f"  ✗ {name}: compile failed ({exc.__class__.__name__})")
+                continue
+
+            orm_cols = tuple(cls.__table__.columns.keys())
+            selectable_cols = tuple(cls.__mv_select__.subquery().c.keys())
+            orm_colset = set(orm_cols)
+            selectable_colset = set(selectable_cols)
+
+            missing_select_cols = sorted(orm_colset - selectable_colset)
+            if missing_select_cols:
+                errors.append(
+                    f"{name}: mapped columns missing from selectable {missing_select_cols}"
+                )
+                lines.append(
+                    f"  ✗ {name}: selectable missing mapped columns {missing_select_cols}"
+                )
+                continue
+
+            index_name = getattr(cls, "__mv_index__", None)
+            if index_name is not None:
+                if index_name not in orm_colset or index_name not in selectable_colset:
+                    errors.append(f"{name}: invalid __mv_index__ '{index_name}'")
+                    lines.append(f"  ✗ {name}: invalid __mv_index__ '{index_name}'")
+                    continue
+
+            pk_names = tuple(getattr(cls, "__mv_pk__", ()) or ())
+            bad_pks = sorted(
+                pk_name
+                for pk_name in pk_names
+                if pk_name not in orm_colset or pk_name not in selectable_colset
+            )
+            if bad_pks:
+                errors.append(f"{name}: invalid __mv_pk__ columns {bad_pks}")
+                lines.append(f"  ✗ {name}: invalid __mv_pk__ columns {bad_pks}")
+                continue
+
+            sql_kb = round(len(sql) / 1024, 1)
+            lines.append(
+                f"  ✓ {name:25s} sql≈{sql_kb:6.1f} KB cols={len(selectable_cols)} ddl={len(ddl)} chars"
+            )
+
+        if errors:
+            detail_lines = ["", "<ConstructRegistry compile_check details>"]
+            detail_lines.extend(f"  - {error}" for error in errors)
+            raise ConstructSpecError("\n".join(lines + detail_lines))
+
+        return "\n".join(lines)
     
     def create_all(self, bind, *, with_data: bool = True):
         """

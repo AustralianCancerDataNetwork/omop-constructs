@@ -7,6 +7,7 @@ from .course_joins import course_join
 from .fraction_mv import FractionMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 @register_construct
 class RTCourseMV(
@@ -14,7 +15,7 @@ class RTCourseMV(
     Base,
 ):
     __mv_name__ = "rt_course_mv"
-    __mv_select__ = course_join.select()
+    __mv_select__ = select_all_columns(course_join)
     __mv_index__ = "course_id"
     __deps__ = (FractionMV.__mv_name__,)
     __tablename__ = __mv_name__

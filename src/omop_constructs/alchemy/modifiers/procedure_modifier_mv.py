@@ -2,6 +2,7 @@ import sqlalchemy as sa
 from orm_loader.helpers import Base
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .procedure_modifier_joins import modified_procedure_join
 
 @register_construct
@@ -11,7 +12,7 @@ class ModifiedProcedure(MaterializedViewMixin, Base):
     clin / path stage etc - just a dump of all, along with the identifier to link to condition ep
     """
     __mv_name__ = 'modified_procedure_mv'
-    __mv_select__ = modified_procedure_join.select()
+    __mv_select__ = select_all_columns(modified_procedure_join)
     __mv_pk__ = ["mv_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__

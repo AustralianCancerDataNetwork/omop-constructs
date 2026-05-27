@@ -32,6 +32,7 @@ def get_eav_modifier_query(
 
 def get_direct_modifier_query(
         modifier_concept_id: list[int],
+        target_cols: Iterable[so.InstrumentedAttribute] = (),
         name: str = "direct_modifier"
 ) -> sa.Subquery:
     return (
@@ -43,6 +44,7 @@ def get_direct_modifier_query(
             Measurement.measurement_id, 
             Measurement.measurement_date, 
             modifier_concept.concept_name,
+            *target_cols,
         )
         .join(modifier_concept, modifier_concept.concept_id==Measurement.measurement_concept_id, isouter=True)
         .filter(Measurement.measurement_concept_id.in_(modifier_concept_id))

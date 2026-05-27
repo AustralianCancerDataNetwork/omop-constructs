@@ -46,19 +46,19 @@ fev1_query = measurement_attached_to_condition_episode(
 
 distress_thermometer_query = measurement_attached_to_condition_episode(
     concept_ids=[runtime.measurements_numeric.proms_numeric.distress_thermometer],  # type: ignore
-    include_cols=[Measurement.value_as_number],
+    include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="dtherm",
 )
 
 ecog_query = measurement_attached_to_condition_episode(
     concept_ids=[runtime.measurements_numeric.performance_status_measurements.ecog_performance_status],  # type: ignore
-    include_cols=[Measurement.value_as_number],
+    include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="ecog",
 )
 
 smoking_pyh_query = measurement_attached_to_condition_episode(
     concept_ids=[runtime.measurements_numeric.smoking_numeric.pyh],  # type: ignore
-    include_cols=[Measurement.value_as_number],
+    include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="smoking_pyh",
 )
 

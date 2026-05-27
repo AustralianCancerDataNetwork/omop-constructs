@@ -11,6 +11,7 @@ _EXPORTS: dict[str, str] = {
     "MetastaticDiseaseModifierMV": "omop_constructs.alchemy.modifiers.modifier_mappers",
     "AllStageModifierMV": "omop_constructs.alchemy.modifiers.modifier_mappers",
     "ModifiedCondition": "omop_constructs.alchemy.modifiers.condition_modifier_mv",
+    "PrimaryDiagnosisConditionMV": "omop_constructs.alchemy.modifiers.condition_modifier_mv",
     "StageModifier": "omop_constructs.alchemy.modifiers.condition_modifier_mv",
     "ModifiedProcedure": "omop_constructs.alchemy.modifiers.procedure_modifier_mv",
 }
@@ -24,6 +25,7 @@ __all__ = [
     "LateralityModifierMV",
     "SizeModifierMV",
     "ModifiedCondition",
+    "PrimaryDiagnosisConditionMV",
     "MetastaticDiseaseModifierMV",
     "AllStageModifierMV",
     "StageModifier",

@@ -6,6 +6,7 @@ from .fraction_joins import fraction_join
 from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 @register_construct
 class FractionMV(
@@ -13,7 +14,7 @@ class FractionMV(
     Base,
 ):
     __mv_name__ = "fraction_mv"
-    __mv_select__ = fraction_join.select()
+    __mv_select__ = select_all_columns(fraction_join)
     __mv_index__ = "fraction_id"
     __deps__ = (ModifiedProcedure.__mv_name__,)
     __tablename__ = __mv_name__

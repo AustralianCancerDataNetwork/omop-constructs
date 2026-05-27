@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+import importlib
+import sys
+
+import pytest
+from orm_loader.helpers import Base
+
+from omop_constructs import get_complete_construct_registry
+from omop_constructs.core.registry import materialized_view_exists
+
+
+def _clear_construct_import_state() -> None:
+    constructs = importlib.import_module("omop_constructs.core.constructs")
+    registered = list(constructs._CONSTRUCTS.values())
+    constructs._CONSTRUCTS.clear()
+
+    for cls in registered:
+        table = getattr(cls, "__table__", None)
+        if table is not None and table.key in Base.metadata.tables:
+            Base.metadata.remove(Base.metadata.tables[table.key])
+
+    for module_name in list(sys.modules):
+        if (
+            module_name.startswith("omop_constructs.alchemy")
+            or module_name.startswith("omop_constructs.semantics")
+            or module_name in {"omop_constructs.bootstrap", "omop_constructs.bootstrap_modules"}
+        ):
+            sys.modules.pop(module_name, None)
+
+
+@pytest.mark.postgres
+def test_full_construct_registry_compile_check_on_postgres(pg_bootstrapped_engine):
+    _clear_construct_import_state()
+    registry = get_complete_construct_registry()
+
+    report = registry.compile_check()
+    assert "primary_diagnosis_condition_mv" in report
+
+    with pg_bootstrapped_engine.connect() as conn:
+        created = []
+        try:
+            created = registry.create_missing(conn, with_data=False)
+            assert "primary_diagnosis_condition_mv" in created
+            assert materialized_view_exists(
+                conn,
+                "primary_diagnosis_condition_mv",
+            )
+        finally:
+            registry.drop_all(conn, cascade=True)

@@ -9,6 +9,7 @@ from .course_mv import RTCourseMV
 from .systemic_treatment_mv import SACTRegimenMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 
 @register_construct
 class ConditionTreatmentEpisode(
@@ -16,7 +17,7 @@ class ConditionTreatmentEpisode(
     Base,
 ):
     __mv_name__ = "condition_treatment_episode_mv"
-    __mv_select__ = condition_treatment_join.select()
+    __mv_select__ = select_all_columns(condition_treatment_join)
     __mv_index__ = "condition_episode_id"
     __deps__ = (RTCourseMV.__mv_name__, SACTRegimenMV.__mv_name__)
     __tablename__ = __mv_name__

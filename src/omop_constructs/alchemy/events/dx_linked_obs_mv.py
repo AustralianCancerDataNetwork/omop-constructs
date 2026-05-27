@@ -7,6 +7,7 @@ from orm_loader.helpers import Base
 from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .observation_queries import (
     dx_all_observations
 )
@@ -39,7 +40,7 @@ class ConditionEpisodeObservationCols:
 @register_construct
 class DxObservationMV(ConditionEpisodeObservationCols, MaterializedViewMixin, Base):
     __mv_name__ = "dx_observation_mv"
-    __mv_select__ = dx_all_observations.select()
+    __mv_select__ = select_all_columns(dx_all_observations)
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__

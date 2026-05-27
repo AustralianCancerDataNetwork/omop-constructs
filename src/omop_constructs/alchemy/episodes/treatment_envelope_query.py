@@ -70,6 +70,7 @@ treatment_window = (
                 else_=None
         ).label('concurrent_chemort')
     )
+    .select_from(ModifiedCondition)
     .join(first_surg, first_surg.c.condition_episode_id==ModifiedCondition.condition_episode, isouter=True)
     .join(rt_window, rt_window.c.condition_episode_id==ModifiedCondition.condition_episode, isouter=True)
     .join(sact_window, sact_window.c.condition_episode_id==ModifiedCondition.condition_episode, isouter=True)
@@ -88,6 +89,7 @@ treatment_envelope = (
         sa.func.greatest(treatment_window.c.last_sact_exposure, treatment_window.c.last_rt_exposure).label('latest_treatment'),
         Death.death_datetime
     )
+    .select_from(Death)
     .join(treatment_window, treatment_window.c.person_id==Death.person_id, isouter=True)
     .subquery()
 )

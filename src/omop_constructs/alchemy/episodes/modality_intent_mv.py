@@ -4,6 +4,7 @@ from orm_loader.helpers import Base
 from datetime import date
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
+from ...core.sql import select_all_columns
 from .modality_intent_join import episode_join
 
 @register_construct
@@ -12,7 +13,7 @@ class TreatmentIntentMV(
     Base,
 ):
     __mv_name__ = "episode_treatment_mv"
-    __mv_select__ = episode_join.select()
+    __mv_select__ = select_all_columns(episode_join)
     __mv_index__ = "treatment_episode_id"
     __deps__ = ()
 
@@ -38,6 +39,7 @@ from .condition_episode_mv import ConditionEpisodeMV
 
 episode_summary_select = (
     sa.select(
+        sa.func.row_number().over().label("mv_id"),
         ConditionEpisodeMV.episode_id,
         ConditionEpisodeMV.person_id,
 

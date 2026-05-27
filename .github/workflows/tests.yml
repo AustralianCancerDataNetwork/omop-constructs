@@ -1,0 +1,63 @@
+name: Tests
+
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  pytest:
+    name: Pytest
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Run non-Postgres tests
+        run: uv run pytest -m "not postgres" -v
+
+  pytest-postgres:
+    name: Pytest Postgres
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: omop_constructs_ci
+          POSTGRES_USER: omop_constructs
+          POSTGRES_PASSWORD: omop_constructs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U omop_constructs -d omop_constructs_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENGINE_CDM: postgresql+psycopg://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
+      ENGINE: postgresql+psycopg://omop_constructs:omop_constructs@127.0.0.1:5432/omop_constructs_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Run Postgres tests
+        run: uv run pytest -m postgres -v
