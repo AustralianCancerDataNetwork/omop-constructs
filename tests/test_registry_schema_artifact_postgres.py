@@ -19,8 +19,13 @@ ARTIFACT_PATH = Path(__file__).parent / "artifacts" / "construct_registry_schema
 
 def _clear_construct_import_state() -> None:
     constructs = importlib.import_module("omop_constructs.core.constructs")
+    registered = list(constructs._CONSTRUCTS.values())
     constructs._CONSTRUCTS.clear()
-    Base.metadata.clear()
+
+    for cls in registered:
+        table = getattr(cls, "__table__", None)
+        if table is not None and table.key in Base.metadata.tables:
+            Base.metadata.remove(Base.metadata.tables[table.key])
 
     for module_name in list(sys.modules):
         if (
