@@ -38,6 +38,7 @@ class TreatmentEnvelopeMV(
     earliest_treatment = sa.Column(sa.Date)
     latest_treatment = sa.Column(sa.Date)
     death_datetime = sa.Column(sa.DateTime)
-    treatment_days_before_death = sa.Column(sa.Float)
-    days_from_dx_to_treatment = sa.Column(sa.Float)
+    # Date - Date arithmetic in PostgreSQL produces integer days directly.
+    treatment_days_before_death = sa.Column(sa.Integer)
+    days_from_dx_to_treatment = sa.Column(sa.Integer)
     concurrent_chemort = sa.Column(sa.Boolean)

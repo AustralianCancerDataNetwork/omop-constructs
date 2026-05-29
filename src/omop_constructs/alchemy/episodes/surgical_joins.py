@@ -194,7 +194,11 @@ cancer_relevant_surg_select = (
             _surgery_date >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
             _surgery_date <= _episode_end_bound,
         ),
-        isouter=True,
+        # Inner join: SurgicalProcedureMV is an event-level view. Only rows where
+        # a surgery falls within the episode window should appear — not one row per
+        # episode with NULL surgery columns. Episodes with no surgery simply have no
+        # rows here; the outer join in surg_window (treatment_envelope_query.py)
+        # handles the null-surgery case for treatment timing.
     )
     .subquery(name="cancer_relevant_surg")
 )
@@ -245,7 +249,8 @@ radioisotope_select = (
             _ri_date >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
             _ri_date <= _episode_end_bound,
         ),
-        isouter=True,
+        # Inner join for the same reason as cancer_relevant_surg_select: this is an
+        # event-level view and should only contain attributed radioisotope procedures.
     )
     .subquery(name="radioisotope_procedure")
 )

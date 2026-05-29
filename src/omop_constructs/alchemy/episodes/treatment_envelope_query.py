@@ -114,12 +114,20 @@ treatment_envelope = (
         # earliest_treatment: first treatment event across all modalities.
         # All three inputs are Date after the cast in surg_window, so LEAST
         # returns a Date and the downstream scalar is a whole-day integer.
+        # Note: PostgreSQL LEAST/GREATEST ignore NULLs and only return NULL
+        # when all inputs are NULL. This diverges from the SQL standard (where
+        # any NULL propagates) but is the correct behaviour here — a missing
+        # modality should not suppress a real date from another. No COALESCE
+        # sentinel is needed; this is intentional and PostgreSQL-specific.
         sa.func.least(
             treatment_window.c.first_surgery,
             treatment_window.c.first_sact_exposure,
             treatment_window.c.first_rt_exposure,
         ).label('earliest_treatment'),
         # latest_treatment: last treatment event across all modalities.
+        # Surgery (last_surgery) is included so that surgery-only episodes and
+        # episodes where surgery was the final treatment produce a populated
+        # value. Same PostgreSQL NULL-ignoring behaviour as LEAST above.
         sa.func.greatest(
             treatment_window.c.last_surgery,
             treatment_window.c.last_sact_exposure,
