@@ -175,3 +175,6 @@
 
 ## 0.4.6
 - added primary diagnosis condition mv, registry compile/drift checks, postgres CI coverage, and schema snapshot artifact export
+
+## 0.4.7
+- fixed treatment envelope window issues
