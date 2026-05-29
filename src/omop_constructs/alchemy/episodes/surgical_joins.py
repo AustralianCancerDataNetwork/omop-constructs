@@ -65,8 +65,7 @@ radioisotopes_only = radioisotope_concepts.subquery(name="radioisotopes_only")
 # ---------------------------------------------------------------------------
 # There are two possible sources of surgical information in the CDM:
 #
-#   1. surgical_procedure_events — Procedure_Occurrence records sourced from
-#      the Mosaiq careplan (pipeline step 08_surgical_procedures). These
+#   1. surgical_procedure_events — Procedure_Occurrence records
 #      represent procedures actually performed and recorded against the
 #      patient's active treatment plan. They carry a real procedure_datetime.
 #
