@@ -182,5 +182,5 @@
 ## 0.4.8 
 - treatment envelope should left join to death (bug fix)
 
-## 0.4.8
+## 0.4.9
 - surgery absence rule requires outer join 
