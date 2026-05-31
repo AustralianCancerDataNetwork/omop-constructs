@@ -182,5 +182,8 @@
 ## 0.4.8 
 - treatment envelope should left join to death (bug fix)
 
-## 0.4.8
+## 0.4.9
 - surgery absence rule requires outer join 
+
+## 0.4.10
+- cast SACT and RT exposure dates to Date in sact_window and rt_window to prevent timestamp upcast contaminating LEAST/GREATEST results; fixes treatment_days_before_death and days_from_dx_to_treatment storing as interval instead of integer
