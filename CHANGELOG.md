@@ -178,3 +178,6 @@
 
 ## 0.4.7
 - fixed treatment envelope window issues
+
+## 0.4.8 
+- treatment envelope should left join to death (bug fix)
