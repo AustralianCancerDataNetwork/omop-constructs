@@ -102,12 +102,18 @@ treatment_window = (
 
 
 # ---------------------------------------------------------------------------
-# treatment_envelope — person-level envelope joined to death
+# treatment_envelope — condition-episode spine joined to death
 # ---------------------------------------------------------------------------
+# The spine is treatment_window (rooted at ModifiedCondition / ConditionEpisodeMV)
+# so that every condition episode appears regardless of mortality status.
+# Death is outer-joined on person_id to attach death_datetime where it exists.
+# Using Death as the spine instead would silently exclude all living patients —
+# treatment timing scalars such as days_from_dx_to_treatment are meaningful for
+# the full cohort, not only for those with a death record.
 treatment_envelope = (
     sa.select(
         sa.func.row_number().over().label('mv_id'),
-        Death.person_id,
+        treatment_window.c.person_id,
         treatment_window.c.condition_episode,
         treatment_window.c.condition_start_date,
         treatment_window.c.concurrent_chemort,
@@ -135,8 +141,8 @@ treatment_envelope = (
         ).label('latest_treatment'),
         Death.death_datetime,
     )
-    .select_from(Death)
-    .join(treatment_window, treatment_window.c.person_id == Death.person_id, isouter=True)
+    .select_from(treatment_window)
+    .join(Death, Death.person_id == treatment_window.c.person_id, isouter=True)
     .subquery()
 )
 
