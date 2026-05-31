@@ -32,24 +32,29 @@ surg_window = (
 )
 
 # SACT window.
-# first_exposure_date / last_exposure_date are already Date on SACTRegimenMV.
+# first_exposure_date / last_exposure_date are mapped as Date on SACTRegimenMV, but
+# the underlying PostgreSQL columns can be timestamp without time zone depending on
+# how the materialized view was originally created. Explicit casts here ensure the
+# aggregated values are Date regardless of what PostgreSQL infers from the source.
+# Without this, GREATEST(date, timestamp, timestamp) silently upcasts to timestamp
+# and downstream date arithmetic produces interval instead of integer days.
 sact_window = (
     sa.select(
         SACTRegimenMV.condition_episode_id,
-        sa.func.min(SACTRegimenMV.first_exposure_date).label('first_sact_exposure'),
-        sa.func.max(SACTRegimenMV.last_exposure_date).label('last_sact_exposure'),
+        sa.func.min(sa.cast(SACTRegimenMV.first_exposure_date, sa.Date)).label('first_sact_exposure'),
+        sa.func.max(sa.cast(SACTRegimenMV.last_exposure_date, sa.Date)).label('last_sact_exposure'),
     )
     .group_by(SACTRegimenMV.condition_episode_id)
     .subquery(name='sact_window')
 )
 
 # RT window.
-# first_exposure_date / last_exposure_date are already Date on RTCourseMV.
+# Same timestamp-guard cast as sact_window above — see comment there.
 rt_window = (
     sa.select(
         RTCourseMV.condition_episode_id,
-        sa.func.min(RTCourseMV.first_exposure_date).label('first_rt_exposure'),
-        sa.func.max(RTCourseMV.last_exposure_date).label('last_rt_exposure'),
+        sa.func.min(sa.cast(RTCourseMV.first_exposure_date, sa.Date)).label('first_rt_exposure'),
+        sa.func.max(sa.cast(RTCourseMV.last_exposure_date, sa.Date)).label('last_rt_exposure'),
     )
     .group_by(RTCourseMV.condition_episode_id)
     .subquery(name='rt_window')
@@ -118,8 +123,9 @@ treatment_envelope = (
         treatment_window.c.condition_start_date,
         treatment_window.c.concurrent_chemort,
         # earliest_treatment: first treatment event across all modalities.
-        # All three inputs are Date after the cast in surg_window, so LEAST
-        # returns a Date and the downstream scalar is a whole-day integer.
+        # All three inputs are Date (cast explicitly in each of surg_window,
+        # sact_window, and rt_window), so LEAST returns a Date and the
+        # downstream scalar is a whole-day integer.
         # Note: PostgreSQL LEAST/GREATEST ignore NULLs and only return NULL
         # when all inputs are NULL. This diverges from the SQL standard (where
         # any NULL propagates) but is the correct behaviour here — a missing
@@ -133,7 +139,7 @@ treatment_envelope = (
         # latest_treatment: last treatment event across all modalities.
         # Surgery (last_surgery) is included so that surgery-only episodes and
         # episodes where surgery was the final treatment produce a populated
-        # value. Same PostgreSQL NULL-ignoring behaviour as LEAST above.
+        # value. All three inputs are Date — same cast guarantee as LEAST above.
         sa.func.greatest(
             treatment_window.c.last_surgery,
             treatment_window.c.last_sact_exposure,
