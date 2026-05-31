@@ -194,11 +194,14 @@ cancer_relevant_surg_select = (
             _surgery_date >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
             _surgery_date <= _episode_end_bound,
         ),
-        # Inner join: SurgicalProcedureMV is an event-level view. Only rows where
-        # a surgery falls within the episode window should appear — not one row per
-        # episode with NULL surgery columns. Episodes with no surgery simply have no
-        # rows here; the outer join in surg_window (treatment_envelope_query.py)
-        # handles the null-surgery case for treatment timing.
+        # Outer join: every condition episode must appear in SurgicalProcedureMV,
+        # including those with no surgery in the date window. oa-cohorts absence rules
+        # (e.g. "no surgery") rely on WHERE surgery_concept_id IS NULL to identify
+        # non-surgical episodes — those rows only exist because of this outer join.
+        # Episodes WITH surgery in the window still get one row per matched surgery
+        # (the date window prevents the old person-level fan-out); episodes WITHOUT
+        # surgery get exactly one row with all surgery columns NULL.
+        isouter=True,
     )
     .subquery(name="cancer_relevant_surg")
 )
@@ -249,8 +252,10 @@ radioisotope_select = (
             _ri_date >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
             _ri_date <= _episode_end_bound,
         ),
-        # Inner join for the same reason as cancer_relevant_surg_select: this is an
-        # event-level view and should only contain attributed radioisotope procedures.
+        # Outer join: same reasoning as cancer_relevant_surg_select. Every condition
+        # episode must appear so that absence rules (WHERE ri_concept_id IS NULL) can
+        # identify episodes with no radioisotope procedure in the date window.
+        isouter=True,
     )
     .subquery(name="radioisotope_procedure")
 )
