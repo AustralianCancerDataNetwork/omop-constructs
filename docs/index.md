@@ -15,9 +15,9 @@ In this repository, the main patterns in active use are:
 - staging and modifier resolution
 - registry-driven materialized view lifecycle management
 
-## What Is In Scope Today
+## What Is In Scope
 
-The current library is centered on oncology-style episode linkage. The most important construct families are:
+The library is centered on oncology-style episode linkage. The most important construct families are:
 
 - `omop_constructs.alchemy.modifiers`
   Stage and modifier materialized views, then episode-linked condition joins such as `ModifiedCondition`.
@@ -32,7 +32,7 @@ The current library is centered on oncology-style episode linkage. The most impo
 - `omop_constructs.semantics`
   Runtime concept resolver registry used by the staging and modifier layer.
 
-## Current Usage Pattern
+## Usage Patterns
 
 The library is used in two complementary ways.
 
@@ -51,21 +51,49 @@ stmt = (
 
 ### 2. Registry-driven materialized view management
 
-Construct classes register themselves when their modules are imported. The package now provides a bootstrap helper for loading the full construct surface without relying on broad package `__init__` imports. Once the relevant construct families are imported, `ConstructRegistry` can plan, create, refresh, inspect, or validate the registered materialized views.
+Construct classes register themselves when their modules are imported. The
+package provides a bootstrap helper for loading the full construct surface
+without relying on broad package `__init__` imports. Once the relevant
+construct families are imported, `ConstructRegistry` can plan, create, refresh,
+inspect, or validate the registered materialized views.
 
 ```python
-from omop_constructs.bootstrap import get_cdm_construct_registry
+from omop_constructs.bootstrap import get_complete_construct_registry
 
-registry = get_cdm_construct_registry()
+registry = get_complete_construct_registry()
 plan = registry.plan()
 ```
 
-## Important Runtime Notes
+## Configuration And CLI
+
+`omop-constructs` uses `oa-configurator` for runtime logging and CDM resource
+resolution.
+
+Set up the shared OMOP stack configuration with:
+
+```bash
+omop-config init
+omop-config configure omop_alchemy
+omop-config configure omop_constructs
+```
+
+`omop-config configure omop_constructs` is the package-specific entry point. It
+validates the shared `cdm_db` resource and records a package-specific
+`default_resource` when `omop-constructs` should target a different CDM
+resource than `omop-alchemy`.
+
+The package also provides a small CLI for operational helpers:
+
+```bash
+omop-constructs schema-snapshot tests/artifacts/construct_registry_schema.csv
+```
+
+## Runtime Notes
 
 - Registration is import-driven.
   `get_construct_registry()` only sees construct classes from modules that have already been imported in the current process.
 - The full-registry helper is bootstrap-driven.
-  `get_cdm_construct_registry()` loads family-specific bootstrap modules instead of package `__init__` files.
+  `get_complete_construct_registry()` loads family-specific bootstrap modules instead of package `__init__` files.
 - The modifier layer is semantics-backed.
   Importing parts of `omop_constructs.alchemy.modifiers` can trigger runtime resolver setup through `omop_constructs.semantics`.
 - Materialized view lifecycle helpers are PostgreSQL-oriented.
@@ -75,13 +103,4 @@ plan = registry.plan()
 
 - [Usage](usage.md): import patterns, registry workflow, and operational notes
 - [Architecture](architecture.md): layering, registration, dependency planning, and event attachment
-- [Construct Catalog](construct-catalog.md): current construct families and the materialized views they expose
-
-## Recent Additions Reflected Here
-
-The docs now cover the current consult and specialist linkage path:
-
-- `DxRelevantVisitMV` for episode-linked provider-specialty visits
-- `ConsultWindowMV` for referral-to-specialist and referral-to-treatment window scalars
-
-These are now part of the active public construct surface alongside the older treatment and diagnosis-linked event materialized views.
+- [Construct Catalog](construct-catalog.md): construct families and the materialized views they expose

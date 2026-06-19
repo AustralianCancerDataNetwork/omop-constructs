@@ -30,7 +30,7 @@ Cancer-relevant surgical procedures attributed to condition episodes.
 
 **Source:** `Procedure_Occurrence` records with explicit dates. Surgical history observations (i.e. procedures reported as prior history rather than performed procedures) are excluded — they are not suitable for treatment timing and are not episode-attributed here.
 
-**Episode attribution:** Currently, surgery records do not carry an OMOP `Episode_Event` link, so attribution uses a date window relative to each condition episode:
+**Episode attribution:** Surgery records do not carry an OMOP `Episode_Event` link, so attribution uses a date window relative to each condition episode:
 - Look back up to 90 days before episode start (captures diagnostic or staging surgery performed just prior to formal diagnosis).
 - Look forward to the episode end date when one is present. For open-ended episodes, allow up to 365 days after episode start.
 - A surgical procedure that falls outside this window for every condition episode the patient has does not appear in this view.

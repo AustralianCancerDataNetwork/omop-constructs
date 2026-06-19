@@ -58,7 +58,7 @@ def test_registry_schema_snapshot_matches_checked_in_artifact(
         pytest.fail(
             "Missing checked-in registry schema artifact. Generate it with:\n"
             "UPDATE_REGISTRY_SCHEMA_SNAPSHOT=1 "
-            "uv run --extra dev pytest "
+            "uv run --extra dev python -m pytest "
             "tests/test_registry_schema_artifact_postgres.py -m postgres -q"
         )
 
@@ -78,7 +78,7 @@ def test_registry_schema_snapshot_matches_checked_in_artifact(
         pytest.fail(
             "Registry schema artifact is stale. Regenerate it with:\n"
             "UPDATE_REGISTRY_SCHEMA_SNAPSHOT=1 "
-            "uv run --extra dev pytest "
+            "uv run --extra dev python -m pytest "
             "tests/test_registry_schema_artifact_postgres.py -m postgres -q\n\n"
             f"{diff}"
         )

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 import sqlalchemy as sa
-from omop_alchemy.maintenance.create_tables import create_missing_tables
+from omop_alchemy.maintenance import create_missing_tables
 
 
 ROOT = Path(__file__).resolve().parents[1]
