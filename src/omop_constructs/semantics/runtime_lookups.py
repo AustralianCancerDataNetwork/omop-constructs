@@ -1,10 +1,8 @@
-
-from omop_alchemy import get_engine_name, load_environment
+import sqlalchemy as sa
 from omop_alchemy.cdm.handlers import ConceptResolverRegistry
 from omop_semantics.runtime.default_valuesets import runtime
-import sqlalchemy as sa
-import os
 
+from ..config import create_cdm_engine
 from .lookups import get_concept_resolver_registry, build_stage_resolver, build_parent_resolver
 
 DEFAULT_RESOLVER_BUILDERS = {
@@ -53,17 +51,13 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
 }
 
-def get_registry_engine(env_path: str = __file__):
-    """
-    Build the engine used for runtime resolver lookup.
+def get_registry_engine() -> sa.Engine:
+    """Build the engine used for runtime resolver lookup.
 
-    If ``ENGINE`` is not already defined in the environment, the function asks
-    ``omop-alchemy`` to load environment configuration relative to ``env_path``.
+    Resolver-backed modifier imports use the shared OMOP stack configuration
+    managed by ``oa-configurator``.
     """
-    if os.environ.get("ENGINE") is None:
-        load_environment(env_path)
-    engine_string = get_engine_name()
-    return sa.create_engine(engine_string, future=True, echo=False)
+    return create_cdm_engine()
 
 def get_runtime_resolvers(engine: sa.Engine) -> ConceptResolverRegistry:
     """

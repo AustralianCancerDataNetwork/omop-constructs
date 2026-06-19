@@ -120,6 +120,30 @@ without re-implementing the logic every time.
 
 ---
 
+## Configuration and CLI
+
+`omop-constructs` uses `oa-configurator` for runtime logging and CDM resource
+resolution.
+
+```bash
+omop-config init
+omop-config configure omop_alchemy
+omop-config configure omop_constructs
+```
+
+`omop-config configure omop_constructs` validates that a shared `cdm_db`
+resource is available and can record a package-specific `default_resource`
+override when `omop-constructs` should use a different CDM resource than
+`omop-alchemy`.
+
+The package CLI exposes operational helpers such as registry schema export:
+
+```bash
+omop-constructs schema-snapshot tests/artifacts/construct_registry_schema.csv
+```
+
+---
+
 ## When should you use this?
 
 Use **omop-constructs** if you:
@@ -140,4 +164,5 @@ Use **omop-constructs** if you:
 - No hidden execution or side effects  
 - Easy to test in isolation  
 - Compatible with materialized views and derived tables  
-- Portable across PostgreSQL, SQLite, and other SQLAlchemy backends
+- SQLAlchemy query definitions are portable across backends
+- Materialized view lifecycle management targets PostgreSQL

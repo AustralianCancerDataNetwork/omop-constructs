@@ -19,7 +19,7 @@ This is the operational layer that turns mapped SQLAlchemy classes into somethin
 
 `omop_constructs.semantics` provides runtime concept resolver setup on top of `omop-semantics` value sets and `omop-alchemy` resolver helpers.
 
-The current default resolver set includes:
+The default resolver set includes:
 
 - `tnm_t_stage`
 - `tnm_n_stage`
@@ -51,7 +51,7 @@ This has two consequences:
 - registration happens at import time
 - the registry is process-local and reflects what has been imported so far
 
-That import-driven behavior is current, intentional usage and should be assumed by downstream consumers.
+That import-driven behavior is intentional and should be assumed by downstream consumers.
 
 ## Dependency Planning
 
@@ -106,7 +106,7 @@ grouping, de-duplication, and timing composition deferred to the measure engine.
 
 ## Treatment Window And Consult Window Pattern
 
-The episode layer currently exposes two important scalar-style constructs:
+The episode layer exposes two important scalar-style constructs:
 
 - `TreatmentEnvelopeMV`
   earliest/latest treatment and treatment-derived scalar windows

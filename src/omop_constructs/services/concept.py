@@ -1,6 +1,6 @@
 import sqlalchemy.orm as so
 from collections import defaultdict
-from orm_loader.helpers import get_logger
+from oa_configurator import get_logger
 from ..alchemy.concepts.concept_mappers import Standard_Concept_Mapper
 
 logger = get_logger(__name__)

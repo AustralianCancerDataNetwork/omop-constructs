@@ -2,7 +2,7 @@ import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from omop_alchemy.cdm.model.clinical import Person
-from orm_loader.helpers import get_logger
+from oa_configurator import get_logger
 
 logger = get_logger(__name__)
 

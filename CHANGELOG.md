@@ -187,3 +187,6 @@
 
 ## 0.4.10
 - cast SACT and RT exposure dates to Date in sact_window and rt_window to prevent timestamp upcast contaminating LEAST/GREATEST results; fixes treatment_days_before_death and days_from_dx_to_treatment storing as interval instead of integer
+
+## 0.5.0
+- integrated oa-configurator package configuration and adapted omop-constructs to current orm-loader / omop-alchemy compatibility changes

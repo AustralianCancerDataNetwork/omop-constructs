@@ -4,18 +4,21 @@
 
 ```bash
 # Unit tests only
-uv run --extra dev pytest -m "not postgres"
+uv run --extra dev python -m pytest -m "not postgres"
 
 # PostgreSQL integration test
 export ENGINE_CDM='postgresql+psycopg://user:pass@localhost:5432/dbname'
-uv run --extra dev pytest -m postgres -v
+uv run --extra dev python -m pytest -m postgres -v
 
 # Registry schema snapshot artifact
+uv run --directory . omop-constructs schema-snapshot tests/artifacts/construct_registry_schema.csv
+
+# Equivalent module invocation
 python -m omop_constructs.core.schema_snapshot tests/artifacts/construct_registry_schema.csv
 
 # Regenerate the checked-in full-registry artifact using the Postgres fixture
 UPDATE_REGISTRY_SCHEMA_SNAPSHOT=1 \
-uv run --extra dev pytest tests/test_registry_schema_artifact_postgres.py -m postgres -q
+uv run --extra dev python -m pytest tests/test_registry_schema_artifact_postgres.py -m postgres -q
 ```
 
 ## PostgreSQL integration test
@@ -27,8 +30,7 @@ database. The fixture resolves the engine in this order:
 2. `ENGINE`
 
 During the test, `ENGINE` is populated automatically from `ENGINE_CDM` when
-needed so the `omop_constructs.semantics` import path can bind its runtime
-resolver engine.
+needed so the scratch database is visible to resolver-backed construct imports.
 
 The test does not modify the database named in `ENGINE_CDM` / `ENGINE`
 directly. Instead it:
@@ -40,5 +42,5 @@ directly. Instead it:
 5. creates all materialized views with `WITH NO DATA`
 6. drops the scratch database on teardown
 
-If a generated scratch database name already exists, the fixture will fail. 
-It never drops a pre-existing database during setup (...anymore...).
+If a generated scratch database name already exists, the fixture fails instead
+of dropping a pre-existing database during setup.
