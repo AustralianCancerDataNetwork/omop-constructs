@@ -191,3 +191,5 @@
 ## 0.5.0
 - integrated oa-configurator package configuration and adapted omop-constructs to current orm-loader / omop-alchemy compatibility changes
 
+## 0.5.2
+- ecog_dx_mv now also carries value_as_concept_id: ECOG performance status is a precoordinated-concept answer (OHDSI convention), not a plain number, so downstream measure logic needs the concept alongside (or instead of) value_as_number

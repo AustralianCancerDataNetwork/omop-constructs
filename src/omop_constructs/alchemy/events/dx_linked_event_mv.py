@@ -157,6 +157,7 @@ class ECOGDxMV(
     __mv_index__ = "person_id"
     __deps__ = (ConditionEpisodeMV.__mv_name__,)
     __tablename__ = __mv_name__
+    value_as_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
 
 @register_construct
 class SmokingPYHDxMV(
