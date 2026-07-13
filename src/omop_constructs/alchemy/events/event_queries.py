@@ -52,7 +52,7 @@ distress_thermometer_query = measurement_attached_to_condition_episode(
 
 ecog_query = measurement_attached_to_condition_episode(
     concept_ids=[runtime.measurements_numeric.performance_status_measurements.ecog_performance_status],  # type: ignore
-    include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
+    include_cols=[Measurement.value_as_number, Measurement.value_as_concept_id, Measurement.unit_concept_id],
     name="ecog",
 )
 
