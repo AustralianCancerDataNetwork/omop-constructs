@@ -6,6 +6,7 @@ from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
 from .modality_intent_join import episode_join
+from .treatment_envelope_mv import TreatmentEnvelopeMV
 
 @register_construct
 class TreatmentIntentMV(
@@ -58,11 +59,19 @@ episode_summary_select = (
         sa.func.coalesce(TreatmentIntentMV.rt, False).label("rt"),
         sa.func.coalesce(TreatmentIntentMV.sact, False).label("sact"),
         sa.func.coalesce(TreatmentIntentMV.concurrent, False).label("concurrent"),
+        sa.and_(
+            sa.func.coalesce(TreatmentIntentMV.rt, False),
+            sa.func.coalesce(TreatmentEnvelopeMV.concurrent_chemort, False)
+        ).label("concurrent_rt"),
     )
     .outerjoin(
         TreatmentIntentMV,
         TreatmentIntentMV.treatment_episode_parent_id
         == ConditionEpisodeMV.episode_id
+    )
+    .outerjoin(
+        TreatmentEnvelopeMV,
+        TreatmentEnvelopeMV.condition_episode == ConditionEpisodeMV.episode_id
     )
 )
 
@@ -74,7 +83,11 @@ class ConditionTreatmentIntentMV(
     __mv_name__ = "condition_episode_intent_mv"
     __mv_select__ = episode_summary_select
     __mv_index__ = "episode_id"
-    __deps__ = (ConditionEpisodeMV.__mv_name__, TreatmentIntentMV.__mv_name__)
+    __deps__ = (
+        ConditionEpisodeMV.__mv_name__,
+        TreatmentIntentMV.__mv_name__,
+        TreatmentEnvelopeMV.__mv_name__,
+    )
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 
@@ -98,3 +111,4 @@ class ConditionTreatmentIntentMV(
     rt: so.Mapped[bool | None] = so.mapped_column(sa.Boolean, nullable=True)
     sact: so.Mapped[bool | None] = so.mapped_column(sa.Boolean, nullable=True)
     concurrent: so.Mapped[bool | None] = so.mapped_column(sa.Boolean, nullable=True)
+    concurrent_rt: so.Mapped[bool | None] = so.mapped_column(sa.Boolean, nullable=True)

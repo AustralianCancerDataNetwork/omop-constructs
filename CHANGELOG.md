@@ -190,3 +190,4 @@
 
 ## 0.5.0
 - integrated oa-configurator package configuration and adapted omop-constructs to current orm-loader / omop-alchemy compatibility changes
+
