@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from omop_alchemy.cdm.model import Concept, Concept_Ancestor, Procedure_Occurrence, Observation
+from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 from .condition_episode_mv import ConditionEpisodeMV
 from ..events.event_factories import (
@@ -84,10 +85,6 @@ radioisotopes_only = radioisotope_concepts.subquery(name="radioisotopes_only")
 surg_obs_concept = so.aliased(Concept, name="surg_obs_concept")
 
 # Stream 1: active surgical procedures from Procedure_Occurrence.
-# Note: these records are NOT registered in Episode_Event at this time. 
-# Episode attachment must therefore use date windowing rather than 
-# explicit Episode_Event joins - TODO: confirm if we push episode linkage
-# as its own distinct phase / utility?
 surgical_procedure_events = (
     sa.select(
         Procedure_Occurrence.person_id,
@@ -138,22 +135,14 @@ all_cancer_relevant_surg = (
 # here. historical_surgical_events are excluded because their timestamps do not
 # reliably represent the date of surgical treatment within the current episode.
 #
-# Episode attachment uses a date window because no Episode_Event records exist
-# for surgical Procedure_Occurrence rows (confirmed: pipeline step 08 writes
-# them directly without episode registration).
+# Surgery attribution is now driven by explicit Episode_Event links created by
+# pipeline-runtime. This makes the runtime the authority for choosing a single
+# diagnosis episode per surgery, avoiding the former person+window fan-out
+# across overlapping primaries.
 #
-# Window bounds (shared with event_factories defaults):
-#   - Look back  DEFAULT_EPISODE_WINDOW_DAYS_PRIOR  days before episode start
-#     to capture surgeries performed just before a formal diagnosis is coded
-#     (e.g. diagnostic/staging surgery).
-#   - Look forward to the episode end date when one is present, signalling an
-#     explicitly closed episode. For open-ended episodes, allow up to
-#     DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS days after episode start.
-#
-# A surgery that falls outside this window for every condition episode the
-# patient has will produce no row in SurgicalProcedureMV for that surgery.
-# That is the correct behaviour — it means the surgery cannot be attributed
-# to any known condition episode.
+# SurgicalProcedureMV must still keep ConditionEpisodeMV as the spine so that
+# episodes with no linked surgery produce a single null-valued row. oa-cohorts
+# absence rules (e.g. "no surgery") depend on that outer-join shape.
 
 # surgical_procedure_events is kept as a Select (not a subquery) so it can be
 # passed directly to sa.union_all() in all_cancer_relevant_surg above. For the
@@ -161,24 +150,10 @@ all_cancer_relevant_surg = (
 # here. Both refer to the same query; the distinction is purely structural.
 _surg_proc_sq = surgical_procedure_events.subquery(name="surgical_procedure_events")
 
-_episode_end_bound = sa.func.coalesce(
-    ConditionEpisodeMV.episode_end_date,
-    ConditionEpisodeMV.episode_start_date + DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS,
-)
-
-# Cast surgery_datetime to Date for window comparison. Procedure_Occurrence
-# carries a full timestamp (time of surgery) but episode bounds are stored as
-# dates. Casting strips the time component and avoids fractional-day edge
-# cases where a surgery at 23:59 on the boundary day would otherwise be
-# excluded.
-_surgery_date = sa.cast(_surg_proc_sq.c.surgery_datetime, sa.Date)
-
-cancer_relevant_surg_select = (
+linked_surgical_procedure_events = (
     sa.select(
-        sa.func.row_number().over().label("mv_id"),
-        ConditionEpisodeMV.person_id,
-        ConditionEpisodeMV.episode_id.label("condition_episode_id"),
-        ConditionEpisodeMV.episode_start_date.label("condition_start_date"),
+        Episode_Event.episode_id.label("condition_episode_id"),
+        _surg_proc_sq.c.person_id,
         _surg_proc_sq.c.surgery_occurrence_id,
         _surg_proc_sq.c.surgery_concept_id,
         _surg_proc_sq.c.surgery_datetime,
@@ -186,24 +161,49 @@ cancer_relevant_surg_select = (
         _surg_proc_sq.c.surgery_name,
         _surg_proc_sq.c.surgery_source,
     )
-    .select_from(ConditionEpisodeMV)
+    .select_from(Episode_Event)
     .join(
         _surg_proc_sq,
-        sa.and_(
-            _surg_proc_sq.c.person_id == ConditionEpisodeMV.person_id,
-            _surgery_date >= ConditionEpisodeMV.episode_start_date - DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
-            _surgery_date <= _episode_end_bound,
-        ),
+        _surg_proc_sq.c.surgery_occurrence_id == Episode_Event.event_id,
+    )
+    .where(
+        Episode_Event.episode_event_field_concept_id
+        == runtime.modifiers.modifier_fields.procedure_occurrence_id
+    )
+    .subquery(name="linked_surgical_procedure_events")
+)
+
+cancer_relevant_surg_select = (
+    sa.select(
+        sa.func.row_number().over().label("mv_id"),
+        ConditionEpisodeMV.person_id,
+        ConditionEpisodeMV.episode_id.label("condition_episode_id"),
+        ConditionEpisodeMV.episode_start_date.label("condition_start_date"),
+        linked_surgical_procedure_events.c.surgery_occurrence_id,
+        linked_surgical_procedure_events.c.surgery_concept_id,
+        linked_surgical_procedure_events.c.surgery_datetime,
+        linked_surgical_procedure_events.c.surgery_concept_code,
+        linked_surgical_procedure_events.c.surgery_name,
+        linked_surgical_procedure_events.c.surgery_source,
+    )
+    .select_from(ConditionEpisodeMV)
+    .join(
+        linked_surgical_procedure_events,
+        linked_surgical_procedure_events.c.condition_episode_id == ConditionEpisodeMV.episode_id,
         # Outer join: every condition episode must appear in SurgicalProcedureMV,
-        # including those with no surgery in the date window. oa-cohorts absence rules
+        # including those with no linked surgery. oa-cohorts absence rules
         # (e.g. "no surgery") rely on WHERE surgery_concept_id IS NULL to identify
         # non-surgical episodes — those rows only exist because of this outer join.
-        # Episodes WITH surgery in the window still get one row per matched surgery
-        # (the date window prevents the old person-level fan-out); episodes WITHOUT
-        # surgery get exactly one row with all surgery columns NULL.
+        # Episodes WITH linked surgery still get one row per linked surgery;
+        # episodes WITHOUT surgery get exactly one row with all surgery columns NULL.
         isouter=True,
     )
     .subquery(name="cancer_relevant_surg")
+)
+
+_episode_end_bound = sa.func.coalesce(
+    ConditionEpisodeMV.episode_end_date,
+    ConditionEpisodeMV.episode_start_date + DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS,
 )
 
 
