@@ -196,3 +196,6 @@
 
 ## 0.5.3
 - adding separate distinct handling for joining surgeries in with episodes when there is an explicit link to a specific diagnosis
+
+## 0.5.4
+- fix for episode intent - this actually modifies procedure, not episode
