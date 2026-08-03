@@ -1,10 +1,8 @@
 import sqlalchemy as sa
-import sqlalchemy.orm as so
-from omop_alchemy.cdm.model import Episode, Episode_Event, Measurement, Drug_Exposure, Procedure_Occurrence, Concept
+from omop_alchemy.cdm.model import Episode, Episode_Event, Drug_Exposure, Procedure_Occurrence
 from omop_semantics.runtime.default_valuesets import runtime
 from ...semantics import registry
-
-intent_concept = so.aliased(Concept, name='intent_concept')
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 
 modality_sact = (
     sa.select(
@@ -47,19 +45,19 @@ episode_intent = (
         Episode.episode_start_date,
         Episode.episode_end_date,
         Episode.episode_parent_id,
-        Measurement.measurement_concept_id,
-        intent_concept.concept_name,
+        ModifiedProcedure.intent_concept_id.label('measurement_concept_id'),
+        ModifiedProcedure.intent_concept.label('concept_name'),
     )
     .join(
-        Measurement,
+        Episode_Event,
         sa.and_(
-            Measurement.measurement_event_id==Episode.episode_id,
-            Measurement.meas_event_field_concept_id==runtime.modifiers.modifier_fields.episode_id
+            Episode_Event.episode_id==Episode.episode_id,
+            Episode_Event.episode_event_field_concept_id==runtime.modifiers.modifier_fields.procedure_occurrence_id
         )
     )
-    .join(intent_concept, intent_concept.concept_id==Measurement.measurement_concept_id)
+    .join(ModifiedProcedure, ModifiedProcedure.procedure_occurrence_id==Episode_Event.event_id)
     .filter(
-        Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
+        ModifiedProcedure.intent_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
     )
     .subquery()
 )
