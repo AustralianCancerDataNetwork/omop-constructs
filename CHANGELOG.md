@@ -199,3 +199,6 @@
 
 ## 0.5.4
 - fix for episode intent - this actually modifies procedure, not episode
+
+# 0.5.5
+- actual fix for episode intent via parent 

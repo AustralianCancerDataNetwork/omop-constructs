@@ -1,8 +1,11 @@
 import sqlalchemy as sa
-from omop_alchemy.cdm.model import Episode, Episode_Event, Drug_Exposure, Procedure_Occurrence
+import sqlalchemy.orm as so
+from omop_alchemy.cdm.model import Episode, Episode_Event, Measurement, Drug_Exposure, Procedure_Occurrence, Concept
 from omop_semantics.runtime.default_valuesets import runtime
 from ...semantics import registry
-from ..modifiers.procedure_modifier_mv import ModifiedProcedure
+
+intent_concept = so.aliased(Concept, name='intent_concept')
+regimen_or_parent = so.aliased(Episode, name='regimen_or_parent')
 
 modality_sact = (
     sa.select(
@@ -44,20 +47,27 @@ episode_intent = (
         Episode.episode_id,
         Episode.episode_start_date,
         Episode.episode_end_date,
-        Episode.episode_parent_id,
-        ModifiedProcedure.intent_concept_id.label('measurement_concept_id'),
-        ModifiedProcedure.intent_concept.label('concept_name'),
+        sa.case(
+            (
+                regimen_or_parent.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen,
+                regimen_or_parent.episode_parent_id
+            ),
+            else_=regimen_or_parent.episode_id
+        ).label('episode_parent_id'),
+        Measurement.measurement_concept_id,
+        intent_concept.concept_name,
     )
     .join(
-        Episode_Event,
+        Measurement,
         sa.and_(
-            Episode_Event.episode_id==Episode.episode_id,
-            Episode_Event.episode_event_field_concept_id==runtime.modifiers.modifier_fields.procedure_occurrence_id
+            Measurement.measurement_event_id==Episode.episode_id,
+            Measurement.meas_event_field_concept_id==runtime.modifiers.modifier_fields.episode_id
         )
     )
-    .join(ModifiedProcedure, ModifiedProcedure.procedure_occurrence_id==Episode_Event.event_id)
+    .join(intent_concept, intent_concept.concept_id==Measurement.measurement_concept_id)
+    .join(regimen_or_parent, regimen_or_parent.episode_id==Episode.episode_parent_id, isouter=True)
     .filter(
-        ModifiedProcedure.intent_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
+        Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
     )
     .subquery()
 )
