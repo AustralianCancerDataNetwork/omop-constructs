@@ -57,32 +57,10 @@ packages = ["src/omop_constructs"]
 cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
 
 [tool.ruff.lint]
-# Ruff 0.16 enables far more rules by default (217 extra findings here). Rather than
-# take that wholesale, or ignore it, the high-signal ones are selected explicitly so
-# they apply under the pinned <0.16 too.
-#
-#   B006   mutable default argument  - a real bug class, not a style point
-#   PIE810 one startswith/endswith call with a tuple
-#
-# Deliberately NOT selected, with reasons:
-#   RUF012 (42) mutable class attribute -> ClassVar. All 42 are SQLAlchemy declarative
-#          hooks (25 __table_args__, 14 __mv_pk__, 3 __mapper_args__), i.e. framework
-#          contract, not accidentally-shared instance state. Pure annotation churn.
-#   I001   (64) / RUF022 (5) import and __all__ sorting. Cosmetic; adopt as a separate
-#          formatting decision if wanted, not smuggled in with a CI migration.
-#   UP006/UP007/UP017/UP035/UP045/UP047 (94) annotation modernisation. Mechanical and
-#          defensible, but a large diff with no correctness value - its own PR.
-#   BLE001 (7) blind `except Exception`. Six are in registry.py diagnostic paths
-#          (compile_check, explain, build_plan_json) where catching broadly to report
-#          is the intent; enabling it buys seven `# noqa` and no fix.
 extend-select = ["B006", "PIE810"]
 
 [tool.ty.rules]
-# Staged adoption of `ty` alongside the cava-devops CI. These three account for 97 of
-# 98 diagnostics and are suppressed repo-wide so the pipeline can land; they are not a
-# statement that the code is clean. Burn down in order: fixing `unresolved-attribute`
-# (the dynamic omop-semantics runtime accessors) is what makes the stale mypy-era
-# `# type: ignore` comments behind `unused-type-ignore-comment` genuinely removable.
+# todo: these shouldn't remain here long term - for cicd initial deployment for now
 invalid-argument-type = "ignore"
 unused-type-ignore-comment = "ignore"
 unresolved-attribute = "ignore"
