@@ -5,7 +5,6 @@ from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 from .condition_episode_mv import ConditionEpisodeMV
 from ..events.event_factories import (
-    DEFAULT_EPISODE_WINDOW_DAYS_POST,
     DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
     DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS,
 )

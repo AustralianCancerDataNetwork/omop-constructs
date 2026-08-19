@@ -1,6 +1,5 @@
-from typing import Protocol, Iterable, runtime_checkable, Any
+from typing import Protocol, runtime_checkable, Any
 import sqlalchemy as sa
-from .core.plan import ConstructNode, topo_sort
 
 @runtime_checkable
 class SupportsMaterializedView(Protocol):

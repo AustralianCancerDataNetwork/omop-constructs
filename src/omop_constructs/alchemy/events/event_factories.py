@@ -215,7 +215,7 @@ def measurement_event_core(
     )
 
     if unlinked_only:
-        q = q.where(Measurement.modifier_of_event_id == None)
+        q = q.where(Measurement.modifier_of_event_id.is_(None))
 
     if concept_ids is not None:
         q = q.where(Measurement.measurement_concept_id.in_(list(concept_ids)))
@@ -273,7 +273,7 @@ def observation_event_core(
     )
 
     if unlinked_only:
-        q = q.where(Observation.observation_event_id == None)
+        q = q.where(Observation.observation_event_id.is_(None))
 
     if concept_ids is not None:
         q = q.where(Observation.observation_concept_id.in_(list(concept_ids)))

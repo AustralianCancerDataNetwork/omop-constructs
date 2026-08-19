@@ -7,6 +7,7 @@ from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
 from .modality_intent_join import episode_join
 from .treatment_envelope_mv import TreatmentEnvelopeMV
+from .condition_episode_mv import ConditionEpisodeMV
 
 @register_construct
 class TreatmentIntentMV(
@@ -35,8 +36,6 @@ class TreatmentIntentMV(
     sact: so.Mapped[bool | None] = so.mapped_column(sa.Boolean)
     concurrent: so.Mapped[bool] = so.mapped_column(sa.Boolean)
 
-
-from .condition_episode_mv import ConditionEpisodeMV
 
 episode_summary_select = (
     sa.select(
