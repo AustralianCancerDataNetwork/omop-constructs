@@ -40,7 +40,8 @@ DEFAULT_RESOLVER_BUILDERS = {
         session,
         parent_list=[
             runtime.cancer_procedures.cancer_procedure_types.rt_externalbeam, # type: ignore
-            runtime.cancer_procedures.cancer_procedure_types.rt_procedure
+            runtime.cancer_procedures.cancer_procedure_types.rt_procedure,
+            runtime.cancer_procedures.cancer_procedure_types.rt_brachytherapy,
         ],
         resolver_name="rt_procedures",
     ),

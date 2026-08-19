@@ -1,6 +1,6 @@
 [project]
 name = "omop-constructs"
-version = "0.5.5"
+version = "0.5.6"
 description = "For building complex constructs on top of the omop-alchemy library."
 readme = "README.md"
 authors = [
@@ -8,9 +8,9 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "oa-configurator>=0.1.1",
+    "oa-configurator>=0.1.1,<1",
     "omop-alchemy[postgres]>=0.7.0",
-    "omop-semantics>=0.2.0",
+    "omop-semantics>=0.6.0",
     "orm-loader>=0.5.0",
     "sqlalchemy>=2.0.45",
 ]
