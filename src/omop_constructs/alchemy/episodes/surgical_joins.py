@@ -13,10 +13,11 @@ from ..events.event_factories import (
 # ---------------------------------------------------------------------------
 # Concept sets
 # ---------------------------------------------------------------------------
-# Surgery is defined as any descendant of the surgical_procedure ancestor,
-# minus any concept that is also a radiotherapy or radioisotope procedure
-# (those overlap in the vocabulary hierarchy and are handled by their own
-# constructs).
+# Surgery is defined as any descendant of the broad surgical_procedure
+# ancestor, minus any concept that is also a radiotherapy or radioisotope
+# procedure. The narrower cancer-indicating surgery anchors in
+# omop-semantics are available for detailed classification work, but this
+# construct intentionally keeps the general treatment-envelope definition.
 
 rth_ca = so.aliased(Concept_Ancestor, name="rth_ca")
 srg_ca = so.aliased(Concept_Ancestor, name="srg_ca")

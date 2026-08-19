@@ -202,3 +202,6 @@
 
 # 0.5.5
 - actual fix for episode intent via parent 
+
+# 0.5.6 
+- pin oa-configurator version
