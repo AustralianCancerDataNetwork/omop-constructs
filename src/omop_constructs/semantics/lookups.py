@@ -29,7 +29,7 @@ def build_parent_resolver(
         session: so.Session, 
         parent_list: list[int], 
         resolver_name: str, 
-        corrections: list[Callable] = [],
+        corrections: list[Callable] | None = None,
         unknown_concept_id: int = UNKNOWN["generic"].concept_id
 ) -> ConceptResolver:
     """

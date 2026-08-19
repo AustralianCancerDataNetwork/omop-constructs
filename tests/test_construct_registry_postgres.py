@@ -22,8 +22,9 @@ def _clear_construct_import_state() -> None:
 
     for module_name in list(sys.modules):
         if (
-            module_name.startswith("omop_constructs.alchemy")
-            or module_name.startswith("omop_constructs.semantics")
+            module_name.startswith(
+                ("omop_constructs.alchemy", "omop_constructs.semantics")
+            )
             or module_name in {"omop_constructs.bootstrap", "omop_constructs.bootstrap_modules"}
         ):
             sys.modules.pop(module_name, None)
