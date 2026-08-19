@@ -9,9 +9,9 @@ import pytest
 import sqlalchemy as sa
 import oa_configurator.loader as oa_loader
 from oa_configurator import (
-    DatabaseConfig,
+    CDMDatabaseConfig,
+    ConnectionConfig,
     Resolver,
-    ResourceConfig,
     StackConfig,
     load_stack_config,
     save_stack_config,
@@ -22,7 +22,6 @@ from omop_alchemy.maintenance.tables import (
     collect_maintenance_tables,
     schema_adjusted_metadata,
 )
-from omop_constructs.config import resolve_cdm_resource_name
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,8 +35,8 @@ if str(SEMANTICS_SRC) not in sys.path:
     sys.path.insert(0, str(SEMANTICS_SRC))
 
 
-def _build_database_config(url: sa.engine.URL) -> DatabaseConfig:
-    return DatabaseConfig(
+def _build_connection_config(url: sa.engine.URL) -> ConnectionConfig:
+    return ConnectionConfig(
         dialect=url.drivername,
         host=url.host,
         port=url.port,
@@ -47,17 +46,17 @@ def _build_database_config(url: sa.engine.URL) -> DatabaseConfig:
     )
 
 
-def _load_effective_cdm_resource() -> ResourceConfig | None:
+def _load_effective_cdm_database() -> CDMDatabaseConfig | None:
     try:
         stack = load_stack_config()
     except FileNotFoundError:
         return None
 
-    resolved = Resolver(stack).resolve_resource(resolve_cdm_resource_name(stack))
-    return ResourceConfig(
-        database="cdm_db",
-        vocab_database="cdm_db",
-        cdm_schema=resolved.cdm_schema,
+    resolved = Resolver(stack).resolve_database("cdm_db")
+    return CDMDatabaseConfig(
+        connection="cdm_db",
+        vocab_connection="cdm_db",
+        schema_name=resolved.schema_name,
         vocab_schema=resolved.vocab_schema,
         results_schema=resolved.results_schema,
     )
@@ -66,22 +65,22 @@ def _load_effective_cdm_resource() -> ResourceConfig | None:
 def _build_scratch_stack(
     scratch_url: sa.engine.URL,
     *,
-    resource_config: ResourceConfig,
+    cdm_config: CDMDatabaseConfig,
 ) -> StackConfig:
     return StackConfig.for_session(
-        databases={"cdm_db": _build_database_config(scratch_url)},
-        resources={"cdm_db": resource_config},
+        connections={"cdm_db": _build_connection_config(scratch_url)},
+        databases={"cdm_db": cdm_config},
     )
 
 
 def _bootstrap_scratch_cdm(
     engine: sa.Engine,
     *,
-    resource_config: ResourceConfig,
+    cdm_config: CDMDatabaseConfig,
 ) -> None:
-    cdm_schema = resource_config.cdm_schema
-    vocab_schema = resource_config.vocab_schema or cdm_schema
-    results_schema = resource_config.results_schema
+    cdm_schema = cdm_config.schema_name
+    vocab_schema = cdm_config.vocab_schema or cdm_schema
+    results_schema = cdm_config.results_schema
 
     if results_schema:
         ensure_schema(engine, results_schema)
@@ -204,30 +203,28 @@ def pg_engine():
     Session-scoped engine connecting to a PostgreSQL database for opt-in tests.
 
     Resolution order:
-    1. configured ``cdm_db`` resource from ``oa-configurator``
+    1. configured ``cdm_db`` database from ``oa-configurator``
     2. ``ENGINE_CDM``
     3. ``ENGINE``
     """
-    resource_config = _load_effective_cdm_resource() or ResourceConfig(
-        database="cdm_db",
-        vocab_database="cdm_db",
-        cdm_schema="public",
+    cdm_config = _load_effective_cdm_database() or CDMDatabaseConfig(
+        connection="cdm_db",
+        vocab_connection="cdm_db",
+        schema_name="public",
         vocab_schema="public",
     )
 
     engine_url = None
-    configured_resource = None
+    configured_database = None
     try:
         stack = load_stack_config()
     except FileNotFoundError:
         stack = None
 
     if stack is not None:
-        configured_resource = Resolver(stack).resolve_resource(
-            resolve_cdm_resource_name(stack)
-        )
-        if configured_resource.database.url.startswith("postgresql"):
-            engine_url = configured_resource.database.url
+        configured_database = Resolver(stack).resolve_database("cdm_db")
+        if configured_database.connection.url.startswith("postgresql"):
+            engine_url = configured_database.connection.url
 
     if engine_url is None:
         engine_url = os.getenv("ENGINE_CDM") or os.getenv("ENGINE")
@@ -249,7 +246,7 @@ def pg_engine():
         )
     _wait_for_engine(engine)
     try:
-        yield engine, resource_config
+        yield engine, cdm_config
     finally:
         engine.dispose()
 
@@ -265,7 +262,7 @@ def pg_bootstrapped_engine(pg_engine):
     imports at that scratch database via a temporary ``oa-configurator`` stack
     config, and drops the scratch database on teardown.
     """
-    source_engine, resource_config = pg_engine
+    source_engine, cdm_config = pg_engine
     source_url = sa.engine.make_url(
         source_engine.url.render_as_string(hide_password=False)
     )
@@ -299,12 +296,12 @@ def pg_bootstrapped_engine(pg_engine):
 
         _bootstrap_scratch_cdm(
             scratch_engine,
-            resource_config=resource_config,
+            cdm_config=cdm_config,
         )
 
         scratch_stack = _build_scratch_stack(
             scratch_url,
-            resource_config=resource_config,
+            cdm_config=cdm_config,
         )
         save_stack_config(scratch_stack, temp_config_path)
 
