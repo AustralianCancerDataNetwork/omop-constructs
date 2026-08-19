@@ -15,4 +15,4 @@ def get_standard_concept_lookup(sess: so.Session, to_standardise: list[int]) -> 
         .all()
     )
     logger.info(f"Found {len(standard_concept_lookup)} standard concept mappings for {len(to_standardise)} concepts to standardise")
-    return defaultdict(int, {l[0]: l[1] for l in standard_concept_lookup})
+    return defaultdict(int, {row[0]: row[1] for row in standard_concept_lookup})

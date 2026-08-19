@@ -27,7 +27,7 @@ def get_episode_query(
             Episode.episode_end_date,
             Episode.episode_end_datetime,
             Episode.episode_concept_id,
-            episode_concept.concept_name.label(f"episode_label"),
+            episode_concept.concept_name.label("episode_label"),
             Episode.episode_object_concept_id,
             Episode.episode_type_concept_id,
             Episode.episode_parent_id,

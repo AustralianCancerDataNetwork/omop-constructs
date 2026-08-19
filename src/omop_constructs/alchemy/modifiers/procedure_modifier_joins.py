@@ -1,4 +1,3 @@
-from datetime import datetime
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from omop_alchemy.cdm.model import Concept, Procedure_Occurrence, Measurement

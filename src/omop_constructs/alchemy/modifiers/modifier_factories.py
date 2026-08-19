@@ -2,7 +2,6 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from typing import Iterable
 
-from omop_semantics.runtime.default_valuesets import runtime
 from omop_alchemy.cdm.model.clinical import Measurement
 from omop_alchemy.cdm.model.vocabulary import Concept
 

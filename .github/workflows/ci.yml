@@ -1,0 +1,35 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+jobs:
+  label-gate:
+    uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/label-gate.yml@main
+  build-test-sqlite:
+    uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/build-test.yml@main
+    with:
+      ty-src: src/omop_constructs
+  build-test-postgres:
+    uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/build-test-postgres.yml@main
+    with:
+      ty-src: src/omop_constructs
+      postgres-db: omop_constructs_ci
+      # --test-only false is required, not incidental: OmopConstructsConfig.cdm_db is
+      # RefTo(CDMDatabaseConfig) with no is_test, and resolve_package_config rejects a
+      # non-test field pointing at a test_only connection. omop-alchemy's equivalent
+      # block uses --test-only true because its field is RefTo(..., is_test=True).
+      setup-commands: |
+        uv run omop-config connections add ci_pg \
+          --dialect postgresql+psycopg \
+          --host localhost \
+          --port 5432 \
+          --user test \
+          --password test \
+          --database-name omop_constructs_ci \
+          --test-only false
+        uv run omop-config databases add cdm_db \
+          --kind cdm \
+          --connection ci_pg \
+          --schema-name public \
+          --vocab-schema public

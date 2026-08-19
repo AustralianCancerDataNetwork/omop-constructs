@@ -1,4 +1,4 @@
-from typing import Iterable, Type
+from typing import Iterable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from sqlalchemy import orm as so

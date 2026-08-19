@@ -1,6 +1,4 @@
 
-from collections import defaultdict
-import sqlalchemy.orm as so
 import sqlalchemy as sa
 from omop_alchemy.cdm.model.clinical import Condition_Occurrence
 

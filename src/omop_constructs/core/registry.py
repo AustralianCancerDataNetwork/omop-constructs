@@ -2,8 +2,7 @@
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Type
 import sqlalchemy as sa
-import json
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.dialects import postgresql
 from .plan import ConstructNode, topo_sort
 from .ddl import CreateMaterializedView
@@ -270,7 +269,7 @@ class ConstructRegistry:
                 lines.append(f"  ✗ {name}: MV does not exist")
                 continue
 
-            cols = bind.execute(sa.text(f"""
+            cols = bind.execute(sa.text("""
                 SELECT column_name
                 FROM information_schema.columns
                 WHERE table_schema = :schema
@@ -305,7 +304,7 @@ class ConstructRegistry:
         items = self.plan()
 
         return {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "constructs": [
                 {
                     "name": item.name,
@@ -369,7 +368,7 @@ class ConstructRegistry:
         """
 
         try:
-            items = self.plan()
+            self.plan()
         except Exception as e:
             return f"<ConstructRegistry DAG unavailable: {e}>"
 

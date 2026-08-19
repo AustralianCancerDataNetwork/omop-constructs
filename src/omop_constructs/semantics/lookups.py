@@ -5,7 +5,6 @@ from omop_alchemy.toolkit.core.concepts import (
     make_stage,
     strip_uicc,
 )
-from omop_semantics.runtime.default_valuesets import runtime
 from omop_semantics.unknowns import UNKNOWN
 import sqlalchemy.orm as so
 import sqlalchemy as sa
