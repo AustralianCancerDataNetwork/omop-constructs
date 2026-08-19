@@ -129,3 +129,26 @@ def test_create_cdm_engine_falls_back_to_environment(monkeypatch) -> None:
 
     assert create_cdm_engine() is sentinel
     assert calls == [("sqlite:///:memory:", True)]
+
+
+def test_create_cdm_engine_resolves_configured_database_to_expected_url() -> None:
+    """Pin the *outcome* of CDM resolution, not the mechanism.
+
+    The oa-configurator 1.x migration deletes ``ResourceConfig``, ``resources``
+    and the ``default_resource`` cascade, so the tests above that assert on those
+    are rewritten or dropped with it. The engine URL this produces is the part
+    that must not change: after the migration, rebuild the stack with
+    ``[databases.*]`` + a ``RefTo(CDMDatabaseConfig)`` field and assert this same
+    string. A different URL means the migration repointed the CDM.
+    """
+    stack = StackConfig(
+        databases={
+            "cdm": DatabaseConfig(dialect="sqlite", database_name=":memory:")
+        },
+        resources={"cdm_db": ResourceConfig(database="cdm", cdm_schema="omop")},
+    )
+
+    engine = create_cdm_engine(stack)
+
+    assert engine.url.render_as_string(hide_password=False) == "sqlite:///:memory:"
+    assert engine.dialect.name == "sqlite"

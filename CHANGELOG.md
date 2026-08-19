@@ -209,3 +209,6 @@
 # 0.6.1
 - switched the four resolvers from the deprecated `.ids` accessor to `.parent_ids`
 - `rt_procedures` resolves from the governed `cancer_procedures.radiotherapy` group instead of hand-assembling 
+
+# 0.6.2
+- pin the resolved CDM engine URL so the oa-configurator 1.x migration can prove it did not repoint the database
