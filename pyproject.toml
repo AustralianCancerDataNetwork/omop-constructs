@@ -1,6 +1,6 @@
 [project]
 name = "omop-constructs"
-version = "0.5.6"
+version = "0.6.1"
 description = "For building complex constructs on top of the omop-alchemy library."
 readme = "README.md"
 authors = [
