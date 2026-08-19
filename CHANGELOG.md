@@ -210,5 +210,7 @@
 - switched the four resolvers from the deprecated `.ids` accessor to `.parent_ids`
 - `rt_procedures` resolves from the governed `cancer_procedures.radiotherapy` group instead of hand-assembling 
 
-# 0.6.2
+# 0.7.0
 - pin the resolved CDM engine URL so the oa-configurator 1.x migration can prove it did not repoint the database
+- moved to omop-alchemy 1.x, oa-configurator 1.x and orm-loader 1.x
+- concept resolver imports follow omop-alchemy's move from `cdm.handlers` to `toolkit.core.concepts`
