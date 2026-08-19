@@ -206,8 +206,6 @@
 # 0.5.6 
 - pin oa-configurator version
 
-## 0.6.1
-- switched the four TNM staging resolvers from the deprecated `.ids` accessor to `.parent_ids`; `.ids` is deprecated only for group-backed units, so the enum-backed `tumor_grade`, `treatment_intent` and episode-type accessors deliberately keep it
-- `rt_procedures` now resolves from the governed `cancer_procedures.radiotherapy` group instead of hand-assembling the rt_procedure / rt_externalbeam / rt_brachytherapy triple, so the radiotherapy definition is named in omop-semantics rather than duplicated here
-- both changes are value-identical against omop-semantics 0.6.0 and leave every materialised view definition unchanged
-- added `tests/test_semantic_anchor_sets.py` pinning the staging and radiotherapy anchor sets, which nothing previously covered
+# 0.6.1
+- switched the four resolvers from the deprecated `.ids` accessor to `.parent_ids`
+- `rt_procedures` resolves from the governed `cancer_procedures.radiotherapy` group instead of hand-assembling 
