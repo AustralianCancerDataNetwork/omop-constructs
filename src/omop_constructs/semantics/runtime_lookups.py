@@ -8,22 +8,22 @@ from .lookups import get_concept_resolver_registry, build_stage_resolver, build_
 DEFAULT_RESOLVER_BUILDERS = {
     "tnm_t_stage": lambda session: build_stage_resolver(
         session,
-        parent_list=list(runtime.staging.t_stage_concepts.ids),
+        parent_list=list(runtime.staging.t_stage_concepts.parent_ids),
         stage_name="t",
     ),
     "tnm_n_stage": lambda session: build_stage_resolver(
         session,
-        parent_list=list(runtime.staging.n_stage_concepts.ids),
+        parent_list=list(runtime.staging.n_stage_concepts.parent_ids),
         stage_name="n",
     ),
     "tnm_m_stage": lambda session: build_stage_resolver(
         session,
-        parent_list=list(runtime.staging.m_stage_concepts.ids),
+        parent_list=list(runtime.staging.m_stage_concepts.parent_ids),
         stage_name="m",
     ),
     "tnm_group_stage": lambda session: build_stage_resolver(
         session,
-        parent_list=list(runtime.staging.group_stage_concepts.ids),
+        parent_list=list(runtime.staging.group_stage_concepts.parent_ids),
         stage_name="group",
     ),
     "metastatic_disease": lambda session: build_parent_resolver(
@@ -38,11 +38,7 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
     "rt_procedures": lambda session: build_parent_resolver(
         session,
-        parent_list=[
-            runtime.cancer_procedures.cancer_procedure_types.rt_externalbeam, # type: ignore
-            runtime.cancer_procedures.cancer_procedure_types.rt_procedure,
-            runtime.cancer_procedures.cancer_procedure_types.rt_brachytherapy,
-        ],
+        parent_list=list(runtime.cancer_procedures.radiotherapy.parent_ids),
         resolver_name="rt_procedures",
     ),
     "country_of_birth": lambda session: build_parent_resolver(
