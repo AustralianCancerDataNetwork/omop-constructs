@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from omop_alchemy.cdm.handlers import ConceptResolverRegistry
+from omop_alchemy.toolkit.core.concepts import ConceptResolverRegistry
 from omop_semantics.runtime.default_valuesets import runtime
 
 from ..config import create_cdm_engine

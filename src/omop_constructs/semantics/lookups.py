@@ -1,5 +1,10 @@
-from omop_alchemy.cdm.handlers import make_concept_resolver, ConceptResolverRegistry
-from omop_alchemy.cdm.handlers.vocabs_and_mappers import ConceptResolver, strip_uicc, make_stage
+from omop_alchemy.toolkit.core.concepts import (
+    ConceptResolver,
+    ConceptResolverRegistry,
+    make_concept_resolver,
+    make_stage,
+    strip_uicc,
+)
 from omop_semantics.runtime.default_valuesets import runtime
 from omop_semantics.unknowns import UNKNOWN
 import sqlalchemy.orm as so

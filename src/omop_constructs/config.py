@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 import sqlalchemy as sa
 from oa_configurator import (
-    ConfigurationError,
+    CDMDatabaseConfig,
     PackageConfigBase,
+    RefTo,
     Resolver,
     StackConfig,
     load_stack_config,
@@ -14,50 +15,19 @@ from oa_configurator import (
 
 
 class OmopConstructsConfig(PackageConfigBase):
-    """Package-level configuration surface for omop-constructs."""
+    """Package-level configuration surface for omop-constructs.
+
+    The ``cdm_db`` field names the ``[databases.*]`` entry holding the CDM.
+    Defaulting it to ``"cdm_db"`` is what shares that database with
+    ``omop-alchemy``, which declares an identically-named field — the two agree
+    by naming convention, deliberately, rather than by either importing the
+    other's config class.
+    """
 
     tool_name: ClassVar[str] = "omop_constructs"
-    required_resources: ClassVar[tuple[str, ...]] = ("cdm_db",)
     extra_logging_namespaces: ClassVar[tuple[str, ...]] = ("orm_loader", "omop_alchemy")
 
-
-def resolve_cdm_resource_name(stack: StackConfig) -> str:
-    """Return the CDM resource name used for resolver-backed construct imports.
-
-    The package prefers its own configured default resource when present. When
-    ``omop-constructs`` has not been configured explicitly, it falls back to
-    ``omop_alchemy``'s default resource so the analytical layer follows the same
-    CDM selection as the base OMOP models by default.
-    """
-    available: set[str] = set(stack.resource_names())
-    if stack.active_profile and stack.active_profile in stack.profiles:
-        available |= set(stack.profiles[stack.active_profile].resources)
-
-    candidates: list[str] = []
-    for tool_name in (OmopConstructsConfig.tool_name, "omop_alchemy"):
-        tool = stack.tools.get(tool_name)
-        if tool is not None and tool.default_resource:
-            candidates.append(tool.default_resource)
-
-    candidates.extend(OmopConstructsConfig.required_resources)
-
-    for resource_name in candidates:
-        resolved_name = stack.resource_aliases.get(resource_name, resource_name)
-        if resolved_name in available:
-            return resource_name
-
-    alias_hint = (
-        "\nTip: if you named your resource differently, add:\n"
-        '  [resource_aliases]\n  cdm_db = "your-resource-name"'
-    )
-    raise ConfigurationError(
-        "OmopConstructsConfig requires a resolvable CDM resource. "
-        f"Tried: {candidates}\n"
-        f"Available: {sorted(available) or '(none)'}\n"
-        "Run 'omop-config configure omop_constructs' to set up this package, "
-        "or configure 'omop_alchemy' first if it owns the shared CDM resource."
-        + alias_hint
-    )
+    cdm_db: Annotated[str, RefTo(CDMDatabaseConfig)] = "cdm_db"
 
 
 def create_cdm_engine(stack: StackConfig | None = None) -> sa.Engine:
@@ -65,23 +35,31 @@ def create_cdm_engine(stack: StackConfig | None = None) -> sa.Engine:
 
     Runtime usage prefers the shared ``oa-configurator`` stack configuration.
     For test and scratch-database workflows, ``ENGINE_CDM`` or ``ENGINE`` can
-    supply a direct SQLAlchemy URL when no config file is present.
+    supply a direct SQLAlchemy URL when the configuration cannot be loaded.
+
+    The fallback covers an unreadable config file as well as a missing one.
+    ``load_stack_config`` raises ``FileNotFoundError`` when absent, but
+    ``ValueError`` for malformed TOML and a pydantic ``ValidationError`` — itself
+    a ``ValueError`` — when the file does not match the current schema. That last
+    case is ordinary during a stack migration, when the file on disk and the
+    installed oa-configurator disagree about the layout, and it should not
+    deprive callers of the environment escape hatch.
     """
     if stack is None:
         try:
             stack = load_stack_config()
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             engine_url = os.getenv("ENGINE_CDM") or os.getenv("ENGINE")
             if engine_url:
                 return sa.create_engine(engine_url, future=True)
             raise
 
-    resource_name = resolve_cdm_resource_name(stack)
-    return Resolver(stack).resolve_resource(resource_name).create_engine()
+    resolver = Resolver(stack)
+    config = resolver.resolve_package_config(OmopConstructsConfig)
+    return resolver.resolve_engine(config.cdm_db)
 
 
 __all__ = [
     "OmopConstructsConfig",
     "create_cdm_engine",
-    "resolve_cdm_resource_name",
 ]
