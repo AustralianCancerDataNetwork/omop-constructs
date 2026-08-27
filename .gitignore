@@ -14,3 +14,4 @@ wheels/
 .DS_Store
 _temp
 notebooks/
+.ipynb_checkpoints/

@@ -20,6 +20,7 @@ person_cob = (
     sa.select(
         Observation.person_id,
         Concept.concept_name.label("country_of_birth"),
+        Observation.value_as_concept_id.label("country_of_birth_concept_id"),
     )
     .join(Concept, Concept.concept_id == Observation.value_as_concept_id)
     .where(Observation.observation_concept_id.in_(list(registry['country_of_birth'].all_concepts)))
@@ -30,6 +31,7 @@ person_lang = (
     sa.select(
         Observation.person_id,
         Concept.concept_name.label("language_spoken"),
+        Observation.value_as_concept_id.label("language_spoken_concept_id"),
     )
     .join(Concept, Concept.concept_id == Observation.value_as_concept_id)
     .where(Observation.observation_concept_id == runtime.observations.demography_concepts.language_spoken)
@@ -52,7 +54,9 @@ demographics_join = (
 
         Concept.concept_name.label("sex"),
         person_lang.c.language_spoken,
+        person_lang.c.language_spoken_concept_id,
         person_cob.c.country_of_birth,
+        person_cob.c.country_of_birth_concept_id,
         person_postcode.c.post_code,
     )
     .join(Death, Death.person_id == Person.person_id, isouter=True)
