@@ -38,5 +38,7 @@ class PersonDemography(MaterializedViewMixin, Base):
     death_datetime: Mapped[datetime | None] = mapped_column(sa.DateTime)
 
     language_spoken: Mapped[str | None] = mapped_column(sa.String)
+    language_spoken_concept_id: Mapped[int | None] = mapped_column(sa.Integer)
     country_of_birth: Mapped[str | None] = mapped_column(sa.String)
+    country_of_birth_concept_id: Mapped[int | None] = mapped_column(sa.Integer)
     post_code: Mapped[int | None] = mapped_column(sa.Integer)
