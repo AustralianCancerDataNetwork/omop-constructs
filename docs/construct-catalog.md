@@ -155,10 +155,10 @@ From `omop_constructs.alchemy.events`.
 
 Event constructs attach individual clinical events to condition episodes. Unlike episode constructs (which follow OMOP episode hierarchy links), event constructs use a two-tier attachment strategy implemented in `event_factories.py`:
 
-1. **Explicit link:** Join through `Episode_Event` where the event has a registered episode linkage.
-2. **Time-window fallback:** Attach by date when no explicit link exists. The default window is 90 days prior to episode start through the episode end date (or 365 days after episode start for episodes with no end date). Events falling outside this window for every condition episode the patient has do not appear in the view.
+1. **Explicit link:** Accept an `Episode_Event` relationship only when its event ID, OMOP Field-concept discriminator, episode ID, and person all agree.
+2. **Time-window fallback:** Attach by date only when the event has no valid explicit link. The default window is 90 days prior to episode start through the episode end date (or 365 days after episode start for episodes with no end date). Events falling outside this window for every condition episode the patient has do not appear in the view.
 
-The two streams are combined with `UNION ALL` and the fallback is not anti-joined against the explicit stream, so an explicitly linked event that also falls inside the window appears more than once, and a window match can attach one event to several overlapping episodes. No construct in this family currently has a unique key; the declared keys and the findings behind them are in the contract table below.
+The construct family names `explicit_first_all_in_window` as its policy. A valid explicit row therefore occurs once and suppresses every fallback candidate for that table-scoped event. An unlinked event deliberately attaches to every overlapping eligible episode; exact `(source table, event ID, episode ID)` duplicates are removed. The factory paths remain compatibility wrappers over `omop_alchemy.toolkit.episodes.derivation`. No construct in this family currently has a database unique key; the declared keys and the remaining identity work are in the contract table below.
 
 ---
 
@@ -236,7 +236,7 @@ From `omop_constructs.alchemy.conditions`.
 The following modules are not construct registries but are part of the active public architecture:
 
 - `omop_constructs.core` — registry, planning, DDL, and materialized view lifecycle helpers
-- `omop_constructs.alchemy.events.event_factories` — generic event-to-episode attachment functions, including `attach_to_condition_episode_via_episode_event`, `attach_to_condition_episode_by_time_window`, and `episode_relevant_window`. Default window constants (`DEFAULT_EPISODE_WINDOW_DAYS_PRIOR = 90`, `DEFAULT_EPISODE_WINDOW_DAYS_POST = 365`, `DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS = 365`) are defined here and shared across all constructs that perform date-window attachment.
+- `omop_constructs.alchemy.events.event_factories` — compatibility paths over OMOP Alchemy's canonical event projection and explicit-first attachment builder. New calls pass `EpisodeAttachmentPolicy` explicitly. The old Boolean and the standalone explicit/window helpers emit `DeprecationWarning` for one pre-1.0 compatibility cycle. Default window constants (`DEFAULT_EPISODE_WINDOW_DAYS_PRIOR = 90`, `DEFAULT_EPISODE_WINDOW_DAYS_POST = 365`, `DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS = 365`) remain available.
 - `omop_constructs.alchemy.episodes.episode_factories` — reusable episode query builders including `get_episode_query`, `get_episode_hierarchy_query`, and `dx_treatment_window`
 - `omop_constructs.semantics` — runtime concept resolvers
 
@@ -298,20 +298,20 @@ be stored downstream.
 
 | Construct | Grain | Key | Surrogate | 1.0 | Lung | Findings |
 |---|---|---|---|---|---|---|
-| `bsa_dx_mv` | Declared: one row per (body surface area measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `creatinine_clearance_dx_mv` | Declared: one row per (creatinine clearance measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `dtherm_dx_mv` | Declared: one row per (distress thermometer score measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `dx_measurement_mv` | Declared: one row per (measurement, attributed condition episode). The generic diagnosis-linked measurement surface, unrestricted by concept. | `event_id`, `episode_id` | refresh-local | yes | direct | OC-B2, OC-M3 |
-| `dx_observation_mv` | Declared: one row per (observation, attributed condition episode). | `event_id`, `episode_id` | refresh-local | yes | direct | OC-B1, OC-B2, OC-M3 |
-| `dx_procedure_mv` | Declared: one row per (procedure occurrence, attributed condition episode), carrying the signed episode_delta_days. | `event_id`, `episode_id` | refresh-local | yes | direct | OC-B1, OC-B2, OC-M3 |
+| `bsa_dx_mv` | Declared: one row per (body surface area measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `creatinine_clearance_dx_mv` | Declared: one row per (creatinine clearance measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `dtherm_dx_mv` | Declared: one row per (distress thermometer score measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `dx_measurement_mv` | Declared: one row per (measurement, attributed condition episode). The generic diagnosis-linked measurement surface, unrestricted by concept. | `event_id`, `episode_id` | refresh-local | yes | direct | OC-M3 |
+| `dx_observation_mv` | Declared: one row per (observation, attributed condition episode). | `event_id`, `episode_id` | refresh-local | yes | direct | OC-M3 |
+| `dx_procedure_mv` | Declared: one row per (procedure occurrence, attributed condition episode), carrying the signed episode_delta_days. | `event_id`, `episode_id` | refresh-local | yes | direct | OC-M3 |
 | `dx_visit_mv` | One row per (visit occurrence, attributed episode of care), carrying one atomic provider specialty. No within-episode aggregation and no specialty grouping. | `visit_occurrence_id`, `episode_id` | refresh-local | yes | — | OC-H3, OC-M3 |
-| `ecog_dx_mv` | Declared: one row per (ECOG performance status measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `egfr_dx_mv` | Declared: one row per (estimated glomerular filtration rate measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `fev1_dx_mv` | Declared: one row per (FEV1 measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `height_dx_mv` | Declared: one row per (body height measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `smoking_pyh_dx_mv` | Declared: one row per (smoking pack-year history measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `weight_change_dx_mv` | Declared: one row per (body weight change measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
-| `weight_dx_mv` | Declared: one row per (body weight measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-B2, OC-M3 |
+| `ecog_dx_mv` | Declared: one row per (ECOG performance status measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `egfr_dx_mv` | Declared: one row per (estimated glomerular filtration rate measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `fev1_dx_mv` | Declared: one row per (FEV1 measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `height_dx_mv` | Declared: one row per (body height measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `smoking_pyh_dx_mv` | Declared: one row per (smoking pack-year history measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `weight_change_dx_mv` | Declared: one row per (body weight change measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
+| `weight_dx_mv` | Declared: one row per (body weight measurement, attributed condition episode). | `event_id`, `episode_id` | refresh-local | — | — | OC-M3 |
 
 #### Modifiers
 
@@ -485,42 +485,42 @@ is where unexpected *absence* comes from, which is harder to notice.
 
 **`bsa_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.body_size_measurements.bsa, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`creatinine_clearance_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.lab_measurements.creatinine_clearance, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`dtherm_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.proms_numeric.distress_thermometer, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`dx_measurement_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator, correct for this table
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL, attaching by person plus a 90-day-prior to episode-end window
-- reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365, which also removes the unattached NULL-episode rows
-- _Two independent multipliers. Within the explicit stream an event linked to several episodes yields several rows; within the fallback stream an event inside several overlapping episode windows yields several rows. The two streams then overlap._
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
+- reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
+- _Explicit and fallback branches are mutually exclusive. Several valid explicit links or several eligible fallback windows intentionally produce several episode-grain rows._
 
 **`dx_observation_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the MEASUREMENT discriminator, which is wrong for observations — see OC-B1
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the observation_id discriminator and suppress fallback for that observation
+- multiplies — condition_episode_mv (window): an unlinked observation is retained once for each eligible overlapping episode window
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`dx_procedure_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the MEASUREMENT discriminator, which is wrong for procedures — see OC-B1
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the procedure_occurrence_id discriminator and suppress fallback for that procedure
+- multiplies — condition_episode_mv (window): an unlinked procedure is retained once for each eligible overlapping episode window
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`dx_visit_mv`**
@@ -533,50 +533,50 @@ is where unexpected *absence* comes from, which is harder to notice.
 
 **`ecog_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.performance_status_measurements.ecog_performance_status, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`egfr_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.lab_measurements.egfr, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`fev1_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.lab_measurements.fev1, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`height_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.body_size_measurements.height, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`smoking_pyh_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.smoking_numeric.pyh, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`weight_change_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.body_size_measurements.weight_change, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
 **`weight_dx_mv`**
 
-- multiplies — episode_event: explicit stream: inner join on the measurement_id discriminator
-- multiplies — condition_episode_mv (window): fallback stream appended with UNION ALL
+- multiplies — episode_event: distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement
+- multiplies — condition_episode_mv (window): an unlinked measurement is retained once for each eligible overlapping episode window
 - reduces — measurement: restricted to measurements_numeric.body_size_measurements.weight, and to rows with no modifier_of_event_id
 - reduces — episode_relevant_window: keeps rows with episode_delta_days between -90 and 365
 
@@ -661,8 +661,6 @@ is where unexpected *absence* comes from, which is harder to notice.
 | `OC-0-N7` | low | construct | condition_treatment_episode_mv materialises four duplicate unmapped columns. | 1 |
 | `OC-0-N8` | medium | construct | sact_treatment_mv and rt_course_mv read modified_procedure_mv without declaring it. | 2 |
 | `OC-0-N9` | medium | package | ConstructRegistry.validate() reads information_schema.columns, which does not list materialized views. | — |
-| `OC-B1` | blocker | construct | Explicit procedure and observation episode links use the measurement discriminator. | 2 |
-| `OC-B2` | blocker | construct | 'Prefer explicit' unions the explicit and fallback streams without anti-joining, so an explicitly linked event inside the window is returned at least twice. | 13 |
 | `OC-B3` | blocker | construct | ORM primary keys contradict multi-row view grains, so SQLAlchemy's identity map collapses child-specific values. | 3 |
 | `OC-B4` | blocker | construct | Demography postcode, country-of-birth, and language subqueries are unranked, producing an N x M x K product per person/episode. | 1 |
 | `OC-B5` | blocker | package | Materialized-view lifecycle operations are unqualified, so they depend on search_path rather than the inspected schema. | — |

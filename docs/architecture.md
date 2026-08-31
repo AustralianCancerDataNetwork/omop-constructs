@@ -71,12 +71,23 @@ Dependencies can point at constructs outside the currently imported set; those a
 ## Event Attachment Strategy
 
 The active event-linkage code centers on `omop_constructs.alchemy.events.event_factories`.
+Those public paths are compatibility wrappers over OMOP Alchemy's canonical event
+projection and `episode_attachment_queries()` builder.
 
 For procedures, measurements, and observations the library supports:
 
 - explicit attachment via `Episode_Event`
 - fallback time-window attachment to `ConditionEpisodeMV`
 - post-filtering through `episode_relevant_window`
+
+Every construct names `explicit_first_all_in_window`: a valid explicit relationship must
+match the event ID, Field-concept discriminator, and person, and it suppresses fallback for
+that table-scoped event. Events without a valid explicit relationship attach to every
+eligible overlapping episode. The wrapper removes exact `(source table, event ID, episode
+ID)` duplicates before restoring the established construct result columns.
+
+New factory calls use `EpisodeAttachmentPolicy`; the former `prefer_explicit_link` Boolean
+is a deprecated adapter for the remainder of the pre-1.0 cycle.
 
 This keeps downstream event MVs consistent:
 

@@ -57,18 +57,6 @@ lung_report_role = [
 # review's own numbering. OC-0-N* were found while cataloguing grains for this
 # milestone and are new.
 
-[findings.OC-B1]
-scope = "construct"
-severity = "blocker"
-origin = "joint review"
-summary = "Explicit procedure and observation episode links use the measurement discriminator."
-
-[findings.OC-B2]
-scope = "construct"
-severity = "blocker"
-origin = "joint review"
-summary = "'Prefer explicit' unions the explicit and fallback streams without anti-joining, so an explicitly linked event inside the window is returned at least twice."
-
 [findings.OC-B3]
 scope = "construct"
 severity = "blocker"
@@ -1032,16 +1020,12 @@ violation_note = "Multiplied by treatment_envelope_mv rows for the same episode.
 # ===========================================================================
 # Event family
 # ===========================================================================
-# Every construct in this family attaches individual clinical events to
-# condition episodes through `attach_to_condition_episode()`, which unions an
-# explicit Episode_Event stream with a date-window fallback stream. The
-# fallback is not anti-joined against the explicit stream, so an explicitly
-# linked event that also falls inside the window is returned at least twice —
-# OC-B2. Until OC-1 lands, no construct in this family has a unique key, and
-# the declared keys below all record a known violation.
-#
-# The explicit stream also hard-codes the measurement_id discriminator for
-# every event type, so procedure and observation links do not match — OC-B1.
+# Every construct in this family uses the canonical cross-table event identity
+# and an explicit-first/all-in-window attachment policy. Valid explicit links
+# match event ID, Field-concept discriminator, episode, and person; those events
+# are anti-joined out of fallback. Unlinked events retain every eligible
+# overlapping episode, and exact source-table/event/episode keys are distinct.
+# OC-2 still owns the matching database indexes and ORM identities.
 
 [constructs.dx_measurement_mv]
 class_name = "DxMeasurementMV"
@@ -1056,20 +1040,20 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["meas_concept", "meas_value_concept"]
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here, so modifier measurements are included too" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator, correct for this table" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL, attaching by person plus a 90-day-prior to episode-end window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365, which also removes the unattached NULL-episode rows" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-fan_out_note = "Two independent multipliers. Within the explicit stream an event linked to several episodes yields several rows; within the fallback stream an event inside several overlapping episode windows yields several rows. The two streams then overlap."
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "The fallback stream is not anti-joined against the explicit stream, so explicitly linked events in window appear at least twice. The measurement discriminator is correct for this table, so OC-B1 does not apply here."
+fan_out_note = "Explicit and fallback branches are mutually exclusive. Several valid explicit links or several eligible fallback windows intentionally produce several episode-grain rows."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_observation_mv]
 class_name = "DxObservationMV"
@@ -1084,19 +1068,19 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 corrects the discriminator and removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["obs_concept"]
 inputs = [
   { name = "observation", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here" },
   { name = "observation_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the MEASUREMENT discriminator, which is wrong for observations — see OC-B1" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the observation_id discriminator and suppress fallback for that observation" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked observation is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B1", "OC-B2", "OC-M3"]
-violation_note = "Valid Episode_Event links for observations do not match because the explicit join uses the measurement discriminator; where a numeric observation_id collides with a measurement_id, the wrong episode can match. The fallback is also not anti-joined."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_procedure_mv]
 class_name = "DxProcedureMV"
@@ -1111,19 +1095,19 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 corrects the discriminator and removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["proc_concept"]
 inputs = [
   { name = "procedure_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
   { name = "procedure_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the MEASUREMENT discriminator, which is wrong for procedures — see OC-B1" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the procedure_occurrence_id discriminator and suppress fallback for that procedure" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked procedure is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B1", "OC-B2", "OC-M3"]
-violation_note = "Same discriminator defect as dx_observation_mv, plus the un-anti-joined fallback."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_visit_mv]
 class_name = "DxRelevantVisitMV"
@@ -1187,8 +1171,8 @@ violation_note = "Unranked repeated-observation joins produce an N*M*K product a
 # Concept-restricted measurement slices
 # ---------------------------------------------------------------------------
 # Each slice is dx_measurement_mv narrowed to one measurement concept. They
-# share the attachment defect of the family and none of them is reachable from
-# any consumer: oa-cohorts resolves meas_concept to the generic
+# share the family's explicit-first/all-in-window policy and none of them is
+# reachable from any consumer: oa-cohorts resolves meas_concept to the generic
 # dx_measurement_mv, not to a slice. They stay registered and buildable but sit
 # outside the 1.0 public surface.
 
@@ -1205,7 +1189,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1213,12 +1197,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.weight_change_dx_mv]
 class_name = "WeightChangeDxMV"
@@ -1233,7 +1217,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1241,12 +1225,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight_change, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.height_dx_mv]
 class_name = "HeightDxMV"
@@ -1261,7 +1245,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1269,12 +1253,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.height, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.bsa_dx_mv]
 class_name = "BSADxMV"
@@ -1289,7 +1273,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1297,12 +1281,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.bsa, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.creatinine_clearance_dx_mv]
 class_name = "CreatinineClearanceDxMV"
@@ -1317,7 +1301,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1325,12 +1309,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.creatinine_clearance, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.egfr_dx_mv]
 class_name = "EGFRDxMV"
@@ -1345,7 +1329,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1353,12 +1337,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.egfr, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.fev1_dx_mv]
 class_name = "FEV1DxMV"
@@ -1373,7 +1357,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1381,12 +1365,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.fev1, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dtherm_dx_mv]
 class_name = "DistressThermometerDxMV"
@@ -1401,7 +1385,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1409,12 +1393,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.proms_numeric.distress_thermometer, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.ecog_dx_mv]
 class_name = "ECOGDxMV"
@@ -1429,7 +1413,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1437,12 +1421,12 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.performance_status_measurements.ecog_performance_status, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family. The underlying query also selects value_as_concept_id, which no mapped column reads, so the materialized view carries an unmapped extra column."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it. The underlying query also carries an unmapped value_as_concept_id column."
 
 [constructs.smoking_pyh_dx_mv]
 class_name = "SmokingPYHDxMV"
@@ -1457,7 +1441,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-1 removes the duplicate explicit rows."
+concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1465,9 +1449,9 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.smoking_numeric.pyh, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "explicit stream: inner join on the measurement_id discriminator" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "union_all", note = "fallback stream appended with UNION ALL" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
 ]
-known_violations = ["OC-B2", "OC-M3"]
-violation_note = "Shares the un-anti-joined fallback of the event family."
+known_violations = ["OC-M3"]
+violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
