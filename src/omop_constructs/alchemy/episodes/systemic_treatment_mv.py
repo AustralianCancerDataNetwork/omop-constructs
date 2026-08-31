@@ -5,6 +5,7 @@ from datetime import date
 from typing import Optional
 from .systemic_treatment_joins import regimen_join
 from .cycle_mv import CycleMV
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
@@ -17,7 +18,7 @@ class SACTRegimenMV(
     __mv_name__ = "sact_treatment_mv"
     __mv_select__ = select_all_columns(regimen_join)
     __mv_index__ = "regimen_id"
-    __deps__ = (CycleMV.__mv_name__,)
+    __deps__ = (CycleMV.__mv_name__, ModifiedProcedure.__mv_name__)
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 

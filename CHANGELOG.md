@@ -214,3 +214,14 @@
 - pin the resolved CDM engine URL so the oa-configurator 1.x migration can prove it did not repoint the database
 - moved to omop-alchemy 1.x, oa-configurator 1.x and orm-loader 1.x
 - concept resolver imports follow omop-alchemy's move from `cdm.handlers` to `toolkit.core.concepts`
+
+# 0.7.1 (unreleased)
+- `construct-contracts.toml`: the wheel-packaged, machine-readable D3 grain catalogue. Records the grain, intended logical key, ORM identity, surrogate stability, per-input fan-out, concurrent-refresh eligibility, 1.0 inclusion, and lung-report usage of all 43 registered constructs, plus a findings register
+- `omop_constructs.core.contracts` loads and validates that manifest; `omop_constructs.core.catalogue` renders it into `docs/construct-catalog.md`
+- new CLI subcommands `contracts` and `render-catalogue`
+- registry coverage and key-column validation tests: a construct with no declared grain, or a declared key naming a column that does not exist in both the mapper and the materialized-view select, now fails
+- focused test asserting a clean construct import emits no SQLAlchemy mapper warnings, with a companion test proving the promoted filter bites
+- `scripts/release_validation/`: transitional side-schema build, key-metric collection, and old/new comparison for result-changing releases; side imports are pinned to the selected CDM, metadata comparisons remain database-side, and optional clinical samples are bounded before transfer
+- `sact_treatment_mv` and `rt_course_mv` declare their `modified_procedure_mv` dependency, which both read but neither listed. Build order previously held only because of module import order
+- reconciled the construct catalogue prose with the actual queries for surgery attribution, SACT and RT grain, the treatment envelope, and event attachment
+- release validation normalises rendered SQL before checksumming: resolved concept-ID lists are emitted in hash-seed-dependent set order, and PostgreSQL stores the qualified schema name of every referenced object, so unnormalised checksums reported roughly a quarter of the registry as changed on every run
