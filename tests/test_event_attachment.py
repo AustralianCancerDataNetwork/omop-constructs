@@ -14,6 +14,10 @@ from omop_alchemy.toolkit.episodes.derivation import EpisodeAttachmentPolicy
 from omop_constructs.alchemy.events.event_factories import (
     EVENT_CONSTRUCT_ATTACHMENT_POLICY,
     attach_to_condition_episode,
+    attach_to_condition_episode_by_time_window,
+    attach_to_condition_episode_via_episode_event,
+    measurement_attached_to_condition_episode,
+    observation_attached_to_condition_episode,
     procedure_attached_to_condition_episode,
     procedure_event_core,
 )
@@ -210,7 +214,31 @@ def test_legacy_boolean_adapter_warns_and_preserves_explicit_only_shape():
     assert _rows(legacy)[0]["episode_id"] == _rows(named)[0]["episode_id"] == 1002
 
 
-def test_legacy_factory_columns_remain_stable_and_procedure_uses_its_field():
+@pytest.mark.parametrize(
+    ("factory", "spec"),
+    (
+        (measurement_attached_to_condition_episode, MEASUREMENT),
+        (observation_attached_to_condition_episode, OBSERVATION),
+        (procedure_attached_to_condition_episode, PROCEDURE),
+    ),
+)
+def test_each_factory_uses_its_canonical_event_identity(factory, spec):
+    attached = factory(
+        name=f"{spec.event_source_table}_attachments",
+        policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
+    )
+    sql = str(
+        sa.select(attached).compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+
+    assert f"{spec.event_field_concept_id} AS event_field_concept_id" in sql
+    assert f"'{spec.event_source_table}' AS event_source_table" in sql
+
+
+def test_legacy_factory_columns_remain_stable():
     assert tuple(procedure_event_core().c.keys()) == (
         "person_id",
         "event_id",
@@ -236,10 +264,39 @@ def test_legacy_factory_columns_remain_stable_and_procedure_uses_its_field():
         "episode_end_date",
         "episode_delta_days",
     )
-    sql = str(
-        sa.select(attached).compile(
-            dialect=postgresql.dialect(),
-            compile_kwargs={"literal_binds": True},
+
+
+def test_direct_legacy_attachment_helpers_warn_and_compile():
+    events = _events(
+        (
+            MEASUREMENT.event_source_table,
+            MEASUREMENT.event_field_concept_id,
+            101,
+            date(2026, 1, 20),
+            7,
         )
     )
-    assert str(PROCEDURE.event_field_concept_id) in sql
+    episodes = _episodes()
+
+    with pytest.warns(DeprecationWarning, match="compatibility wrapper"):
+        explicit = attach_to_condition_episode_via_episode_event(
+            events,
+            event_id_col=events.c.event_id,
+            date_col=events.c.event_date,
+            name="legacy_explicit_helper",
+            episodes=episodes,
+            episode_events=_links(
+                (1001, 7, MEASUREMENT.event_field_concept_id),
+            ),
+        )
+    with pytest.warns(DeprecationWarning, match="compatibility wrapper"):
+        fallback = attach_to_condition_episode_by_time_window(
+            events,
+            date_col=events.c.event_date,
+            person_col=events.c.person_id,
+            name="legacy_window_helper",
+            episodes=episodes,
+        )
+
+    assert _rows(explicit)[0]["episode_id"] == 1001
+    assert {row["episode_id"] for row in _rows(fallback)} == {1001, 1002}

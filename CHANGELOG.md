@@ -225,3 +225,10 @@
 - `sact_treatment_mv` and `rt_course_mv` declare their `modified_procedure_mv` dependency, which both read but neither listed. Build order previously held only because of module import order
 - reconciled the construct catalogue prose with the actual queries for surgery attribution, SACT and RT grain, the treatment envelope, and event attachment
 - release validation normalises rendered SQL before checksumming: resolved concept-ID lists are emitted in hash-seed-dependent set order, and PostgreSQL stores the qualified schema name of every referenced object, so unnormalised checksums reported roughly a quarter of the registry as changed on every run
+
+# 0.8.0 (unreleased)
+- diagnosis-linked Measurement, Observation, and Procedure Occurrence constructs now use omop-alchemy's canonical event projection and explicit-first episode attachment policy
+- valid explicit links require the event ID, Field-concept discriminator, episode, and person to agree; exact duplicate links collapse and linked events no longer also enter date-window fallback
+- unlinked events retain each eligible overlapping episode, preserving the declared all-in-window policy while deduplicating the table-scoped event/episode identity
+- the existing event-factory import paths and result columns remain available; the Boolean policy argument and direct attachment helpers warn for one pre-1.0 compatibility cycle
+- deployments must rebuild the affected event materialized views and `consult_window_mv`; an in-place refresh does not replace a PostgreSQL materialized-view definition

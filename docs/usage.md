@@ -102,6 +102,42 @@ Safer operational variants are also available:
 
 These helpers assume PostgreSQL materialized views and use `pg_matviews` for existence checks.
 
+### Deploying event-attachment definition changes
+
+The diagnosis-linked event constructs use an explicit-first attachment policy. A valid
+`Episode_Event` relationship must match the event ID, Field-concept discriminator, and
+person. It is emitted once and suppresses date-window fallback for that table-scoped event.
+An event without a valid explicit relationship is attached once to every eligible overlapping
+condition episode.
+
+Changing that policy changes materialized-view definitions. PostgreSQL `REFRESH MATERIALIZED
+VIEW` only repopulates the existing definition, so an upgrade containing an attachment-policy
+change requires a rebuild rather than an in-place refresh. The affected definitions are:
+
+- `dx_measurement_mv`, `dx_observation_mv`, and `dx_procedure_mv`;
+- the concept-specific measurement views (`weight_dx_mv`, `weight_change_dx_mv`,
+  `height_dx_mv`, `bsa_dx_mv`, `creatinine_clearance_dx_mv`, `egfr_dx_mv`, `fev1_dx_mv`,
+  `dtherm_dx_mv`, `ecog_dx_mv`, and `smoking_pyh_dx_mv`); and
+- `consult_window_mv`, which depends on `dx_observation_mv`.
+
+For a registry-managed deployment, the supported safe operation is to rebuild the managed
+construct set in dependency order:
+
+```python
+from omop_constructs.bootstrap import get_complete_construct_registry
+
+registry = get_complete_construct_registry()
+
+with engine.begin() as connection:
+    registry.drop_all(connection)
+    registry.create_all(connection)
+```
+
+Use the side-schema release-validation workflow before replacing a populated clinical
+deployment. A selective rebuild is also possible, but the operator must drop downstream
+views before their inputs and recreate inputs before downstream views; the registry does not
+currently expose a selective cascade planner.
+
 ## CLI
 
 The package exposes a small command-line interface for registry artefacts:
@@ -151,8 +187,10 @@ If you want a lighter import path for event or episode constructs only, avoid im
 
 The codebase uses three main episode-linkage strategies:
 
-- explicit `Episode_Event` linkage where available
-- time-window attachment to `ConditionEpisodeMV` for observations, procedures, and measurements
+- explicit-first `Episode_Event` linkage for observations, procedures, and measurements,
+  with fallback only when no valid explicit relationship exists
+- all-eligible time-window attachment to `ConditionEpisodeMV` for unlinked observations,
+  procedures, and measurements
 - specialty-specific visit ranking for `DxRelevantVisitMV`
 
 The consult-window path combines:
