@@ -20,10 +20,13 @@ from omop_alchemy.toolkit.core.events import (
     clinical_event_model_spec,
 )
 from omop_alchemy.toolkit.episodes.derivation import (
+    ATTACHMENT_METHOD,
+    EpisodeAttachmentMethod,
     EpisodeAttachmentPolicy,
     EpisodeWindowSpec,
     TemporalRankingSpec,
     episode_attachment_queries,
+    episode_window_predicate,
 )
 
 from omop_constructs.alchemy.episodes.condition_episode_mv import ConditionEpisodeMV
@@ -194,6 +197,7 @@ def _legacy_attachment_result(
             (
                 attachments.c.event_date - episodes.c.episode_start_date
             ).label("episode_delta_days"),
+            attachments.c[ATTACHMENT_METHOD],
         )
         .join(episodes, episodes.c.episode_id == attachments.c.episode_id)
         .subquery(name=name)
@@ -560,17 +564,49 @@ def episode_relevant_window(
     max_days_prior: int = DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
     name: str | None = None,
 ) -> sa.Subquery:
-    """Apply the legacy outer event window and refresh-local row number."""
+    """Apply the legacy outer event window and refresh-local row number.
+
+    The window bounds a proximity guess. An explicitly linked event is a
+    recorded clinical assertion, so its distance from the episode start is not
+    evidence against it, and under explicit-first there is no fallback to
+    replace a discarded one — so explicit attachments are exempt.
+
+    The bound is ``episode_window_predicate``, the same rule the attachment
+    builder admits fallback candidates with, rather than a second expression
+    that can drift from it. The earlier form compared ``episode_delta_days``
+    against a fixed ``max_days_post``, which ignored ``episode_end_date`` and so
+    truncated any closed episode longer than that horizon partway through
+    itself.
+
+    ``attachment_method`` is consumed here and excluded from the output: the
+    materialized views select these columns positionally.
+    """
+    in_window = episode_window_predicate(
+        starting_query.c.event_date,
+        starting_query.c.episode_start_date,
+        starting_query.c.episode_end_date,
+        window=EpisodeWindowSpec(
+            days_prior=max_days_prior, open_end_fallback_days=max_days_post
+        ),
+    )
+    if ATTACHMENT_METHOD in starting_query.c:
+        keep = sa.or_(
+            starting_query.c[ATTACHMENT_METHOD]
+            == str(EpisodeAttachmentMethod.explicit),
+            in_window,
+        )
+    else:
+        keep = in_window
+
     return (
         sa.select(
             sa.func.row_number().over().label("mv_id"),
-            *starting_query.c,
+            *(
+                column
+                for column in starting_query.c
+                if column.key != ATTACHMENT_METHOD
+            ),
         )
-        .where(
-            sa.and_(
-                starting_query.c.episode_delta_days <= max_days_post,
-                starting_query.c.episode_delta_days >= -1 * max_days_prior,
-            )
-        )
+        .where(keep)
         .subquery(name=name or starting_query.name)
     )

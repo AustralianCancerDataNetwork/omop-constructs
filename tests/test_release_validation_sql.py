@@ -33,6 +33,14 @@ from scripts.release_validation.build_side_schema import (  # noqa: E402
 from scripts.release_validation.collect_key_metrics import (  # noqa: E402
     measure_construct,
 )
+from scripts.release_validation.collect_modifier_metrics import (  # noqa: E402
+    ModifierCategory,
+    SourceMetrics,
+    TARGET_TABLES,
+    measure_source,
+    measure_view,
+    summarise,
+)
 from scripts.release_validation.compare_schemas import (  # noqa: E402
     compare_construct,
     except_all_sql,
@@ -641,3 +649,337 @@ def test_unpopulated_views_are_reported_not_raised(synthetic_schemas):
     with engine.begin() as conn:
         conn.execute(sa.text(f'REFRESH MATERIALIZED VIEW "{BASELINE_SCHEMA}".empty_mv'))
     assert _common.matview_is_populated(engine, BASELINE_SCHEMA, "empty_mv")
+
+
+CDM_SCHEMA = "rv_cdm"
+
+
+def _create_cdm_fixture(conn: sa.Connection) -> None:
+    """A tiny CDM holding every modifier defect OC-CM0 has to be able to count.
+
+    Deliberately small and hand-checkable: measurements 101/102 tie on the
+    earliest date for one target, 104 points at another person's condition,
+    106 and 107 reuse the numeric ID 7 across two OMOP tables, 108 points at a
+    condition that does not exist, and 109 is an unrelated modifier category.
+    """
+    conn.execute(sa.text(f'DROP SCHEMA IF EXISTS "{CDM_SCHEMA}" CASCADE'))
+    conn.execute(sa.text(f'CREATE SCHEMA "{CDM_SCHEMA}"'))
+    conn.execute(
+        sa.text(
+            f'CREATE TABLE "{CDM_SCHEMA}".condition_occurrence '
+            "(condition_occurrence_id int, person_id int)"
+        )
+    )
+    conn.execute(
+        sa.text(
+            f'INSERT INTO "{CDM_SCHEMA}".condition_occurrence VALUES (1,10),(2,10),(7,10)'
+        )
+    )
+    conn.execute(
+        sa.text(
+            f'CREATE TABLE "{CDM_SCHEMA}".procedure_occurrence '
+            "(procedure_occurrence_id int, person_id int)"
+        )
+    )
+    conn.execute(
+        sa.text(f'INSERT INTO "{CDM_SCHEMA}".procedure_occurrence VALUES (7,10)')
+    )
+    conn.execute(
+        sa.text(
+            f'CREATE TABLE "{CDM_SCHEMA}".concept '
+            "(concept_id int, concept_code text, standard_concept text)"
+        )
+    )
+    conn.execute(
+        sa.text(
+            f'INSERT INTO "{CDM_SCHEMA}".concept VALUES '
+            "(900,'modifier','S'),(901,'unrelated','S')"
+        )
+    )
+    conn.execute(
+        sa.text(
+            f'CREATE TABLE "{CDM_SCHEMA}".measurement ('
+            "measurement_id int, person_id int, measurement_concept_id int, "
+            "measurement_event_id int, "
+            "meas_event_field_concept_id int, measurement_date date)"
+        )
+    )
+    conn.execute(
+        sa.text(
+            f'INSERT INTO "{CDM_SCHEMA}".measurement VALUES '
+            "(101,10,900,1,1147127,'2020-01-01'),"
+            "(102,10,900,1,1147127,'2020-01-01'),"
+            "(103,10,900,2,1147127,'2020-02-01'),"
+            "(104,11,900,2,1147127,'2020-03-01'),"
+            "(105,10,900,NULL,NULL,'2020-04-01'),"
+            "(106,10,900,7,1147127,'2020-05-01'),"
+            "(107,10,900,7,1147082,'2020-06-01'),"
+            "(108,10,900,999,1147127,'2020-07-01'),"
+            # Malformed link: an event id with no discriminator naming its table.
+            "(110,10,900,3,NULL,'2020-08-01'),"
+            # Same target and earliest date, but a different modifier category.
+            "(109,10,901,1,1147127,'2020-01-01')"
+        )
+    )
+
+
+def _fixture_targets():
+    return [
+        t
+        for t in TARGET_TABLES
+        if t[1] in {"condition_occurrence", "procedure_occurrence"}
+    ]
+
+
+@pytest.mark.postgres
+def test_modifier_source_metrics_count_what_a_ranked_view_hides(synthetic_schemas):
+    """Ties, cross-person links and ID collisions are source facts, not view facts.
+
+    A ranked modifier view keeps one row per target, so the losing side of a tie
+    and the cross-person link are both gone by the time the view exists. OC-CM0
+    needs those counts, which is why they are measured against the CDM tables.
+    """
+    engine = synthetic_schemas
+    with engine.begin() as conn:
+        _create_cdm_fixture(conn)
+
+    with engine.connect() as conn:
+        metrics = measure_source(
+            conn,
+            cdm_schema=CDM_SCHEMA,
+            table="measurement",
+            pk="measurement_id",
+            modifier_concept_column="measurement_concept_id",
+            target_event_column="measurement_event_id",
+            target_field_column="meas_event_field_concept_id",
+            date_column="measurement_date",
+            category=ModifierCategory(
+                name="test_modifier",
+                construct_name="fake_modifier_mv",
+                concept_ids=(900,),
+            ),
+            available_targets=_fixture_targets(),
+        )
+
+    # Nine category rows: 105 is unbound, 110 is half-linked, 109 is unrelated.
+    assert metrics.modifier_rows == 9
+    assert metrics.bound_modifier_rows == 7
+    assert metrics.unbound_modifier_rows == 1
+    assert metrics.partial_target_rows == 1
+    assert metrics.distinct_modifier_ids == 9
+    assert metrics.distinct_bound_modifier_ids == 7
+    # (1147127,1), (1147127,2), (1147127,7), (1147082,7), (1147127,999)
+    assert metrics.distinct_target_identities == 5
+    # The total retains the same meaning as the view metric; the explicit state
+    # counts distinguish legitimate unbound data from a malformed half-link.
+    assert metrics.null_target_rows == 2
+    assert metrics.null_target_rows == (
+        metrics.unbound_modifier_rows + metrics.partial_target_rows
+    )
+    assert metrics.modifier_rows - metrics.bound_modifier_rows == 2
+    # CM-B1: numeric ID 7 is both a condition and a procedure.
+    assert metrics.target_ids_across_field_concepts == 1
+    # CM-B2: 101 and 102 share the earliest date for target (1147127, 1).
+    assert metrics.earliest_date_tie_partitions == 1
+    # CM-B3: 104 belongs to person 11, condition 2 to person 10.
+    assert metrics.cross_person_rows == 1
+    assert metrics.per_target_table == {"condition_occurrence": 1}
+    # 108 points at condition 999, which does not exist.
+    assert metrics.unresolvable_target_rows == 1
+
+    with engine.begin() as conn:
+        conn.execute(sa.text(f'DROP SCHEMA IF EXISTS "{CDM_SCHEMA}" CASCADE'))
+
+
+@pytest.mark.postgres
+def test_modifier_source_ties_follow_stage_basis_before_date(synthetic_schemas):
+    """A later pathological tie is the winner tie even with an earlier clinical row."""
+    engine = synthetic_schemas
+    with engine.begin() as conn:
+        _create_cdm_fixture(conn)
+        conn.execute(
+            sa.text(
+                f'INSERT INTO "{CDM_SCHEMA}".concept VALUES '
+                "(902,'cT2','S'),(903,'pT2','S'),(904,'pT3','S')"
+            )
+        )
+        conn.execute(
+            sa.text(
+                f'INSERT INTO "{CDM_SCHEMA}".measurement VALUES '
+                "(201,10,902,1,1147127,'2020-01-01'),"
+                "(202,10,903,1,1147127,'2020-02-01'),"
+                "(203,10,904,1,1147127,'2020-02-01')"
+            )
+        )
+
+    common = dict(
+        cdm_schema=CDM_SCHEMA,
+        table="measurement",
+        pk="measurement_id",
+        modifier_concept_column="measurement_concept_id",
+        target_event_column="measurement_event_id",
+        target_field_column="meas_event_field_concept_id",
+        date_column="measurement_date",
+        available_targets=_fixture_targets(),
+    )
+    with engine.connect() as conn:
+        stage = measure_source(
+            conn,
+            **common,
+            category=ModifierCategory(
+                name="t_stage",
+                construct_name="t_stage_mv",
+                concept_ids=(902, 903, 904),
+                stage_basis_priority=True,
+            ),
+        )
+        chronological = measure_source(
+            conn,
+            **common,
+            category=ModifierCategory(
+                name="chronological",
+                construct_name="fake_modifier_mv",
+                concept_ids=(902, 903, 904),
+            ),
+        )
+
+    assert stage.earliest_date_tie_partitions == 1
+    assert chronological.earliest_date_tie_partitions == 0
+
+    with engine.begin() as conn:
+        conn.execute(sa.text(f'DROP SCHEMA IF EXISTS "{CDM_SCHEMA}" CASCADE'))
+
+
+@pytest.mark.postgres
+def test_an_unranked_category_reports_no_tie_count(synthetic_schemas):
+    """all_stage_modifier_mv keeps every row, so it cannot have a tie.
+
+    Its declared key is measurement_id and its grain is one row per stage
+    measurement. Reporting zero ties would read as "measured, none found";
+    leaving the metric unset says the question does not apply.
+    """
+    engine = synthetic_schemas
+    with engine.begin() as conn:
+        _create_cdm_fixture(conn)
+
+    with engine.connect() as conn:
+        ranked, unranked = (
+            measure_source(
+                conn,
+                cdm_schema=CDM_SCHEMA,
+                table="measurement",
+                pk="measurement_id",
+                modifier_concept_column="measurement_concept_id",
+                target_event_column="measurement_event_id",
+                target_field_column="meas_event_field_concept_id",
+                date_column="measurement_date",
+                category=ModifierCategory(
+                    name="test_modifier",
+                    construct_name="fake_modifier_mv",
+                    concept_ids=(900,),
+                    ranked=is_ranked,
+                ),
+                available_targets=_fixture_targets(),
+            )
+            for is_ranked in (True, False)
+        )
+
+    assert ranked.earliest_date_tie_partitions == 1
+    assert ranked.selection_policy == "earliest_date"
+
+    assert unranked.earliest_date_tie_partitions is None
+    assert unranked.selection_policy == "unranked_long_form"
+    # Every other measurement still applies to an unranked stream.
+    assert unranked.bound_modifier_rows == ranked.bound_modifier_rows
+    assert unranked.cross_person_rows == ranked.cross_person_rows
+    assert unranked.target_ids_across_field_concepts == (
+        ranked.target_ids_across_field_concepts
+    )
+
+    with engine.begin() as conn:
+        conn.execute(sa.text(f'DROP SCHEMA IF EXISTS "{CDM_SCHEMA}" CASCADE'))
+
+
+def test_modifier_summary_excludes_overlapping_all_stage_category():
+    """The all-stage union remains detailed evidence, not a second roll-up copy."""
+
+    def source(category: str, *, included: bool) -> SourceMetrics:
+        return SourceMetrics(
+            source_table="measurement",
+            modifier_category=category,
+            construct_name=f"{category}_mv",
+            selection_policy="earliest_date",
+            included_in_summary=included,
+            modifier_rows=3,
+            bound_modifier_rows=2,
+            unbound_modifier_rows=1,
+            partial_target_rows=0,
+            distinct_modifier_ids=3,
+            distinct_bound_modifier_ids=2,
+            distinct_target_identities=2,
+            null_target_rows=1,
+            target_ids_across_field_concepts=1,
+            earliest_date_tie_partitions=1,
+            cross_person_rows=1,
+            unresolvable_target_rows=1,
+        )
+
+    summary = summarise(
+        [],
+        [
+            source("t_stage", included=True),
+            source("all_stage", included=False),
+        ],
+    )
+
+    assert summary["source_modifier_rows"] == 3
+    assert summary["source_bound_modifier_rows"] == 2
+    assert summary["source_unbound_modifier_rows"] == 1
+    assert summary["source_partial_target_rows"] == 0
+    assert summary["source_null_target_rows"] == 1
+    assert summary["source_cross_person_rows"] == 1
+    assert summary["source_earliest_date_tie_partitions"] == 1
+    assert summary["source_target_id_collisions"] == 1
+    assert summary["source_unresolvable_target_rows"] == 1
+
+
+@pytest.mark.postgres
+def test_modifier_view_metrics_separate_identity_from_target(synthetic_schemas):
+    """A view row count says nothing about how many targets it actually covers."""
+    engine = synthetic_schemas
+    with engine.begin() as conn:
+        _create_matview(
+            conn,
+            BASELINE_SCHEMA,
+            "fake_stage_mv",
+            """
+            SELECT * FROM (VALUES
+                (10,101,1::int,1147127::int),
+                (10,103,2,1147127),
+                (10,106,7,1147127),
+                (10,107,7,1147082),
+                (10,109,NULL,NULL)
+            ) AS v(person_id, stage_id, measurement_event_id,
+                   meas_event_field_concept_id)
+            """,
+        )
+
+    with engine.connect() as conn:
+        measured = measure_view(
+            conn,
+            schema=BASELINE_SCHEMA,
+            name="fake_stage_mv",
+            logical_key=["meas_event_field_concept_id", "measurement_event_id"],
+            modifier_id_column="stage_id",
+        )
+
+    assert measured["row_count"] == 5
+    assert measured["distinct_modifier_ids"] == 5
+    assert measured["null_target_rows"] == 1
+    # The collision survives into the view because the two rows differ by Field
+    # concept; under a partition that ignores it, only one would remain.
+    assert measured["target_ids_across_field_concepts"] == 1
+    # count(DISTINCT row) treats the all-null target as one value, matching the
+    # convention collect_key_metrics.py already documents for logical keys.
+    assert measured["distinct_target_identities"] == 5
+    assert measured["distinct_keys"] == 5

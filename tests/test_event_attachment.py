@@ -251,6 +251,10 @@ def test_legacy_factory_columns_remain_stable():
         policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
     )
 
+    # attachment_method is provenance for episode_relevant_window, which needs
+    # to exempt explicitly linked rows from the proximity bound. Every caller
+    # pipes this through that window, which drops the column, so no deployed
+    # view shape changes; tests/test_dx_event_window_scope.py pins those.
     assert tuple(attached.c.keys()) == (
         "person_id",
         "event_id",
@@ -263,6 +267,7 @@ def test_legacy_factory_columns_remain_stable():
         "episode_start_date",
         "episode_end_date",
         "episode_delta_days",
+        "attachment_method",
     )
 
 

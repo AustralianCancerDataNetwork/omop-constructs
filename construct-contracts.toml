@@ -156,12 +156,12 @@ Route is descriptive metadata; it should not gate SACT membership.
 scope = "construct"
 severity = "medium"
 origin = "OC-0"
-summary = "stage_modifier_mv inner-joins stage_concept onto a left-joined modifier, converting the modifier join to an inner join."
+summary = "stage_modifier_mv null-spine and optional stage-label behavior remains pending clinical confirmation."
 detail = """
-`all_stage_join` left-joins AllStageModifierMV and then inner-joins
-`stage_concept` on `AllStageModifierMV.measurement_concept_id`. The inner join
-cannot match when the left join misses, so conditions with no stage modifier are
-dropped even though the query is written as an outer join.
+OC-CM3 changed `all_stage_join` to preserve the condition spine and to
+outer-join the optional stage label. The finding remains recorded as a release
+validation marker until the clinical comparison confirms the restored null
+spine and absent-vocabulary label behavior.
 """
 
 [findings.OC-0-N4]
@@ -536,28 +536,29 @@ violation_note = "mv_id is an unordered row_number() and is the ORM identity. Do
 class_name = "StageModifier"
 module = "omop_constructs.alchemy.modifiers.condition_modifier_mv"
 family = "modifiers"
-grain = "One row per (condition occurrence, linked condition episode, stage measurement). The long-form stage stream with condition and episode context attached."
+grain = "One row per (condition occurrence, validated linked episode, stage measurement), plus one null-stage row when the condition has no stage evidence. The condition spine is retained even when no episode or stage exists."
 logical_key = ["condition_occurrence_id", "condition_episode", "stage_id"]
 logical_key_complete = true
-key_nullable_columns = ["condition_episode"]
+key_nullable_columns = ["condition_episode", "stage_id"]
 unique_index_columns = ["condition_occurrence_id", "condition_episode", "stage_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = true
-concurrent_refresh_note = "Requires UNIQUE NULLS NOT DISTINCT because condition_episode is NULL for conditions with no Episode_Event link."
+concurrent_refresh_note = "Requires UNIQUE NULLS NOT DISTINCT because condition_episode and stage_id are NULL on the no-episode and no-stage spine rows."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["dx_stage"]
 inputs = [
   { name = "condition_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on the condition_occurrence_id discriminator; a condition linked to several episodes multiplies" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "validated explicit attachment source; outer condition spine is preserved and several valid links multiply" },
+  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "validates linked episode existence and person; no episode-concept restriction" },
   { name = "all_stage_modifier_mv", kind = "construct", fan_out = "one_to_many", note = "outer join by measurement_event_id; several stage measurements multiply" },
-  { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops conditions whose concept is absent" },
-  { name = "stage_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "see OC-0-N3: this inner join defeats the outer join to all_stage_modifier_mv" },
+  { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary" },
+  { name = "stage_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer optional-modifier label lookup; must preserve the null-bearing condition spine when no stage modifier or label is present" },
 ]
 known_violations = ["OC-B3", "OC-M3", "OC-0-N3"]
-violation_note = "__mv_pk__ declares [stage_id], which is not unique: one stage measurement appears once per linked episode. The ORM identity is a refresh-local mv_id. The stage_concept inner join drops conditions with no stage despite the outer join."
+violation_note = "The logical key includes nullable condition_episode and stage_id for the restored null spine; the ORM identity is the refresh-local mv_id. OC-0-N3 remains recorded as a release-validation marker pending clinical confirmation of the restored outer stage-label behavior."
 
 [constructs.modified_conditions_mv]
 class_name = "ModifiedCondition"
@@ -578,7 +579,8 @@ lung_report_role = "dependency"
 oa_cohorts_rule_targets = ["dx_any", "dx_mets"]
 inputs = [
   { name = "condition_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
-  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on the condition_occurrence_id discriminator; a condition linked to several episodes multiplies" },
+  { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "validated explicit attachment source; a condition with several valid episode links multiplies while the outer condition spine is preserved" },
+  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "validates linked episode existence and person; no episode-concept restriction" },
   { name = "t_stage_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
   { name = "n_stage_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
   { name = "m_stage_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
@@ -587,9 +589,9 @@ inputs = [
   { name = "size_modifier_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
   { name = "laterality_modifier_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
   { name = "metastatic_disease_modifier_mv", kind = "construct", fan_out = "one_to_zero_or_one", note = "ranked to one row per event" },
-  { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops conditions whose concept is absent" },
+  { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary" },
 ]
-fan_out_note = "The eight modifier joins are each safe because the modifier views rank to one row per modified event. The only multiplier is episode_event."
+fan_out_note = "The eight modifier joins use target Field concept, target event ID, and person_id; they are safe because the modifier views rank to one row per modified event. The validated explicit attachment can multiply a condition only when it has several valid Episode_Event links."
 known_violations = ["OC-M3"]
 violation_note = "mv_id is an unordered row_number() and is the ORM identity."
 
