@@ -9,15 +9,18 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "oa-configurator>=1.2.1,<2",
-    # Raised ahead of publication on purpose. The event and modifier toolkit
-    # packages this package imports do not exist in 1.1.0, and the delivery plan
-    # forbids merging code that imports an unreleased API while the declared
-    # dependency still admits a version lacking it. `uv lock` and CI therefore
-    # fail until omop-alchemy 1.2.0 is published; that failure is the gate.
+    # Transitional pre-release floor. The event and modifier toolkit packages
+    # this package imports do not exist in 1.1.0, and the delivery plan forbids
+    # merging code that imports an unreleased API while the declared dependency
+    # still admits a version lacking it. A 1.1.1.dev0 floor excludes released
+    # 1.1.0 while admitting the candidate dev wheel, which a >=1.2.0 floor does
+    # not: the candidate is 1.1.1.devN, so >=1.2.0 makes the two wheels
+    # unresolvable together and the validation image cannot build.
+    # RAISE TO >=1.2.0 WHEN omop-alchemy 1.2.0 IS PUBLISHED.
     # Develop against the candidate wheel:
     #   uv pip install --python .venv/bin/python \
     #     ../omop-alchemy/dist/omop_alchemy-<version>-py3-none-any.whl
-    "omop-alchemy[postgres]>=1.2.0,<2",
+    "omop-alchemy[postgres]>=1.1.1.dev0,<2",
     "omop-semantics>=0.6.0",
     "orm-loader>=1.0,<2",
     "sqlalchemy>=2.0.45",
