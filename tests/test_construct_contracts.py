@@ -127,8 +127,8 @@ def test_find_contracts_path_supports_an_installed_package_layout(tmp_path):
 
 def test_non_key_findings_do_not_mark_a_reviewed_key_unsatisfied(contracts):
     """Findings cover more than uniqueness; key status has its own declaration."""
-    assert contracts.get("t_stage_mv").known_violations
-    assert contracts.get("t_stage_mv").satisfies_declared_key
+    assert contracts.get("stage_modifier_mv").known_violations
+    assert contracts.get("stage_modifier_mv").satisfies_declared_key
     assert not contracts.get("dx_observation_mv").satisfies_declared_key
 
 

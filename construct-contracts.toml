@@ -123,22 +123,6 @@ severity = "medium"
 origin = "joint review"
 summary = "Repeated mapper-registration warnings hide genuine mapping conflicts."
 
-[findings.OC-0-N1]
-scope = "construct"
-severity = "high"
-origin = "OC-0"
-summary = "Modifier ranking partitions on measurement_event_id alone."
-detail = """
-`get_query_per_stage_type()` and `earliest_modifier()` both rank with
-`row_number() OVER (PARTITION BY measurement_event_id ...)`. The partition omits
-`meas_event_field_concept_id`, so two events in different OMOP tables that share
-a numeric ID fall into one partition and only one survives. Worse, PARTITION BY
-groups all NULLs together, so every modifier measurement with no
-`measurement_event_id` collapses to a single surviving row across the whole
-view. Affects t/n/m/group_stage_mv and the size, grade, laterality, and
-metastatic-disease modifier views.
-"""
-
 [findings.OC-0-N2]
 scope = "construct"
 severity = "high"
@@ -150,18 +134,6 @@ Drug_Exposure whose `route_concept_id` is 0, NULL, or absent from the deployed
 vocabulary is dropped from cycle_mv, and therefore from sact_treatment_mv,
 condition_treatment_episode_mv, and the SACT window of treatment_envelope_mv.
 Route is descriptive metadata; it should not gate SACT membership.
-"""
-
-[findings.OC-0-N3]
-scope = "construct"
-severity = "medium"
-origin = "OC-0"
-summary = "stage_modifier_mv null-spine and optional stage-label behavior remains pending clinical confirmation."
-detail = """
-OC-CM3 changed `all_stage_join` to preserve the condition spine and to
-outer-join the optional stage label. The finding remains recorded as a release
-validation marker until the clinical comparison confirms the restored null
-spine and absent-vocabulary label behavior.
 """
 
 [findings.OC-0-N4]
@@ -287,9 +259,9 @@ class_name = "TStageMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the preferred T stage for that event, earliest pathological if present, otherwise earliest clinical."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["stage_id"]
 orm_primary_key = ["stage_id"]
 surrogate_kind = "source_identifier"
@@ -302,20 +274,19 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tnm_t_stage concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies stage_label and the p-prefix test" },
-  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per measurement_event_id partition" },
+  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-fan_out_note = "The ranking guarantees at most one row per measurement_event_id, which is why the modifier views can be left-joined to Condition_Occurrence without multiplying it. See OC-0-N1 for what that partition loses."
-known_violations = ["OC-0-N1"]
-violation_note = "The ranking partition omits meas_event_field_concept_id, so cross-table numeric ID collisions share a partition and all unlinked stage measurements collapse to one surviving row."
+fan_out_note = "The ranking guarantees at most one row per person-scoped target identity, which is why the modifier views can be left-joined to Condition_Occurrence without multiplying it."
+known_violations = []
 
 [constructs.n_stage_mv]
 class_name = "NStageMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the preferred N stage for that event, earliest pathological if present, otherwise earliest clinical."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["stage_id"]
 orm_primary_key = ["stage_id"]
 surrogate_kind = "source_identifier"
@@ -328,19 +299,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tnm_n_stage concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
-  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per measurement_event_id partition" },
+  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.m_stage_mv]
 class_name = "MStageMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the preferred M stage for that event, earliest pathological if present, otherwise earliest clinical."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["stage_id"]
 orm_primary_key = ["stage_id"]
 surrogate_kind = "source_identifier"
@@ -353,19 +323,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tnm_m_stage concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
-  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per measurement_event_id partition" },
+  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.group_stage_mv]
 class_name = "GroupStageMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the preferred group stage for that event, earliest pathological if present, otherwise earliest clinical."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["stage_id"]
 orm_primary_key = ["stage_id"]
 surrogate_kind = "source_identifier"
@@ -378,19 +347,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tnm_group_stage concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
-  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per measurement_event_id partition" },
+  { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.size_modifier_mv]
 class_name = "SizeModifierMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the earliest recorded tumour size measurement for that event."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["measurement_id"]
 orm_primary_key = ["measurement_id"]
 surrogate_kind = "source_identifier"
@@ -403,19 +371,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tumor_size modifier concept" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join on unit_concept_id" },
-  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per measurement_event_id" },
+  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.grade_modifier_mv]
 class_name = "GradeModifierMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the earliest recorded tumour grade measurement for that event."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["measurement_id"]
 orm_primary_key = ["measurement_id"]
 surrogate_kind = "source_identifier"
@@ -428,19 +395,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the tumor_grade concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
-  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per measurement_event_id" },
+  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.laterality_modifier_mv]
 class_name = "LateralityModifierMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the earliest recorded tumour laterality measurement for that event."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["measurement_id"]
 orm_primary_key = ["measurement_id"]
 surrogate_kind = "source_identifier"
@@ -453,19 +419,18 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the laterality modifier concept" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join on value_as_concept_id" },
-  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per measurement_event_id" },
+  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.metastatic_disease_modifier_mv]
 class_name = "MetastaticDiseaseModifierMV"
 module = "omop_constructs.alchemy.modifiers.modifier_mappers"
 family = "modifiers"
 grain = "One row per modified event: the earliest recorded metastatic-disease measurement for that event."
-logical_key = ["meas_event_field_concept_id", "measurement_event_id"]
+logical_key = ["person_id", "meas_event_field_concept_id", "measurement_event_id"]
 logical_key_complete = true
-key_nullable_columns = ["meas_event_field_concept_id", "measurement_event_id"]
+key_nullable_columns = []
 unique_index_columns = ["measurement_id"]
 orm_primary_key = ["measurement_id"]
 surrogate_kind = "source_identifier"
@@ -478,10 +443,9 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to the metastatic_disease concept set" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
-  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per measurement_event_id" },
+  { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = ["OC-0-N1"]
-violation_note = "See t_stage_mv."
+known_violations = []
 
 [constructs.all_stage_modifier_mv]
 class_name = "AllStageModifierMV"
@@ -557,8 +521,8 @@ inputs = [
   { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary" },
   { name = "stage_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer optional-modifier label lookup; must preserve the null-bearing condition spine when no stage modifier or label is present" },
 ]
-known_violations = ["OC-B3", "OC-M3", "OC-0-N3"]
-violation_note = "The logical key includes nullable condition_episode and stage_id for the restored null spine; the ORM identity is the refresh-local mv_id. OC-0-N3 remains recorded as a release-validation marker pending clinical confirmation of the restored outer stage-label behavior."
+known_violations = ["OC-B3", "OC-M3"]
+violation_note = "The logical key includes nullable condition_episode and stage_id for the restored null spine; the ORM identity is the refresh-local mv_id."
 
 [constructs.modified_conditions_mv]
 class_name = "ModifiedCondition"
