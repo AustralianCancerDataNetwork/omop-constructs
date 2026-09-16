@@ -318,18 +318,18 @@ be stored downstream.
 | Construct | Grain | Key | Surrogate | 1.0 | Lung | Findings |
 |---|---|---|---|---|---|---|
 | `all_stage_modifier_mv` | One row per stage measurement of any TNM or group-stage type. Deliberately unranked: this is the long-form stage stream, not a preferred-stage resolver. | `measurement_id` | source id | yes | dep | — |
-| `grade_modifier_mv` | One row per modified event: the earliest recorded tumour grade measurement for that event. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
-| `group_stage_mv` | One row per modified event: the preferred group stage for that event, earliest pathological if present, otherwise earliest clinical. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
-| `laterality_modifier_mv` | One row per modified event: the earliest recorded tumour laterality measurement for that event. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
-| `m_stage_mv` | One row per modified event: the preferred M stage for that event, earliest pathological if present, otherwise earliest clinical. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
-| `metastatic_disease_modifier_mv` | One row per modified event: the earliest recorded metastatic-disease measurement for that event. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
+| `grade_modifier_mv` | One row per modified event: the earliest recorded tumour grade measurement for that event. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
+| `group_stage_mv` | One row per modified event: the preferred group stage for that event, earliest pathological if present, otherwise earliest clinical. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
+| `laterality_modifier_mv` | One row per modified event: the earliest recorded tumour laterality measurement for that event. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
+| `m_stage_mv` | One row per modified event: the preferred M stage for that event, earliest pathological if present, otherwise earliest clinical. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
+| `metastatic_disease_modifier_mv` | One row per modified event: the earliest recorded metastatic-disease measurement for that event. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
 | `modified_conditions_mv` | One row per (condition occurrence, linked condition episode), carrying the resolved T/N/M/group stage, grade, size, laterality, and metastatic-disease modifiers as columns. The spine of most episode-level constructs. | `condition_occurrence_id`, `condition_episode`<br>nullable: `condition_episode` | refresh-local | yes | dep | OC-M3 |
 | `modified_procedure_mv` | One row per (procedure occurrence, treatment-intent modifier measurement). A procedure with no intent modifier contributes one row with the intent columns NULL. | `procedure_occurrence_id`, `intent_id`<br>nullable: `intent_id` | refresh-local | yes | dep | OC-M3 |
-| `n_stage_mv` | One row per modified event: the preferred N stage for that event, earliest pathological if present, otherwise earliest clinical. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
+| `n_stage_mv` | One row per modified event: the preferred N stage for that event, earliest pathological if present, otherwise earliest clinical. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
 | `primary_diagnosis_condition_mv` | One row per (condition occurrence, episode-of-care episode). modified_conditions_mv restricted to conditions linked to a top-level episode of care, with the episode start and end dates attached. | `condition_occurrence_id`, `condition_episode` | refresh-local | yes | direct | OC-M3 |
-| `size_modifier_mv` | One row per modified event: the earliest recorded tumour size measurement for that event. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
-| `stage_modifier_mv` | One row per (condition occurrence, linked condition episode, stage measurement). The long-form stage stream with condition and episode context attached. | `condition_occurrence_id`, `condition_episode`, `stage_id`<br>nullable: `condition_episode` | refresh-local | yes | direct | OC-B3, OC-M3, OC-0-N3 |
-| `t_stage_mv` | One row per modified event: the preferred T stage for that event, earliest pathological if present, otherwise earliest clinical. | `meas_event_field_concept_id`, `measurement_event_id`<br>nullable: `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | OC-0-N1 |
+| `size_modifier_mv` | One row per modified event: the earliest recorded tumour size measurement for that event. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
+| `stage_modifier_mv` | One row per (condition occurrence, validated linked episode, stage measurement), plus one null-stage row when the condition has no stage evidence. The condition spine is retained even when no episode or stage exists. | `condition_occurrence_id`, `condition_episode`, `stage_id`<br>nullable: `condition_episode`, `stage_id` | refresh-local | yes | direct | OC-B3, OC-M3 |
+| `t_stage_mv` | One row per modified event: the preferred T stage for that event, earliest pathological if present, otherwise earliest clinical. | `person_id`, `meas_event_field_concept_id`, `measurement_event_id` | source id | yes | dep | — |
 
 #### Demography
 
@@ -588,33 +588,33 @@ is where unexpected *absence* comes from, which is harder to notice.
 **`grade_modifier_mv`**
 
 - reduces — measurement: restricted to the tumor_grade concept set
-- reduces — earliest_modifier ranking: rn = 1 by measurement_date per measurement_event_id
+- reduces — earliest_modifier ranking: rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`group_stage_mv`**
 
 - reduces — measurement: restricted to the tnm_group_stage concept set
-- reduces — row_number ranking: rn = 1 per measurement_event_id partition
+- reduces — row_number ranking: rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`laterality_modifier_mv`**
 
 - reduces — measurement: restricted to the laterality modifier concept
-- reduces — earliest_modifier ranking: rn = 1 by measurement_date per measurement_event_id
+- reduces — earliest_modifier ranking: rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`m_stage_mv`**
 
 - reduces — measurement: restricted to the tnm_m_stage concept set
-- reduces — row_number ranking: rn = 1 per measurement_event_id partition
+- reduces — row_number ranking: rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`metastatic_disease_modifier_mv`**
 
 - reduces — measurement: restricted to the metastatic_disease concept set
-- reduces — earliest_modifier ranking: rn = 1 by measurement_date per measurement_event_id
+- reduces — earliest_modifier ranking: rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`modified_conditions_mv`**
 
-- multiplies — episode_event: outer join on the condition_occurrence_id discriminator; a condition linked to several episodes multiplies
-- reduces — condition_concept: drops conditions whose concept is absent
-- _The eight modifier joins are each safe because the modifier views rank to one row per modified event. The only multiplier is episode_event._
+- multiplies — episode_event: validated explicit attachment source; a condition with several valid episode links multiplies while the outer condition spine is preserved
+- reduces — condition_concept: intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary
+- _The eight modifier joins use target Field concept, target event ID, and person_id; they are safe because the modifier views rank to one row per modified event. The validated explicit attachment can multiply a condition only when it has several valid Episode_Event links._
 
 **`modified_procedure_mv`**
 
@@ -624,25 +624,24 @@ is where unexpected *absence* comes from, which is harder to notice.
 **`n_stage_mv`**
 
 - reduces — measurement: restricted to the tnm_n_stage concept set
-- reduces — row_number ranking: rn = 1 per measurement_event_id partition
+- reduces — row_number ranking: rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`size_modifier_mv`**
 
 - reduces — measurement: restricted to the tumor_size modifier concept
-- reduces — earliest_modifier ranking: rn = 1 by measurement_date per measurement_event_id
+- reduces — earliest_modifier ranking: rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
 
 **`stage_modifier_mv`**
 
-- multiplies — episode_event: outer join on the condition_occurrence_id discriminator; a condition linked to several episodes multiplies
+- multiplies — episode_event: validated explicit attachment source; outer condition spine is preserved and several valid links multiply
 - multiplies — all_stage_modifier_mv: outer join by measurement_event_id; several stage measurements multiply
-- reduces — condition_concept: drops conditions whose concept is absent
-- reduces — stage_concept: see OC-0-N3: this inner join defeats the outer join to all_stage_modifier_mv
+- reduces — condition_concept: intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary
 
 **`t_stage_mv`**
 
 - reduces — measurement: restricted to the tnm_t_stage concept set
-- reduces — row_number ranking: rn = 1 per measurement_event_id partition
-- _The ranking guarantees at most one row per measurement_event_id, which is why the modifier views can be left-joined to Condition_Occurrence without multiplying it. See OC-0-N1 for what that partition loses._
+- reduces — row_number ranking: rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition
+- _The ranking guarantees at most one row per person-scoped target identity, which is why the modifier views can be left-joined to Condition_Occurrence without multiplying it._
 
 ### Findings register
 
@@ -651,10 +650,8 @@ is where unexpected *absence* comes from, which is harder to notice.
 
 | Finding | Severity | Scope | Summary | Constructs |
 |---|---|---|---|---|
-| `OC-0-N1` | high | construct | Modifier ranking partitions on measurement_event_id alone. | 8 |
 | `OC-0-N10` | medium | package | Compiled construct SQL is not reproducible: embedded concept-ID IN lists render in hash-seed-dependent set order. | — |
 | `OC-0-N2` | high | construct | cycle_mv inner-joins route_concept, silently dropping drug exposures with no resolvable route. | 1 |
-| `OC-0-N3` | medium | construct | stage_modifier_mv inner-joins stage_concept onto a left-joined modifier, converting the modifier join to an inner join. | 1 |
 | `OC-0-N4` | high | construct | episode_treatment_mv has no executable complete logical key: the intent measurement identity is not projected. | 2 |
 | `OC-0-N5` | blocker | construct | rt_course_mv resolves the course episode with the treatment_regimen concept, not radiotherapy. | 1 |
 | `OC-0-N6` | medium | construct | condition_treatment_episode_mv regimen_count and course_count are always 1. | 1 |

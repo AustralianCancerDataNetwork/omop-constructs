@@ -15,3 +15,8 @@ wheels/
 _temp
 notebooks/
 .ipynb_checkpoints/
+
+# Working release-validation scratch — not packaged (see [tool.hatch.build.targets.wheel]),
+# and kept out of history on purpose; released snapshots live in
+# core-stack/_design/constructs/oc-cm0-validation/release_validation/ instead.
+scripts/release_validation/
