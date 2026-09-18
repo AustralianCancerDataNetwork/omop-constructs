@@ -5,11 +5,13 @@
 Typical runtime usage assumes:
 
 - `oa-configurator` is installed and a shared OMOP stack config is available
-- `omop-alchemy`, `omop-semantics`, and `orm-loader` are installed
+- `omop-alchemy>=1.2.0,<2`, `omop-semantics`, and `orm-loader>=1.2.0,<2` are installed
 - `omop-semantics` runtime value sets are available
 - a PostgreSQL database is available for materialized view creation and refresh
 
-If you use the semantics-backed modifier layer, database-backed resolver setup must also be available at import time.
+The modifier layer builds database-side concept predicates without opening a connection at import time. Other semantics-backed construct families still require database-backed resolver setup.
+
+Diagnosis-linked measurements, procedures, and observations use `explicit_first_all_in_window`: explicit links take precedence, while unlinked events can attach to multiple overlapping episodes. To select one fallback episode in a custom query, pass `policy=EpisodeAttachmentPolicy.explicit_first_ranked` and a `TemporalRankingSpec` to the attachment factory.
 
 ## Configuration With `omop-config`
 

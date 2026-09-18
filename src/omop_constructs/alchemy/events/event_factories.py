@@ -12,12 +12,11 @@ from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.selectable import FromClause, SelectBase
 
 from omop_alchemy.cdm.model import Concept, Measurement, Observation, Procedure_Occurrence
+from omop_alchemy.cdm.model.clinical.event_metadata import clinical_event_model_spec
 from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_alchemy.toolkit.core.events import (
-    CANONICAL_EVENT_REQUIRED_COLUMNS,
     ClinicalEventColumn,
     canonical_event_projection,
-    clinical_event_model_spec,
 )
 from omop_alchemy.toolkit.episodes.derivation import (
     ATTACHMENT_METHOD,
@@ -51,7 +50,9 @@ modifier_concept = so.aliased(Concept, name="modifier_concept")
 procedure_concept = so.aliased(Concept, name="procedure_concept")
 observation_concept = so.aliased(Concept, name="observation_concept")
 
-_CANONICAL_REQUIRED = tuple(str(column) for column in CANONICAL_EVENT_REQUIRED_COLUMNS)
+_CANONICAL_REQUIRED = tuple(
+    str(column) for column in ClinicalEventColumn.required_columns()
+)
 _COMPATIBILITY_HIDDEN_EVENT_COLUMNS = frozenset(
     {
         str(ClinicalEventColumn.event_datetime),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 
 import pytest
@@ -9,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from omop_alchemy.cdm.model import Measurement, Observation, Procedure_Occurrence
-from omop_alchemy.toolkit.core.events import clinical_event_model_spec
+from omop_alchemy.cdm.model.clinical.event_metadata import clinical_event_model_spec
 from omop_alchemy.toolkit.episodes.derivation import EpisodeAttachmentPolicy
 from omop_constructs.alchemy.events.event_factories import (
     EVENT_CONSTRUCT_ATTACHMENT_POLICY,
@@ -100,7 +101,7 @@ def _attached(
     )
 
 
-def _rows(statement: sa.Subquery) -> list[sa.RowMapping]:
+def _rows(statement: sa.Subquery) -> Sequence[sa.RowMapping]:
     engine = sa.create_engine("sqlite://")
     with engine.connect() as connection:
         return connection.execute(sa.select(statement)).mappings().all()
