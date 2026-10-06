@@ -42,4 +42,9 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - Architecture: architecture.md
-  - Construct Catalog: construct-catalog.md
+  - Construct Catalog:
+    - Overview: construct-catalog.md
+    - Episode constructs: constructs/episodes.md
+    - Event constructs: constructs/events.md
+    - Modifier constructs: constructs/modifiers.md
+    - Demography constructs: constructs/demography.md

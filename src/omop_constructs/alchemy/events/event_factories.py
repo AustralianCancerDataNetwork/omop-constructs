@@ -1,4 +1,4 @@
-"""Compatibility factories backed by OMOP Alchemy's attachment contracts."""
+"""Clinical-event query factories backed by OMOP Alchemy attachment contracts."""
 
 from __future__ import annotations
 
@@ -24,6 +24,8 @@ from omop_alchemy.toolkit.episodes.derivation import (
     EpisodeAttachmentPolicy,
     EpisodeWindowSpec,
     TemporalRankingSpec,
+    TemporalSelectionPolicy,
+    TemporalSidePreference,
     episode_attachment_queries,
     episode_window_predicate,
 )
@@ -38,12 +40,11 @@ DEFAULT_EPISODE_WINDOW_DAYS_POST = 365
 DEFAULT_EPISODE_WINDOW_DAYS_PRIOR = 90
 DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS = 365
 
-# Existing diagnosis-linked event constructs deliberately retain every eligible
-# episode under overlap. Explicit links take precedence, but an unlinked event can
-# therefore still have more than one row. A construct that needs one episode must
-# instead name ``explicit_first_ranked`` and provide a ranking contract.
-EVENT_CONSTRUCT_ATTACHMENT_POLICY = (
-    EpisodeAttachmentPolicy.explicit_first_all_in_window
+EVENT_CONSTRUCT_ATTACHMENT_POLICY = EpisodeAttachmentPolicy.explicit_first_ranked
+EVENT_CONSTRUCT_ATTACHMENT_RANKING = TemporalRankingSpec(
+    policy=TemporalSelectionPolicy.nearest,
+    stable_id_column="episode_id",
+    side_preference=TemporalSidePreference.on_or_before_anchor,
 )
 
 modifier_concept = so.aliased(Concept, name="modifier_concept")
@@ -114,15 +115,15 @@ def _canonicalize_legacy_events(
     _require_columns(
         event_source,
         (person_name, event_id_name, date_name, "event_concept_id"),
-        role="legacy event source",
+        role="event source",
     )
     spec = clinical_event_model_spec(event_model)
     consumed = {person_name, event_id_name, date_name, "event_concept_id"}
     extras = tuple(column for column in event_source.c if column.key not in consumed)
 
-    # Compatibility inputs predate the cross-table identity columns. Populate
-    # them from the model's canonical metadata, then let the shared builder own
-    # discriminator checks, precedence, window admission, and deduplication.
+    # Populate cross-table identity from the model metadata so the shared
+    # builder can validate discriminators, apply precedence, admit candidates,
+    # and remove duplicate relationships.
     return sa.select(
         event_source.c[person_name].label(str(ClinicalEventColumn.person_id)),
         event_source.c[event_id_name].label(str(ClinicalEventColumn.event_id)),
@@ -222,8 +223,12 @@ def _resolve_attachment_policy(
         DeprecationWarning,
         stacklevel=stacklevel,
     )
-    if prefer_explicit_link is False:
-        return EpisodeAttachmentPolicy.explicit_only
+    if prefer_explicit_link is not None:
+        return (
+            EpisodeAttachmentPolicy.explicit_first_all_in_window
+            if prefer_explicit_link
+            else EpisodeAttachmentPolicy.explicit_only
+        )
     return EVENT_CONSTRUCT_ATTACHMENT_POLICY
 
 
@@ -240,8 +245,8 @@ def attach_to_condition_episode_via_episode_event(
 ) -> sa.Subquery:
     """Attach only valid explicit links through the shared alchemy builder."""
     warnings.warn(
-        "attach_to_condition_episode_via_episode_event is a compatibility wrapper; "
-        "use attach_to_condition_episode(..., policy=explicit_only)",
+        "attach_to_condition_episode_via_episode_event is deprecated; use "
+        "attach_to_condition_episode(..., policy=explicit_only)",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -278,8 +283,8 @@ def attach_to_condition_episode_by_time_window(
 ) -> sa.Subquery:
     """Attach every eligible in-window episode without an explicit-link source."""
     warnings.warn(
-        "attach_to_condition_episode_by_time_window is a compatibility wrapper; "
-        "use attach_to_condition_episode with a named fallback policy",
+        "attach_to_condition_episode_by_time_window is deprecated; use "
+        "attach_to_condition_episode with a named fallback policy",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -318,17 +323,21 @@ def attach_to_condition_episode(
     episodes: AttachmentSource | type[ConditionEpisodeMV] = ConditionEpisodeMV,
     episode_events: AttachmentSource | type[Episode_Event] = Episode_Event,
 ) -> sa.Subquery:
-    """Attach events using a named alchemy precedence/cardinality policy.
+    """Attach events using a named precedence and cardinality policy.
 
-    ``prefer_explicit_link`` remains as a deprecated adapter for the pre-1.0
-    factory contract. ``True`` maps to explicit-first/all-in-window and
-    ``False`` maps to explicit-only, matching the former result modes while
-    correcting duplicate fallback rows.
+    The default policy preserves valid explicit relationships. Events without
+    one are assigned to a single eligible episode, preferring episodes that
+    have started, then the nearest start, then the lowest episode identifier.
     """
     resolved_policy = _resolve_attachment_policy(
         policy=policy,
         prefer_explicit_link=prefer_explicit_link,
         stacklevel=2,
+    )
+    resolved_ranking = (
+        EVENT_CONSTRUCT_ATTACHMENT_RANKING
+        if resolved_policy is EVENT_CONSTRUCT_ATTACHMENT_POLICY and ranking is None
+        else ranking
     )
     canonical = _canonicalize_legacy_events(
         base_event_subq,
@@ -343,7 +352,7 @@ def attach_to_condition_episode(
         _episode_source(episodes),
         policy=resolved_policy,
         episode_events=episode_events,
-        ranking=ranking,
+        ranking=resolved_ranking,
         window=window,
         name=name,
     )
@@ -396,7 +405,7 @@ def procedure_event_core(
     name: str = "procedure_core",
     include_cols: Sequence[SQLExpr] = (),
 ) -> sa.Subquery:
-    """Return the legacy procedure-event columns from a canonical projection."""
+    """Return procedure-event columns from a canonical projection."""
     canonical = _canonical_event_core(
         Procedure_Occurrence,
         concept_model=procedure_concept,
@@ -445,7 +454,7 @@ def measurement_event_core(
     include_cols: Sequence[SQLExpr] = (),
     unlinked_only: bool = True,
 ) -> sa.Subquery:
-    """Return the legacy measurement-event columns from a canonical projection."""
+    """Return measurement-event columns from a canonical projection."""
     canonical = _canonical_event_core(
         Measurement,
         concept_model=modifier_concept,
@@ -501,7 +510,7 @@ def observation_event_core(
     include_cols: Sequence[SQLExpr] = (),
     unlinked_only: bool = True,
 ) -> sa.Subquery:
-    """Return the legacy observation-event columns from a canonical projection."""
+    """Return observation-event columns from a canonical projection."""
     canonical = _canonical_event_core(
         Observation,
         concept_model=observation_concept,
@@ -565,22 +574,12 @@ def episode_relevant_window(
     max_days_prior: int = DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
     name: str | None = None,
 ) -> sa.Subquery:
-    """Apply the legacy outer event window and refresh-local row number.
+    """Apply the event window and assign a refresh-local row number.
 
-    The window bounds a proximity guess. An explicitly linked event is a
-    recorded clinical assertion, so its distance from the episode start is not
-    evidence against it, and under explicit-first there is no fallback to
-    replace a discarded one — so explicit attachments are exempt.
-
-    The bound is ``episode_window_predicate``, the same rule the attachment
-    builder admits fallback candidates with, rather than a second expression
-    that can drift from it. The earlier form compared ``episode_delta_days``
-    against a fixed ``max_days_post``, which ignored ``episode_end_date`` and so
-    truncated any closed episode longer than that horizon partway through
-    itself.
-
-    ``attachment_method`` is consumed here and excluded from the output: the
-    materialized views select these columns positionally.
+    Explicit relationships are recorded clinical assertions and remain valid
+    outside the date window. Date-based relationships use the same window rule
+    as candidate selection. ``attachment_method`` is consumed here because the
+    materialized views select the remaining result columns positionally.
     """
     in_window = episode_window_predicate(
         starting_query.c.event_date,

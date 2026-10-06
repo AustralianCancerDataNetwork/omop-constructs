@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .config import OmopConstructsConfig
-from .core.catalogue import render, splice
+from .core.catalogue import sync_catalogue
 from .core.contracts import get_contracts
 from .core.schema_snapshot import write_registry_schema_snapshot
 
@@ -17,23 +17,24 @@ def _schema_snapshot_command(args: argparse.Namespace) -> int:
 
 
 def _render_catalogue_command(args: argparse.Namespace) -> int:
-    """Splice the generated contract block into a catalogue document."""
+    """Bring the catalogue index and family pages in step with the manifest."""
     document: Path = args.document
-    current = document.read_text(encoding="utf-8")
-    expected = splice(current, render())
+    stale = sync_catalogue(document, write=not args.check)
 
     if args.check:
-        if current != expected:
+        if stale:
+            pages = "\n".join(f"  {page}" for page in stale)
             print(
-                f"{document} is out of date with the construct contract manifest. "
-                f"Regenerate it with:\n  omop-constructs render-catalogue {document}"
+                "The construct catalogue is out of date with the construct contract "
+                f"manifest:\n{pages}\nRegenerate it with:\n"
+                f"  omop-constructs render-catalogue {document}"
             )
             return 1
-        print(f"{document} is up to date")
+        print("Construct catalogue is up to date")
         return 0
 
-    document.write_text(expected, encoding="utf-8")
-    print(document)
+    for page in stale:
+        print(page)
     return 0
 
 
@@ -103,19 +104,19 @@ def build_parser() -> argparse.ArgumentParser:
     catalogue_parser = subparsers.add_parser(
         "render-catalogue",
         help=(
-            "Splice the generated construct-contract block into a catalogue "
-            "document. The manifest is the source of truth for grains and keys."
+            "Regenerate the construct catalogue index and family pages from the "
+            "contract manifest, the source of truth for grains and keys."
         ),
     )
     catalogue_parser.add_argument(
         "document",
         type=Path,
-        help="Markdown file to update, normally docs/construct-catalog.md.",
+        help="The catalogue index page, normally docs/construct-catalog.md. Family pages are written beside it.",
     )
     catalogue_parser.add_argument(
         "--check",
         action="store_true",
-        help="Exit non-zero if the document is stale instead of rewriting it.",
+        help="Exit non-zero if any page is stale instead of rewriting it.",
     )
     catalogue_parser.set_defaults(handler=_render_catalogue_command)
 

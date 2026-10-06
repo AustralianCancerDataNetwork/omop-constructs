@@ -11,9 +11,14 @@ from sqlalchemy.dialects import postgresql
 
 from omop_alchemy.cdm.model import Measurement, Observation, Procedure_Occurrence
 from omop_alchemy.cdm.model.clinical.event_metadata import clinical_event_model_spec
-from omop_alchemy.toolkit.episodes.derivation import EpisodeAttachmentPolicy
+from omop_alchemy.toolkit.episodes.derivation import (
+    EpisodeAttachmentPolicy,
+    TemporalSelectionPolicy,
+    TemporalSidePreference,
+)
 from omop_constructs.alchemy.events.event_factories import (
     EVENT_CONSTRUCT_ATTACHMENT_POLICY,
+    EVENT_CONSTRUCT_ATTACHMENT_RANKING,
     attach_to_condition_episode,
     attach_to_condition_episode_by_time_window,
     attach_to_condition_episode_via_episode_event,
@@ -153,7 +158,7 @@ def test_explicit_links_use_table_discriminator_person_and_precedence():
     assert len(identities) == len(set(identities))
 
 
-def test_unlinked_fallback_retains_each_overlapping_episode_once():
+def test_unlinked_fallback_selects_the_nearest_started_episode():
     events = _events(
         (
             PROCEDURE.event_source_table,
@@ -170,9 +175,42 @@ def test_unlinked_fallback_retains_each_overlapping_episode_once():
         )
     )
 
+    assert [(row["event_id"], row["episode_id"]) for row in rows] == [(8, 1002)]
+
+
+def test_default_attachment_contract_is_deterministic():
+    assert EVENT_CONSTRUCT_ATTACHMENT_POLICY is EpisodeAttachmentPolicy.explicit_first_ranked
+    assert EVENT_CONSTRUCT_ATTACHMENT_RANKING.policy is TemporalSelectionPolicy.nearest
+    assert EVENT_CONSTRUCT_ATTACHMENT_RANKING.stable_id_column == "episode_id"
+    assert (
+        EVENT_CONSTRUCT_ATTACHMENT_RANKING.side_preference
+        is TemporalSidePreference.on_or_before_anchor
+    )
+
+
+def test_multiple_valid_explicit_links_are_preserved():
+    events = _events(
+        (
+            PROCEDURE.event_source_table,
+            PROCEDURE.event_field_concept_id,
+            101,
+            date(2026, 1, 20),
+            7,
+        )
+    )
+    rows = _rows(
+        _attached(
+            events,
+            _links(
+                (1001, 7, PROCEDURE.event_field_concept_id),
+                (1002, 7, PROCEDURE.event_field_concept_id),
+            ),
+        )
+    )
+
     assert {(row["event_id"], row["episode_id"]) for row in rows} == {
-        (8, 1001),
-        (8, 1002),
+        (7, 1001),
+        (7, 1002),
     }
 
 
@@ -215,6 +253,37 @@ def test_legacy_boolean_adapter_warns_and_preserves_explicit_only_shape():
     assert _rows(legacy)[0]["episode_id"] == _rows(named)[0]["episode_id"] == 1002
 
 
+def test_legacy_true_adapter_preserves_all_in_window_shape():
+    events = _events(
+        (
+            PROCEDURE.event_source_table,
+            PROCEDURE.event_field_concept_id,
+            101,
+            date(2026, 1, 20),
+            8,
+        )
+    )
+
+    with pytest.warns(DeprecationWarning, match="EpisodeAttachmentPolicy"):
+        attached = attach_to_condition_episode(
+            events,
+            event_id_col=events.c.event_id,
+            date_col=events.c.event_date,
+            person_col=events.c.person_id,
+            name="legacy_all_in_window",
+            prefer_explicit_link=True,
+            episodes=_episodes(),
+            episode_events=_links(
+                (2001, 99, PROCEDURE.event_field_concept_id),
+            ),
+        )
+
+    assert {(row["event_id"], row["episode_id"]) for row in _rows(attached)} == {
+        (8, 1001),
+        (8, 1002),
+    }
+
+
 @pytest.mark.parametrize(
     ("factory", "spec"),
     (
@@ -237,6 +306,9 @@ def test_each_factory_uses_its_canonical_event_identity(factory, spec):
 
     assert f"{spec.event_field_concept_id} AS event_field_concept_id" in sql
     assert f"'{spec.event_source_table}' AS event_source_table" in sql
+    assert "row_number() OVER" in sql
+    assert "episode_start_date <=" in sql
+    assert "abs(" in sql
 
 
 def test_legacy_factory_columns_remain_stable():
@@ -272,7 +344,7 @@ def test_legacy_factory_columns_remain_stable():
     )
 
 
-def test_direct_legacy_attachment_helpers_warn_and_compile():
+def test_deprecated_attachment_helpers_warn_and_compile():
     events = _events(
         (
             MEASUREMENT.event_source_table,
@@ -284,23 +356,23 @@ def test_direct_legacy_attachment_helpers_warn_and_compile():
     )
     episodes = _episodes()
 
-    with pytest.warns(DeprecationWarning, match="compatibility wrapper"):
+    with pytest.warns(DeprecationWarning, match="is deprecated"):
         explicit = attach_to_condition_episode_via_episode_event(
             events,
             event_id_col=events.c.event_id,
             date_col=events.c.event_date,
-            name="legacy_explicit_helper",
+            name="deprecated_explicit_helper",
             episodes=episodes,
             episode_events=_links(
                 (1001, 7, MEASUREMENT.event_field_concept_id),
             ),
         )
-    with pytest.warns(DeprecationWarning, match="compatibility wrapper"):
+    with pytest.warns(DeprecationWarning, match="is deprecated"):
         fallback = attach_to_condition_episode_by_time_window(
             events,
             date_col=events.c.event_date,
             person_col=events.c.person_id,
-            name="legacy_window_helper",
+            name="deprecated_window_helper",
             episodes=episodes,
         )
 

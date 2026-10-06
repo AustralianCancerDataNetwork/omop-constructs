@@ -11,12 +11,11 @@ Typical runtime usage assumes:
 
 The modifier layer builds database-side concept predicates without opening a connection at import time. Other semantics-backed construct families still require database-backed resolver setup.
 
-Diagnosis-linked measurements, procedures, and observations use `explicit_first_all_in_window`: explicit links take precedence, while unlinked events can attach to multiple overlapping episodes. To select one fallback episode in a custom query, pass `policy=EpisodeAttachmentPolicy.explicit_first_ranked` and a `TemporalRankingSpec` to the attachment factory.
+Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest `episode_id`. For example, an unlinked pathology observation recorded after one cancer episode began but shortly before a second episode began is assigned to the episode already in progress. A valid explicit relationship to the second episode takes precedence over this date-based choice. Custom queries can override the default with explicit `policy` and `ranking` arguments.
 
 ## Configuration With `omop-config`
 
-`omop-constructs` reads its CDM resource and logging settings through
-`oa-configurator`.
+`omop-constructs` reads its CDM resource and logging settings through `oa-configurator`.
 
 Set up the shared stack configuration with:
 
@@ -26,10 +25,7 @@ omop-config configure omop_alchemy
 omop-config configure omop_constructs
 ```
 
-`omop-config configure omop_constructs` is the package entry point registered
-under `omop.config`. It validates that a `cdm_db` resource is available and can
-store a package-specific `default_resource` when `omop-constructs` should use a
-different CDM resource than `omop-alchemy`.
+`omop-config configure omop_constructs` is the package entry point registered under `omop.config`. It validates that a `cdm_db` resource is available and can store a package-specific `default_resource` when `omop-constructs` should use a different CDM resource than `omop-alchemy`.
 
 ## Importing Construct Families
 
@@ -77,16 +73,11 @@ print(registry.plan())
 
 Useful inspection methods:
 
-- `registry.describe()`
-  Human-readable dependency overview
-- `registry.plan()`
-  Dependency-sorted construct plan
-- `registry.build_plan_json()`
-  JSON-serializable version of the plan
-- `registry.explain(bind)`
-  SQL length plus existence and optional row counts
-- `registry.validate(bind)`
-  Database schema vs mapper comparison
+- `registry.describe()`: human-readable dependency overview
+- `registry.plan()`: dependency-sorted construct plan
+- `registry.build_plan_json()`: JSON-serializable version of the plan
+- `registry.explain(bind)`: SQL length plus existence and optional row counts
+- `registry.validate(bind)`: database schema vs mapper comparison
 
 ## Creating And Refreshing Materialized Views
 
@@ -97,33 +88,22 @@ registry.refresh_all(engine)
 
 Safer operational variants are also available:
 
-- `registry.create_missing(bind)`
-  Only create views that do not yet exist
-- `registry.refresh_existing(bind)`
-  Only refresh views that already exist
+- `registry.create_missing(bind)`: only create views that do not yet exist
+- `registry.refresh_existing(bind)`: only refresh views that already exist
 
 These helpers assume PostgreSQL materialized views and use `pg_matviews` for existence checks.
 
 ### Deploying event-attachment definition changes
 
-The diagnosis-linked event constructs use an explicit-first attachment policy. A valid
-`Episode_Event` relationship must match the event ID, Field-concept discriminator, and
-person. It is emitted once and suppresses date-window fallback for that table-scoped event.
-An event without a valid explicit relationship is attached once to every eligible overlapping
-condition episode.
+The diagnosis-linked event constructs use an explicit-first attachment policy. A valid `Episode_Event` relationship must match the event ID, Field-concept discriminator, and person. It is emitted once and suppresses date-window fallback for that table-scoped event. An event without a valid explicit relationship is attached to one eligible condition episode using the deterministic ranking described above.
 
-Changing that policy changes materialized-view definitions. PostgreSQL `REFRESH MATERIALIZED
-VIEW` only repopulates the existing definition, so an upgrade containing an attachment-policy
-change requires a rebuild rather than an in-place refresh. The affected definitions are:
+The attachment policy is part of each materialized-view definition. PostgreSQL `REFRESH MATERIALIZED VIEW` repopulates the definition already stored in the database, so installing a release with a changed attachment policy requires a rebuild. The affected definitions are:
 
-- `dx_measurement_mv`, `dx_observation_mv`, and `dx_procedure_mv`;
-- the concept-specific measurement views (`weight_dx_mv`, `weight_change_dx_mv`,
-  `height_dx_mv`, `bsa_dx_mv`, `creatinine_clearance_dx_mv`, `egfr_dx_mv`, `fev1_dx_mv`,
-  `dtherm_dx_mv`, `ecog_dx_mv`, and `smoking_pyh_dx_mv`); and
+- `dx_measurement_mv`, `dx_observation_mv`, and `dx_procedure_mv`
+- the concept-specific measurement views (`weight_dx_mv`, `weight_change_dx_mv`, `height_dx_mv`, `bsa_dx_mv`, `creatinine_clearance_dx_mv`, `egfr_dx_mv`, `fev1_dx_mv`, `dtherm_dx_mv`, `ecog_dx_mv`, and `smoking_pyh_dx_mv`)
 - `consult_window_mv`, which depends on `dx_observation_mv`.
 
-For a registry-managed deployment, the supported safe operation is to rebuild the managed
-construct set in dependency order:
+For a registry-managed deployment, rebuild the managed construct set in dependency order:
 
 ```python
 from omop_constructs.bootstrap import get_complete_construct_registry
@@ -135,10 +115,7 @@ with engine.begin() as connection:
     registry.create_all(connection)
 ```
 
-Use the side-schema release-validation workflow before replacing a populated clinical
-deployment. A selective rebuild is also possible, but the operator must drop downstream
-views before their inputs and recreate inputs before downstream views; the registry does not
-currently expose a selective cascade planner.
+Validate the rebuilt views in a side schema before replacing a populated clinical deployment. A selective rebuild is also possible, but the operator must drop downstream views before their inputs and recreate inputs before downstream views; the registry does not expose a selective cascade planner.
 
 ## CLI
 
@@ -180,8 +157,7 @@ In practice this means:
 
 - importing `omop_constructs.alchemy.modifiers` is not a pure no-op
 - stage and modifier query fragments can depend on resolver-backed concept expansion
-- resolver-backed imports require a resolvable CDM resource in the active
-  `oa-configurator` stack config
+- resolver-backed imports require a resolvable CDM resource in the active `oa-configurator` stack config
 
 If you want a lighter import path for event or episode constructs only, avoid importing modifier modules unless you need them.
 
@@ -189,27 +165,21 @@ If you want a lighter import path for event or episode constructs only, avoid im
 
 The codebase uses three main episode-linkage strategies:
 
-- explicit-first `Episode_Event` linkage for observations, procedures, and measurements,
-  with fallback only when no valid explicit relationship exists
-- all-eligible time-window attachment to `ConditionEpisodeMV` for unlinked observations,
-  procedures, and measurements
+- explicit-first `Episode_Event` linkage for observations, procedures, and measurements, with date-based fallback only when no valid explicit relationship exists
+- single-episode ranked attachment to `ConditionEpisodeMV` for unlinked observations, procedures, and measurements
 - specialty-specific visit ranking for `DxRelevantVisitMV`
 
-The consult-window path combines:
+For example, the first two strategies ensure that a spirometry measurement explicitly recorded against two lung cancer episodes remains visible in both, while an unlinked spirometry measurement that merely falls within both date windows is assigned to one episode. The consult-window path combines:
 
 - `DxObservationMV`
 - `DxRelevantVisitMV`
 - `TreatmentEnvelopeMV`
 
-to compute episode-level referral-to-specialist and referral-to-treatment windows.
+Together, these views compute episode-level referral-to-specialist and referral-to-treatment windows.
 
 ## Common Pitfalls
 
-- Empty registry after startup:
-  use `get_complete_construct_registry()` or import the construct families before calling `get_construct_registry()`
-- Import-time resolver errors:
-  check the active `oa-configurator` stack config before importing modifier-heavy modules
-- Schema mismatch during validation:
-  the mapped class and underlying materialized view definition have drifted
-- Missing construct in downstream code:
-  confirm the module containing that construct class has actually been imported
+- Empty registry after startup: use `get_complete_construct_registry()` or import the construct families before calling `get_construct_registry()`.
+- Import-time resolver errors: check the active `oa-configurator` stack config before importing modifier-heavy modules.
+- Schema mismatch during validation: the mapped class and underlying materialized view definition have drifted.
+- Missing construct in downstream code: confirm the module containing that construct class has actually been imported.

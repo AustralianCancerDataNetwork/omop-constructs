@@ -714,6 +714,8 @@ class_name = "SACTRegimenMV"
 module = "omop_constructs.alchemy.episodes.systemic_treatment_mv"
 family = "episodes"
 grain = "Declared: one row per SACT regimen episode, with first and last exposure dates aggregated from its cycles."
+current_grain = "One row per (SACT cycle, regimen prescription procedure, treatment-intent record on that prescription). The exposure dates and count describe the cycle, not the whole regimen."
+current_unique_on = "No published column combination is guaranteed unique: a cycle repeats once for each prescription procedure and intent record on its regimen."
 logical_key = ["regimen_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -741,6 +743,8 @@ class_name = "RTCourseMV"
 module = "omop_constructs.alchemy.episodes.course_mv"
 family = "episodes"
 grain = "Declared: one row per radiotherapy course episode, with first and last exposure dates aggregated from its fractions."
+current_grain = "One row per (radiotherapy fraction episode, course prescription procedure, treatment-intent record on that prescription). The dates and fraction count describe the fraction episode, not the whole course."
+current_unique_on = "No published column combination is guaranteed unique: a fraction episode repeats once for each prescription procedure and intent record on its course."
 logical_key = ["course_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -768,6 +772,8 @@ class_name = "FractionMV"
 module = "omop_constructs.alchemy.episodes.fraction_mv"
 family = "episodes"
 grain = "Declared: one row per (radiotherapy procedure occurrence, fraction episode). Procedure-level detail beneath the RT course."
+current_grain = "One row per (radiotherapy procedure occurrence, fraction episode, treatment-intent record on that procedure). Procedure-level detail beneath the RT course."
+current_unique_on = "`procedure_occurrence_id`, `fraction_id` when a procedure has at most one treatment-intent record. A procedure with several intent records repeats once per record."
 logical_key = ["procedure_occurrence_id", "fraction_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -848,6 +854,8 @@ class_name = "TreatmentEnvelopeMV"
 module = "omop_constructs.alchemy.episodes.treatment_envelope_mv"
 family = "episodes"
 grain = "Declared: one row per condition episode, carrying earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars."
+current_grain = "One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date."
+current_unique_on = "`condition_episode`, `condition_start_date`."
 logical_key = ["condition_episode"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -903,6 +911,7 @@ class_name = "TreatmentIntentMV"
 module = "omop_constructs.alchemy.episodes.modality_intent_mv"
 family = "episodes"
 grain = "One row per (treatment episode, treatment-intent measurement on that episode), with RT and SACT modality evidence flags derived from events linked directly to the episode."
+current_unique_on = "No published column combination is guaranteed unique: a treatment episode with two intent records of the same concept has two rows with the same `treatment_episode_id` and `treatment_intent_concept_id`."
 logical_key = ["treatment_episode_id", "treatment_intent_concept_id"]
 logical_key_complete = false
 key_nullable_columns = []
@@ -931,6 +940,8 @@ class_name = "ConditionTreatmentIntentMV"
 module = "omop_constructs.alchemy.episodes.modality_intent_mv"
 family = "episodes"
 grain = "Declared: one row per (condition episode, child treatment episode with a recorded intent), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL."
+current_grain = "One row per (condition episode, child treatment episode, treatment-intent record on it), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL. An episode whose linked conditions start on more than one date repeats its rows once per start date."
+current_unique_on = "No published column combination is guaranteed unique: rows can repeat, and the intent record's own ID is not included."
 logical_key = ["episode_id", "treatment_episode_id", "treatment_intent_concept_id"]
 logical_key_complete = false
 key_nullable_columns = ["treatment_episode_id", "treatment_intent_concept_id"]
@@ -957,6 +968,8 @@ class_name = "ConsultWindowMV"
 module = "omop_constructs.alchemy.episodes.consult_window_mv"
 family = "episodes"
 grain = "Declared: one row per episode of care, carrying the earliest GP referral, earliest specialist contact, earliest palliative-care contact, and the derived referral-to-specialist and referral-to-treatment day counts."
+current_grain = "One row per episode of care, carrying the earliest GP referral, earliest specialist contact, earliest palliative-care contact, and the derived referral-to-specialist and referral-to-treatment day counts. An episode whose linked conditions start on more than one date appears on several rows with the same values."
+current_unique_on = "No published column combination is guaranteed unique: `episode_id` can repeat on rows with the same values."
 logical_key = ["episode_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -987,10 +1000,10 @@ violation_note = "Multiplied by treatment_envelope_mv rows for the same episode.
 # Event family
 # ===========================================================================
 # Every construct in this family uses the canonical cross-table event identity
-# and an explicit-first/all-in-window attachment policy. Valid explicit links
+# and an explicit-first/ranked-fallback attachment policy. Valid explicit links
 # match event ID, Field-concept discriminator, episode, and person; those events
-# are anti-joined out of fallback. Unlinked events retain every eligible
-# overlapping episode, and exact source-table/event/episode keys are distinct.
+# are anti-joined out of fallback. Unlinked events select one eligible episode
+# deterministically, and exact source-table/event/episode keys are distinct.
 # OC-2 still owns the matching database indexes and ORM identities.
 
 [constructs.dx_measurement_mv]
@@ -1014,10 +1027,10 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here, so modifier measurements are included too" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-fan_out_note = "Explicit and fallback branches are mutually exclusive. Several valid explicit links or several eligible fallback windows intentionally produce several episode-grain rows."
+fan_out_note = "Explicit and fallback branches are mutually exclusive. Several valid explicit links intentionally produce several episode-grain rows; ranked fallback selects one episode."
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
@@ -1042,8 +1055,8 @@ inputs = [
   { name = "observation", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here" },
   { name = "observation_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the observation_id discriminator and suppress fallback for that observation" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked observation is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked observation selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1069,8 +1082,8 @@ inputs = [
   { name = "procedure_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
   { name = "procedure_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the procedure_occurrence_id discriminator and suppress fallback for that procedure" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked procedure is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked procedure selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1108,6 +1121,8 @@ class_name = "PersonDemography"
 module = "omop_constructs.alchemy.demography.demography_matview"
 family = "demography"
 grain = "Declared: one row per (person, condition episode), carrying gender, year of birth, death, MRN, postcode, country of birth, and language spoken."
+current_grain = "One row per (person, condition episode, recorded postcode, country of birth, language spoken), carrying gender, year of birth, death, and MRN. A person with two postcodes and two languages has four rows per episode. People whose gender concept is missing or zero are not included."
+current_unique_on = "No published column combination is guaranteed unique: `person_id` and `episode_id` repeat for each postcode, country of birth, and language combination."
 logical_key = ["person_id", "episode_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -1137,7 +1152,7 @@ violation_note = "Unranked repeated-observation joins produce an N*M*K product a
 # Concept-restricted measurement slices
 # ---------------------------------------------------------------------------
 # Each slice is dx_measurement_mv narrowed to one measurement concept. They
-# share the family's explicit-first/all-in-window policy and none of them is
+# share the family's explicit-first/ranked-fallback policy and none of them is
 # reachable from any consumer: oa-cohorts resolves meas_concept to the generic
 # dx_measurement_mv, not to a slice. They stay registered and buildable but sit
 # outside the 1.0 public surface.
@@ -1164,8 +1179,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1192,8 +1207,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight_change, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1220,8 +1235,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.height, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1248,8 +1263,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.bsa, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1276,8 +1291,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.creatinine_clearance, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1304,8 +1319,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.egfr, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1332,8 +1347,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.fev1, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1360,8 +1375,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.proms_numeric.distress_thermometer, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
@@ -1388,8 +1403,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.performance_status_measurements.ecog_performance_status, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it. The underlying query also carries an unmapped value_as_concept_id column."
@@ -1416,8 +1431,8 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.smoking_numeric.pyh, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "one_to_many", note = "an unlinked measurement is retained once for each eligible overlapping episode window" },
-  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps rows with episode_delta_days between -90 and 365" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
 violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."

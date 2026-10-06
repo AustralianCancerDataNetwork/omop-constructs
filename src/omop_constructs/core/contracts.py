@@ -120,6 +120,10 @@ class ConstructContract:
     public_api_note: str | None = None
     fan_out_note: str | None = None
     violation_note: str | None = None
+    # What the construct returns today, where that differs from ``grain`` and
+    # ``logical_key``. Remove an entry once the construct matches its contract.
+    current_grain: str | None = None
+    current_unique_on: str | None = None
 
     @property
     def satisfies_declared_key(self) -> bool:
@@ -319,6 +323,8 @@ def _parse_contract(name: str, raw: Mapping[str, Any]) -> ConstructContract:
         public_api_note=raw.get("public_api_note"),
         fan_out_note=raw.get("fan_out_note"),
         violation_note=raw.get("violation_note"),
+        current_grain=raw.get("current_grain"),
+        current_unique_on=raw.get("current_unique_on"),
     )
 
 
