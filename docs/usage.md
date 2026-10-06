@@ -11,7 +11,7 @@ Typical runtime usage assumes:
 
 The modifier layer builds database-side concept predicates without opening a connection at import time. Other semantics-backed construct families still require database-backed resolver setup.
 
-Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest `episode_id`. For example, an unlinked pathology observation recorded after one cancer episode began but shortly before a second episode began is assigned to the episode already in progress. A valid explicit relationship to the second episode takes precedence over this date-based choice. Custom queries can override the default with explicit `policy` and `ranking` arguments.
+Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode of care: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest `episode_id`. For example, an unlinked pathology observation recorded after one cancer episode began but shortly before a second episode began is assigned to the episode already in progress. A valid explicit relationship to the second episode takes precedence over this date-based choice. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. Custom queries can override the default with explicit `policy` and `ranking` arguments.
 
 ## Configuration With `omop-config`
 
@@ -95,7 +95,7 @@ These helpers assume PostgreSQL materialized views and use `pg_matviews` for exi
 
 ### Deploying event-attachment definition changes
 
-The diagnosis-linked event constructs use an explicit-first attachment policy. A valid `Episode_Event` relationship must match the event ID, Field-concept discriminator, and person. It is emitted once and suppresses date-window fallback for that table-scoped event. An event without a valid explicit relationship is attached to one eligible condition episode using the deterministic ranking described above.
+The diagnosis-linked event constructs use an explicit-first attachment policy. A valid `Episode_Event` relationship must match the event ID, Field-concept discriminator, and person. It is emitted once and suppresses date-window fallback for that table-scoped event. An event without a valid explicit relationship is attached to one eligible episode of care using the deterministic ranking described above.
 
 The attachment policy is part of each materialized-view definition. PostgreSQL `REFRESH MATERIALIZED VIEW` repopulates the definition already stored in the database, so installing a release with a changed attachment policy requires a rebuild. The affected definitions are:
 
@@ -166,7 +166,7 @@ If you want a lighter import path for event or episode constructs only, avoid im
 The codebase uses three main episode-linkage strategies:
 
 - explicit-first `Episode_Event` linkage for observations, procedures, and measurements, with date-based fallback only when no valid explicit relationship exists
-- single-episode ranked attachment to `ConditionEpisodeMV` for unlinked observations, procedures, and measurements
+- single-episode ranked attachment to an episode of care in `ConditionEpisodeMV` for unlinked observations, procedures, and measurements
 - specialty-specific visit ranking for `DxRelevantVisitMV`
 
 For example, the first two strategies ensure that a spirometry measurement explicitly recorded against two lung cancer episodes remains visible in both, while an unlinked spirometry measurement that merely falls within both date windows is assigned to one episode. The consult-window path combines:

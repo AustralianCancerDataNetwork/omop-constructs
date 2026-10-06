@@ -1027,7 +1027,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here, so modifier measurements are included too" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 fan_out_note = "Explicit and fallback branches are mutually exclusive. Several valid explicit links intentionally produce several episode-grain rows; ranked fallback selects one episode."
@@ -1055,7 +1055,7 @@ inputs = [
   { name = "observation", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here" },
   { name = "observation_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the observation_id discriminator and suppress fallback for that observation" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked observation selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked observation selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1082,7 +1082,7 @@ inputs = [
   { name = "procedure_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
   { name = "procedure_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the procedure_occurrence_id discriminator and suppress fallback for that procedure" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked procedure selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked procedure selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1179,7 +1179,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1207,7 +1207,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.weight_change, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1235,7 +1235,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.height, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1263,7 +1263,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.body_size_measurements.bsa, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1291,7 +1291,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.creatinine_clearance, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1319,7 +1319,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.egfr, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1347,7 +1347,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.lab_measurements.fev1, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1375,7 +1375,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.proms_numeric.distress_thermometer, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1403,7 +1403,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.performance_status_measurements.ecog_performance_status, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]
@@ -1431,7 +1431,7 @@ inputs = [
   { name = "measurement", kind = "cdm_table", fan_out = "filter", note = "restricted to measurements_numeric.smoking_numeric.pyh, and to rows with no modifier_of_event_id" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "distinct valid explicit links use the measurement_id discriminator and suppress fallback for that measurement" },
-  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode: already-started first, then nearest start, then lowest episode_id" },
+  { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 known_violations = ["OC-M3"]

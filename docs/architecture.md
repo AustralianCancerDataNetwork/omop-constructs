@@ -72,7 +72,7 @@ Dependencies can point at constructs outside the currently imported set; those a
 
 Diagnosis-linked procedures, measurements, and observations use one attachment rule across the construct family. A valid `Episode_Event` relationship is authoritative when its event identifier, OMOP Field concept, episode identifier, and person agree. Every valid explicit relationship is retained, so an event deliberately linked to two episodes produces one row for each relationship.
 
-When an event has no valid explicit relationship, the event date determines its episode. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes, the resolver chooses one using these rules in order:
+When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes of care, the resolver chooses one using these rules in order:
 
 1. Prefer episodes that have started by the event date.
 2. Choose the episode start nearest to the event date.
@@ -82,7 +82,7 @@ When an event has no valid explicit relationship, the event date determines its 
 flowchart TD
     event[Clinical event] --> explicit{Valid Episode_Event relationship?}
     explicit -- Yes --> linked[Keep every explicitly linked episode]
-    explicit -- No --> eligible{Any episode in the date window?}
+    explicit -- No --> eligible{Any episode of care in the date window?}
     eligible -- No --> omitted[Do not include the event in a diagnosis-linked view]
     eligible -- Yes --> started{Any eligible episode already started?}
     started -- Yes --> prior[Rank the already-started episodes]

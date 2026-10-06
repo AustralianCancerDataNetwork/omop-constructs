@@ -1278,7 +1278,7 @@ wheels = [
 
 [[package]]
 name = "omop-alchemy"
-version = "1.2.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "oa-configurator" },
@@ -1290,9 +1290,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/f1/6d075fdc151734ec67c678e8ee76c14d6a994e173ac474aceb23af3c671d/omop_alchemy-1.2.0.tar.gz", hash = "sha256:689b789e4a39cd63394dea6f2d4bd06f2195744dafee0d42670cabc1dea4339c", size = 691664, upload-time = "2026-09-18T01:00:22.132Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/94/60f7843da2ba55c3d3b6adc6be79c55a69d271e8baa3509f8c89033cf569/omop_alchemy-1.2.1.tar.gz", hash = "sha256:b79c0a5c845ef1bd7530171718f7a7fed7336e7f585488016af2fa4ffb17327f", size = 694546, upload-time = "2026-10-06T06:59:33.212Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/90/7b34ba5d9ffca12a074a4b5a94ec1dcd9a6bc3ec5f5581736bb56be9b095/omop_alchemy-1.2.0-py3-none-any.whl", hash = "sha256:9402ad34a011c43609b65a56baff8c50b7d8f3b7ba99f6110d6b2593c1db8995", size = 279336, upload-time = "2026-09-18T01:00:20.263Z" },
+    { url = "https://files.pythonhosted.org/packages/35/26/b1d08996d96baf25af14c06d89c9738d634ba31272a3b58f9c3455076d06/omop_alchemy-1.2.1-py3-none-any.whl", hash = "sha256:25e6831979fe96c18fe3a76daa26561ac2de32e64c8ac16931b7af110cc882cf", size = 279797, upload-time = "2026-10-06T06:59:31.573Z" },
 ]
 
 [package.optional-dependencies]
@@ -1338,7 +1338,7 @@ requires-dist = [
     { name = "mkdocs-table-reader-plugin", marker = "extra == 'dev'" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'" },
     { name = "oa-configurator", specifier = ">=1.2.1,<2" },
-    { name = "omop-alchemy", extras = ["postgres"], specifier = ">=1.2.0,<2" },
+    { name = "omop-alchemy", extras = ["postgres"], specifier = ">=1.2.1,<2" },
     { name = "omop-semantics", specifier = ">=0.6.0" },
     { name = "orm-loader", specifier = ">=1.2.0,<2" },
     { name = "pygments", marker = "extra == 'dev'", specifier = ">=2.20.0" },

@@ -229,6 +229,7 @@
 # 0.8.0 (unreleased)
 - diagnosis-linked Measurement, Observation, and Procedure Occurrence constructs now use omop-alchemy's canonical event projection and explicit-first episode attachment policy
 - valid explicit links require the event ID, Field-concept discriminator, episode, and person to agree; exact duplicate links collapse and linked events no longer also enter date-window fallback
-- unlinked events select one eligible episode deterministically: already-started episodes first, then nearest episode start, then lowest episode ID; valid explicit multi-links remain intact
+- unlinked events select one eligible episode of care deterministically: already-started episodes first, then nearest episode start, then lowest episode ID; valid explicit multi-links remain intact
 - custom event factories can select an `EpisodeAttachmentPolicy` and `TemporalRankingSpec`; deprecated Boolean and direct-helper calls issue warnings that identify the policy-based replacement
+- ranked date-window fallback considers episodes of care only, so an unlinked event can no longer attach to a later-starting progression or metastatic episode; those episodes receive events only through valid explicit links. All-in-window and explicit-only policies are unchanged. Requires omop-alchemy>=1.2.1 for the separate explicit-link and fallback episode sources
 - deployments must rebuild the affected event materialized views and `consult_window_mv`; an in-place refresh does not replace a PostgreSQL materialized-view definition

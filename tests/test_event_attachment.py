@@ -411,12 +411,6 @@ def test_deprecated_attachment_helpers_warn_and_compile():
 # child stay valid.
 ROOT = (3001, 101, date(2025, 1, 10), date(2025, 12, 31), EPISODE_OF_CARE)
 
-_FALLBACK_ADMITS_CHILDREN = pytest.mark.xfail(
-    strict=True,
-    reason="Ranked fallback still admits progression and metastatic episodes as candidates.",
-)
-
-
 def _child(concept_id: int, *, episode_id: int = 3002) -> EpisodeRow:
     return (episode_id, 101, date(2025, 6, 1), date(2025, 12, 31), concept_id)
 
@@ -439,7 +433,6 @@ def _pairs(statement: sa.Subquery) -> set[tuple[int, int]]:
     return {(row["event_id"], row["episode_id"]) for row in _rows(statement)}
 
 
-@_FALLBACK_ADMITS_CHILDREN
 @pytest.mark.parametrize("child_concept", [PROGRESSION, METASTATIC])
 def test_ranked_fallback_chooses_the_episode_of_care_over_its_later_child(child_concept):
     attached = _attached(
@@ -451,7 +444,6 @@ def test_ranked_fallback_chooses_the_episode_of_care_over_its_later_child(child_
     assert _pairs(attached) == {(8, 3001)}
 
 
-@_FALLBACK_ADMITS_CHILDREN
 def test_ranked_fallback_compares_episode_of_care_starts_only():
     older_root = (3001, 101, date(2024, 1, 10), date(2025, 12, 31), EPISODE_OF_CARE)
     newer_root = (3003, 101, date(2025, 3, 1), date(2025, 12, 31), EPISODE_OF_CARE)
@@ -466,7 +458,6 @@ def test_ranked_fallback_compares_episode_of_care_starts_only():
     assert _pairs(attached) == {(8, 3003)}
 
 
-@_FALLBACK_ADMITS_CHILDREN
 def test_event_inside_only_a_child_window_is_not_attached_by_date():
     short_root = (3001, 101, date(2025, 1, 10), date(2025, 3, 31), EPISODE_OF_CARE)
     attached = _attached(

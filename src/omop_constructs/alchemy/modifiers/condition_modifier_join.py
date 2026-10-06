@@ -47,7 +47,7 @@ _modified_condition_events = canonical_event_projection(
 _condition_attachment_queries = episode_attachment_queries(
     _modified_condition_events,
     policy=EpisodeAttachmentPolicy.explicit_only,
-    episodes=Episode,
+    explicit_episodes=Episode,
     include_diagnostics=True,
 )
 _condition_attachments = _condition_attachment_queries.attachments.subquery(

@@ -7,6 +7,7 @@ from typing import Any, Iterable, Sequence, TypeAlias
 
 import sqlalchemy as sa
 import sqlalchemy.orm as so
+from omop_semantics.runtime.default_valuesets import runtime  # type: ignore
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.selectable import FromClause, SelectBase
@@ -158,6 +159,33 @@ def _empty_episode_events() -> FromClause:
     )
 
 
+def _fallback_episodes(
+    episodes: FromClause,
+    policy: EpisodeAttachmentPolicy,
+) -> FromClause | None:
+    """Choose the episodes a policy may attach unlinked events to by date.
+
+    Ranked fallback chooses among episodes of care only. A progression or
+    metastatic episode starts on or after its episode of care, so admitting it
+    would let a nested diagnosis win the ranking, and cohort rows are keyed on
+    the episode of care. All-in-window fallback keeps every disease episode, and
+    explicit-only attachment has no fallback stage. Explicit links are validated
+    against the full source in every case.
+    """
+    if not policy.uses_fallback:
+        return None
+    if not policy.requires_fallback_ranking:
+        return episodes
+    return (
+        sa.select(episodes)
+        .where(
+            episodes.c.episode_concept_id
+            == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
+        )
+        .subquery("episode_of_care_candidates")
+    )
+
+
 def _legacy_attachment_result(
     events: FromClause,
     episodes: FromClause,
@@ -179,7 +207,8 @@ def _legacy_attachment_result(
     )
     attachments = episode_attachment_queries(
         events,
-        episodes=episodes,
+        explicit_episodes=episodes,
+        fallback_episodes=_fallback_episodes(episodes, policy),
         episode_events=episode_events,
         policy=policy,
         ranking=ranking,
