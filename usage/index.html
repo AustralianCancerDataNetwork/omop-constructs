@@ -365,6 +365,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Creating And Refreshing Materialized Views">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploying-event-attachment-definition-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying event-attachment definition changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -463,9 +480,27 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../construct-catalog/" class="md-nav__link">
+    
+    
+    
+    
+      
         
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
   
   
   <span class="md-ellipsis">
@@ -479,7 +514,163 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Construct Catalog
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../construct-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/episodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Episode constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/modifiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifier constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/demography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demography constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -562,6 +753,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Creating And Refreshing Materialized Views">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploying-event-attachment-definition-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying event-attachment definition changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -653,131 +861,134 @@
 <p>Typical runtime usage assumes:</p>
 <ul>
 <li><code>oa-configurator</code> is installed and a shared OMOP stack config is available</li>
-<li><code>omop-alchemy</code>, <code>omop-semantics</code>, and <code>orm-loader</code> are installed</li>
+<li><code>omop-alchemy&gt;=1.2.0,&lt;2</code>, <code>omop-semantics</code>, and <code>orm-loader&gt;=1.2.0,&lt;2</code> are installed</li>
 <li><code>omop-semantics</code> runtime value sets are available</li>
 <li>a PostgreSQL database is available for materialized view creation and refresh</li>
 </ul>
-<p>If you use the semantics-backed modifier layer, database-backed resolver setup must also be available at import time.</p>
+<p>The modifier layer builds database-side concept predicates without opening a connection at import time. Other semantics-backed construct families still require database-backed resolver setup.</p>
+<p>Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode of care: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest <code>episode_id</code>. For example, an unlinked pathology observation recorded after one cancer episode began but shortly before a second episode began is assigned to the episode already in progress. A valid explicit relationship to the second episode takes precedence over this date-based choice. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. Custom queries can override the default with explicit <code>policy</code> and <code>ranking</code> arguments.</p>
 <h2 id="configuration-with-omop-config">Configuration With <code>omop-config</code><a class="headerlink" href="#configuration-with-omop-config" title="Permanent link">&para;</a></h2>
-<p><code>omop-constructs</code> reads its CDM resource and logging settings through
-<code>oa-configurator</code>.</p>
+<p><code>omop-constructs</code> reads its CDM resource and logging settings through <code>oa-configurator</code>.</p>
 <p>Set up the shared stack configuration with:</p>
-<pre><code class="language-bash">omop-config init
-omop-config configure omop_alchemy
-omop-config configure omop_constructs
-</code></pre>
-<p><code>omop-config configure omop_constructs</code> is the package entry point registered
-under <code>omop.config</code>. It validates that a <code>cdm_db</code> resource is available and can
-store a package-specific <code>default_resource</code> when <code>omop-constructs</code> should use a
-different CDM resource than <code>omop-alchemy</code>.</p>
+<div class="highlight"><pre><span></span><code>omop-config<span class="w"> </span>init
+omop-config<span class="w"> </span>configure<span class="w"> </span>omop_alchemy
+omop-config<span class="w"> </span>configure<span class="w"> </span>omop_constructs
+</code></pre></div>
+<p><code>omop-config configure omop_constructs</code> is the package entry point registered under <code>omop.config</code>. It validates that a <code>cdm_db</code> resource is available and can store a package-specific <code>default_resource</code> when <code>omop-constructs</code> should use a different CDM resource than <code>omop-alchemy</code>.</p>
 <h2 id="importing-construct-families">Importing Construct Families<a class="headerlink" href="#importing-construct-families" title="Permanent link">&para;</a></h2>
 <p>Constructs are registered via the <code>@register_construct</code> decorator when their modules are imported.</p>
 <p>That means this:</p>
-<pre><code class="language-python">from omop_constructs.core import get_construct_registry
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_construct_registry</span>
 
-registry = get_construct_registry()
-</code></pre>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">get_construct_registry</span><span class="p">()</span>
+</code></pre></div>
 <p>is not enough on its own in a fresh process.</p>
 <p>If you want the full construct registry, use the bootstrap helper:</p>
-<pre><code class="language-python">from omop_constructs.bootstrap import get_complete_construct_registry
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.bootstrap</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_complete_construct_registry</span>
 
-registry = get_complete_construct_registry()
-</code></pre>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">get_complete_construct_registry</span><span class="p">()</span>
+</code></pre></div>
 <p>If you want only a subset, import the families you need first:</p>
-<pre><code class="language-python">from omop_constructs.alchemy import events, episodes, modifiers, demography  # noqa: F401
-from omop_constructs.core import get_construct_registry
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.alchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">events</span><span class="p">,</span> <span class="n">episodes</span><span class="p">,</span> <span class="n">modifiers</span><span class="p">,</span> <span class="n">demography</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_construct_registry</span>
 
-registry = get_construct_registry()
-</code></pre>
+<span class="n">registry</span> <span class="o">=</span> <span class="n">get_construct_registry</span><span class="p">()</span>
+</code></pre></div>
 <p>If you only need a subset, import only those modules. The registry will then contain only the imported construct classes.</p>
 <h2 id="inspecting-the-registry">Inspecting The Registry<a class="headerlink" href="#inspecting-the-registry" title="Permanent link">&para;</a></h2>
-<pre><code class="language-python">from omop_constructs.bootstrap import get_complete_construct_registry
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.bootstrap</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_complete_construct_registry</span>
 
-registry = get_complete_construct_registry()
+<span class="n">registry</span> <span class="o">=</span> <span class="n">get_complete_construct_registry</span><span class="p">()</span>
 
-print(registry.describe())
-print(registry.plan())
-</code></pre>
+<span class="nb">print</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">plan</span><span class="p">())</span>
+</code></pre></div>
 <p>Useful inspection methods:</p>
 <ul>
-<li><code>registry.describe()</code>
-  Human-readable dependency overview</li>
-<li><code>registry.plan()</code>
-  Dependency-sorted construct plan</li>
-<li><code>registry.build_plan_json()</code>
-  JSON-serializable version of the plan</li>
-<li><code>registry.explain(bind)</code>
-  SQL length plus existence and optional row counts</li>
-<li><code>registry.validate(bind)</code>
-  Database schema vs mapper comparison</li>
+<li><code>registry.describe()</code>: human-readable dependency overview</li>
+<li><code>registry.plan()</code>: dependency-sorted construct plan</li>
+<li><code>registry.build_plan_json()</code>: JSON-serializable version of the plan</li>
+<li><code>registry.explain(bind)</code>: SQL length plus existence and optional row counts</li>
+<li><code>registry.validate(bind)</code>: database schema vs mapper comparison</li>
 </ul>
 <h2 id="creating-and-refreshing-materialized-views">Creating And Refreshing Materialized Views<a class="headerlink" href="#creating-and-refreshing-materialized-views" title="Permanent link">&para;</a></h2>
-<pre><code class="language-python">registry.create_all(engine)
-registry.refresh_all(engine)
-</code></pre>
+<div class="highlight"><pre><span></span><code><span class="n">registry</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+<span class="n">registry</span><span class="o">.</span><span class="n">refresh_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+</code></pre></div>
 <p>Safer operational variants are also available:</p>
 <ul>
-<li><code>registry.create_missing(bind)</code>
-  Only create views that do not yet exist</li>
-<li><code>registry.refresh_existing(bind)</code>
-  Only refresh views that already exist</li>
+<li><code>registry.create_missing(bind)</code>: only create views that do not yet exist</li>
+<li><code>registry.refresh_existing(bind)</code>: only refresh views that already exist</li>
 </ul>
 <p>These helpers assume PostgreSQL materialized views and use <code>pg_matviews</code> for existence checks.</p>
+<h3 id="deploying-event-attachment-definition-changes">Deploying event-attachment definition changes<a class="headerlink" href="#deploying-event-attachment-definition-changes" title="Permanent link">&para;</a></h3>
+<p>The diagnosis-linked event constructs use an explicit-first attachment policy. A valid <code>Episode_Event</code> relationship must match the event ID, Field-concept discriminator, and person. It is emitted once and suppresses date-window fallback for that table-scoped event. An event without a valid explicit relationship is attached to one eligible episode of care using the deterministic ranking described above.</p>
+<p>The attachment policy is part of each materialized-view definition. PostgreSQL <code>REFRESH MATERIALIZED VIEW</code> repopulates the definition already stored in the database, so installing a release with a changed attachment policy requires a rebuild. The affected definitions are:</p>
+<ul>
+<li><code>dx_measurement_mv</code>, <code>dx_observation_mv</code>, and <code>dx_procedure_mv</code></li>
+<li>the concept-specific measurement views (<code>weight_dx_mv</code>, <code>weight_change_dx_mv</code>, <code>height_dx_mv</code>, <code>bsa_dx_mv</code>, <code>creatinine_clearance_dx_mv</code>, <code>egfr_dx_mv</code>, <code>fev1_dx_mv</code>, <code>dtherm_dx_mv</code>, <code>ecog_dx_mv</code>, and <code>smoking_pyh_dx_mv</code>)</li>
+<li><code>consult_window_mv</code>, which depends on <code>dx_observation_mv</code>.</li>
+</ul>
+<p>For a registry-managed deployment, rebuild the managed construct set in dependency order:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.bootstrap</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_complete_construct_registry</span>
+
+<span class="n">registry</span> <span class="o">=</span> <span class="n">get_complete_construct_registry</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">registry</span><span class="o">.</span><span class="n">drop_all</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
+    <span class="n">registry</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
+</code></pre></div>
+<p>Validate the rebuilt views in a side schema before replacing a populated clinical deployment. A selective rebuild is also possible, but the operator must drop downstream views before their inputs and recreate inputs before downstream views; the registry does not expose a selective cascade planner.</p>
 <h2 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
 <p>The package exposes a small command-line interface for registry artefacts:</p>
-<pre><code class="language-bash">omop-constructs schema-snapshot tests/artifacts/construct_registry_schema.csv
-</code></pre>
+<div class="highlight"><pre><span></span><code>omop-constructs<span class="w"> </span>schema-snapshot<span class="w"> </span>tests/artifacts/construct_registry_schema.csv
+</code></pre></div>
 <p>The same export is available as a module entry point:</p>
-<pre><code class="language-bash">python -m omop_constructs.core.schema_snapshot tests/artifacts/construct_registry_schema.csv
-</code></pre>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>omop_constructs.core.schema_snapshot<span class="w"> </span>tests/artifacts/construct_registry_schema.csv
+</code></pre></div>
 <h2 id="direct-use-of-materialized-view-classes">Direct Use Of Materialized View Classes<a class="headerlink" href="#direct-use-of-materialized-view-classes" title="Permanent link">&para;</a></h2>
 <p>Every registered construct class exposes its <code>__mv_select__</code> and mapped columns, so you can compose on top of them with SQLAlchemy.</p>
-<pre><code class="language-python">from omop_constructs.alchemy.episodes import TreatmentEnvelopeMV
-import sqlalchemy as sa
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omop_constructs.alchemy.episodes</span><span class="w"> </span><span class="kn">import</span> <span class="n">TreatmentEnvelopeMV</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sa</span>
 
-stmt = (
-    sa.select(
-        TreatmentEnvelopeMV.person_id,
-        TreatmentEnvelopeMV.condition_episode,
-        TreatmentEnvelopeMV.days_from_dx_to_treatment,
-    )
-    .where(TreatmentEnvelopeMV.days_from_dx_to_treatment &gt; 30)
-)
-</code></pre>
+<span class="n">stmt</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">sa</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+        <span class="n">TreatmentEnvelopeMV</span><span class="o">.</span><span class="n">person_id</span><span class="p">,</span>
+        <span class="n">TreatmentEnvelopeMV</span><span class="o">.</span><span class="n">condition_episode</span><span class="p">,</span>
+        <span class="n">TreatmentEnvelopeMV</span><span class="o">.</span><span class="n">days_from_dx_to_treatment</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">TreatmentEnvelopeMV</span><span class="o">.</span><span class="n">days_from_dx_to_treatment</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
 <h2 id="semantics-driven-behavior">Semantics-Driven Behavior<a class="headerlink" href="#semantics-driven-behavior" title="Permanent link">&para;</a></h2>
 <p>The modifier and staging layer depends on runtime concept resolvers from <code>omop_constructs.semantics</code>.</p>
 <p>In practice this means:</p>
 <ul>
 <li>importing <code>omop_constructs.alchemy.modifiers</code> is not a pure no-op</li>
 <li>stage and modifier query fragments can depend on resolver-backed concept expansion</li>
-<li>resolver-backed imports require a resolvable CDM resource in the active
-  <code>oa-configurator</code> stack config</li>
+<li>resolver-backed imports require a resolvable CDM resource in the active <code>oa-configurator</code> stack config</li>
 </ul>
 <p>If you want a lighter import path for event or episode constructs only, avoid importing modifier modules unless you need them.</p>
 <h2 id="episode-linkage-patterns">Episode-Linkage Patterns<a class="headerlink" href="#episode-linkage-patterns" title="Permanent link">&para;</a></h2>
 <p>The codebase uses three main episode-linkage strategies:</p>
 <ul>
-<li>explicit <code>Episode_Event</code> linkage where available</li>
-<li>time-window attachment to <code>ConditionEpisodeMV</code> for observations, procedures, and measurements</li>
+<li>explicit-first <code>Episode_Event</code> linkage for observations, procedures, and measurements, with date-based fallback only when no valid explicit relationship exists</li>
+<li>single-episode ranked attachment to an episode of care in <code>ConditionEpisodeMV</code> for unlinked observations, procedures, and measurements</li>
 <li>specialty-specific visit ranking for <code>DxRelevantVisitMV</code></li>
 </ul>
-<p>The consult-window path combines:</p>
+<p>For example, the first two strategies ensure that a spirometry measurement explicitly recorded against two lung cancer episodes remains visible in both, while an unlinked spirometry measurement that merely falls within both date windows is assigned to one episode. The consult-window path combines:</p>
 <ul>
 <li><code>DxObservationMV</code></li>
 <li><code>DxRelevantVisitMV</code></li>
 <li><code>TreatmentEnvelopeMV</code></li>
 </ul>
-<p>to compute episode-level referral-to-specialist and referral-to-treatment windows.</p>
+<p>Together, these views compute episode-level referral-to-specialist and referral-to-treatment windows.</p>
 <h2 id="common-pitfalls">Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Empty registry after startup:
-  use <code>get_complete_construct_registry()</code> or import the construct families before calling <code>get_construct_registry()</code></li>
-<li>Import-time resolver errors:
-  check the active <code>oa-configurator</code> stack config before importing modifier-heavy modules</li>
-<li>Schema mismatch during validation:
-  the mapped class and underlying materialized view definition have drifted</li>
-<li>Missing construct in downstream code:
-  confirm the module containing that construct class has actually been imported</li>
+<li>Empty registry after startup: use <code>get_complete_construct_registry()</code> or import the construct families before calling <code>get_construct_registry()</code>.</li>
+<li>Import-time resolver errors: check the active <code>oa-configurator</code> stack config before importing modifier-heavy modules.</li>
+<li>Schema mismatch during validation: the mapped class and underlying materialized view definition have drifted.</li>
+<li>Missing construct in downstream code: confirm the module containing that construct class has actually been imported.</li>
 </ul>
 
 

@@ -1,0 +1,1622 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Reusable OMOP analytical constructs, materialized views, and episode-linked query building blocks">
+      
+      
+      
+        <link rel="canonical" href="https://AustralianCancerDataNetwork.github.io/omop-constructs/constructs/episodes/">
+      
+      
+        <link rel="prev" href="../../construct-catalog/">
+      
+      
+        <link rel="next" href="../events/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Episode constructs - OMOP Constructs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#episode-constructs" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="OMOP Constructs" class="md-header__button md-logo" aria-label="OMOP Constructs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            OMOP Constructs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Episode constructs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/AustralianCancerDataNetwork/omop-constructs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    omop-constructs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="OMOP Constructs" class="md-nav__button md-logo" aria-label="OMOP Constructs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    OMOP Constructs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/AustralianCancerDataNetwork/omop-constructs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    omop-constructs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Construct Catalog
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Construct Catalog
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../construct-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Episode constructs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Episode constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#conditionepisodemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overarchingdiseaseepisodemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OverarchingDiseaseEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surgicalproceduremv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SurgicalProcedureMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sactregimenmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SACTRegimenMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rtcoursemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RTCourseMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyclemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CycleMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fractionmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FractionMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentenvelopemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentEnvelopeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentregimencyclemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentRegimenCycleMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditiontreatmentepisode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentEpisode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dxtreatstartmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DxTreatStartMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentintentmv-conditiontreatmentintentmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentIntentMV / ConditionTreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consultwindowmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsultWindowMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contracts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contracts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_treatment_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentEpisode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_episode_intent_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-consult_window_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsultWindowMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-cycle_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CycleMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-dx_treat_start_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DxTreatStartMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-fraction_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FractionMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-overarching_disease_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OverarchingDiseaseEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-radioisotope_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RadioisotopeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-rt_course_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RTCourseMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-sact_treatment_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SACTRegimenMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-surgical_procedure_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SurgicalProcedureMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-treatment_envelope_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentEnvelopeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-episode_treatment_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-treatment_regimen_cycle_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentRegimenCycleMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modifiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifier constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demography constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#conditionepisodemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overarchingdiseaseepisodemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OverarchingDiseaseEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surgicalproceduremv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SurgicalProcedureMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sactregimenmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SACTRegimenMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rtcoursemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RTCourseMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyclemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CycleMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fractionmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FractionMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentenvelopemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentEnvelopeMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentregimencyclemv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentRegimenCycleMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditiontreatmentepisode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentEpisode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dxtreatstartmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DxTreatStartMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatmentintentmv-conditiontreatmentintentmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentIntentMV / ConditionTreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consultwindowmv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsultWindowMV
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contracts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contracts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_treatment_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentEpisode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-condition_episode_intent_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConditionTreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-consult_window_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsultWindowMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-cycle_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CycleMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-dx_treat_start_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DxTreatStartMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-fraction_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FractionMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-overarching_disease_episode_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OverarchingDiseaseEpisodeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-radioisotope_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RadioisotopeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-rt_course_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RTCourseMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-sact_treatment_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SACTRegimenMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-surgical_procedure_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SurgicalProcedureMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-treatment_envelope_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentEnvelopeMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-episode_treatment_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentIntentMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contract-treatment_regimen_cycle_mv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TreatmentRegimenCycleMV
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../../construct-catalog/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Construct Catalog
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="episode-constructs">Episode constructs<a class="headerlink" href="#episode-constructs" title="Permanent link">&para;</a></h1>
+<p>From <code>omop_constructs.alchemy.episodes</code>.</p>
+<p>Episode constructs represent clinical episodes and the treatment activity within them. The central organizing entity throughout is the condition episode, to which all treatment and event data is ultimately attributed.</p>
+<hr />
+<h2 id="conditionepisodemv"><code>ConditionEpisodeMV</code><a class="headerlink" href="#conditionepisodemv" title="Permanent link">&para;</a></h2>
+<p>All disease episodes as a materialized view. One row per episode. Covers episodes of care, disease progression episodes, and metastatic episodes. This is the root entity that all episode-attributed constructs join to.</p>
+<hr />
+<h2 id="overarchingdiseaseepisodemv"><code>OverarchingDiseaseEpisodeMV</code><a class="headerlink" href="#overarchingdiseaseepisodemv" title="Permanent link">&para;</a></h2>
+<p>Episode-of-care rows optionally joined to their child extent episodes (disease progression or metastatic). Provides a two-level view of the disease hierarchy without requiring separate joins.</p>
+<hr />
+<h2 id="surgicalproceduremv"><code>SurgicalProcedureMV</code><a class="headerlink" href="#surgicalproceduremv" title="Permanent link">&para;</a></h2>
+<p>Cancer-relevant surgical procedures attributed to condition episodes.</p>
+<p><strong>Source:</strong> <code>Procedure_Occurrence</code> records whose concept is a descendant of the broad surgical-procedure ancestor, excluding radiotherapy and radioisotope descendants. Surgical history observations (i.e. procedures reported as prior history rather than performed procedures) are excluded — their timestamps record when the history was noted, not when the surgery happened, so they are not suitable for treatment timing.</p>
+<p><strong>Episode attribution:</strong> Explicit <code>Episode_Event</code> linkage. Pipeline-runtime chooses which diagnosis episode owns each surgery, so there is no date-window fan-out across overlapping primaries.</p>
+<p><code>ConditionEpisodeMV</code> remains the spine, so <strong>every</strong> condition episode appears: one with no linked surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules identify non-surgical episodes with <code>WHERE surgery_concept_id IS NULL</code>.</p>
+<p>Radioisotope therapy shares the <code>Procedure_Occurrence</code> source but is a separate construct (<code>RadioisotopeMV</code>) and does still attach by date window. The asymmetry is deliberate.</p>
+<p><strong>Key fields:</strong> <code>person_id</code>, <code>condition_episode_id</code>, <code>condition_start_date</code>, <code>surgery_datetime</code>, <code>surgery_name</code>, <code>surgery_concept_id</code>, <code>surgery_concept_code</code>, <code>surgery_source</code>.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.tx_surgical</code>. The <code>event_date_attr</code> is <code>surgery_datetime</code> and the <code>episode_id_attr</code> is <code>condition_episode_id</code>, so rules are anchored to the date of surgery within the correct episode.</p>
+<hr />
+<h2 id="sactregimenmv"><code>SACTRegimenMV</code><a class="headerlink" href="#sactregimenmv" title="Permanent link">&para;</a></h2>
+<p>Systemic anti-cancer therapy (SACT) treatment, one row per cycle. Each row pairs a cycle with a prescription procedure and its treatment-intent record from the cycle's regimen, and carries the cycle's first and last exposure dates. Regimen episodes are explicitly linked to their parent condition episode via <code>Episode.episode_parent_id</code>, making episode attribution exact rather than date-inferred.</p>
+<p><strong>Key fields:</strong> <code>condition_episode_id</code>, <code>first_exposure_date</code>, <code>last_exposure_date</code>, <code>regimen_concept</code>, <code>intent_concept</code>.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.tx_chemotherapy</code> (through <code>ConditionTreatmentEpisode</code>).</p>
+<hr />
+<h2 id="rtcoursemv"><code>RTCourseMV</code><a class="headerlink" href="#rtcoursemv" title="Permanent link">&para;</a></h2>
+<p>Radiotherapy treatment, one row per fraction episode. Each row pairs a fraction episode with a prescription procedure and its treatment-intent record from the course, and carries that fraction episode's first and last procedure dates. Like SACT, RT courses are explicitly linked to their parent condition episode via <code>Episode.episode_parent_id</code>.</p>
+<p><strong>Key fields:</strong> <code>condition_episode_id</code>, <code>first_exposure_date</code>, <code>last_exposure_date</code>, <code>course_concept</code>, <code>intent_concept</code>.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.tx_radiotherapy</code> (through <code>ConditionTreatmentEpisode</code>).</p>
+<hr />
+<h2 id="cyclemv"><code>CycleMV</code><a class="headerlink" href="#cyclemv" title="Permanent link">&para;</a></h2>
+<p>Individual treatment cycles within a SACT regimen. Provides drug-exposure level detail below the regimen. Summarised per cycle by <code>SACTRegimenMV</code>.</p>
+<hr />
+<h2 id="fractionmv"><code>FractionMV</code><a class="headerlink" href="#fractionmv" title="Permanent link">&para;</a></h2>
+<p>Individual radiotherapy fractions within a course. Provides procedure-level detail below the RT course. Summarised per fraction episode by <code>RTCourseMV</code>.</p>
+<hr />
+<h2 id="treatmentenvelopemv"><code>TreatmentEnvelopeMV</code><a class="headerlink" href="#treatmentenvelopemv" title="Permanent link">&para;</a></h2>
+<p>Treatment timing for each condition episode across all modalities (surgery, SACT, and RT), joined to death information. There is one row per condition start date in the episode, so an episode whose linked conditions start on different dates has several rows with the same treatment dates. The primary source for treatment timing indicators in oa-cohorts.</p>
+<p><strong>Modality coverage:</strong> All three treatment types contribute to both the earliest and latest treatment dates, each pre-aggregated to episode grain before being joined so no modality can multiply the envelope. Surgery uses <code>SurgicalProcedureMV</code>; SACT and RT use their respective episode-linked MVs.</p>
+<p><code>LEAST</code> and <code>GREATEST</code> here rely on PostgreSQL ignoring NULL inputs and returning NULL only when every input is NULL. This is intentional: a missing modality must not suppress a real date from another.</p>
+<p><strong>Key fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>earliest_treatment</code></td>
+<td>Date</td>
+<td>First treatment event across all modalities for the episode</td>
+</tr>
+<tr>
+<td><code>latest_treatment</code></td>
+<td>Date</td>
+<td>Last treatment event across all modalities for the episode</td>
+</tr>
+<tr>
+<td><code>days_from_dx_to_treatment</code></td>
+<td>Integer</td>
+<td>Calendar days from <code>condition_start_date</code> to <code>earliest_treatment</code>. Null when either is absent.</td>
+</tr>
+<tr>
+<td><code>treatment_days_before_death</code></td>
+<td>Integer</td>
+<td>Calendar days from <code>latest_treatment</code> to death. Null when either is absent. Negative values indicate a data quality issue (treatment recorded after death) and are surfaced intentionally for downstream handling.</td>
+</tr>
+<tr>
+<td><code>concurrent_chemort</code></td>
+<td>Boolean / Null</td>
+<td>True when SACT and RT windows overlap within the episode. Null when either modality is absent. Same-day starts are treated as concurrent.</td>
+</tr>
+<tr>
+<td><code>death_datetime</code></td>
+<td>DateTime</td>
+<td>From the OMOP Death table.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>oa-cohorts:</strong> Three <code>RuleTarget</code> entries draw from this view:</p>
+<ul>
+<li><code>RuleTarget.dx_to_tx_window</code> — the <code>days_from_dx_to_treatment</code> scalar, anchored temporally to <code>condition_start_date</code>.</li>
+<li><code>RuleTarget.tx_to_death_window</code> — the <code>treatment_days_before_death</code> scalar, anchored temporally to <code>condition_start_date</code>.</li>
+<li><code>RuleTarget.tx_concurrent</code> — the <code>concurrent_chemort</code> predicate, anchored temporally to <code>condition_start_date</code>.</li>
+</ul>
+<p>Note that all three window measurables use <code>condition_start_date</code> as their <code>event_date_attr</code>. The temporal anchor in oa-cohorts is the row's condition start date, not the treatment date itself; the numeric or predicate value carries the timing information.</p>
+<hr />
+<h2 id="treatmentregimencyclemv"><code>TreatmentRegimenCycleMV</code><a class="headerlink" href="#treatmentregimencyclemv" title="Permanent link">&para;</a></h2>
+<p>Treatment regimen rows with optional linked cycle episodes. Provides a hierarchical view of regimen → cycle without joining to condition context.</p>
+<hr />
+<h2 id="conditiontreatmentepisode"><code>ConditionTreatmentEpisode</code><a class="headerlink" href="#conditiontreatmentepisode" title="Permanent link">&para;</a></h2>
+<p>Treatment summary view joining condition episode context to SACT and RT summaries, carrying the parent condition episode metadata alongside the treatment dates and concepts.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.tx_chemotherapy</code> and <code>RuleTarget.tx_radiotherapy</code>.</p>
+<hr />
+<h2 id="dxtreatstartmv"><code>DxTreatStartMV</code><a class="headerlink" href="#dxtreatstartmv" title="Permanent link">&para;</a></h2>
+<p>Diagnosis-to-treatment timing summary. One row per condition episode that has at least one linked treatment regimen. Exposes <code>treatment_start</code> (earliest regimen start) and <code>treatment_end</code> (latest regimen end) relative to the diagnosis episode.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.tx_current_episode</code>.</p>
+<hr />
+<h2 id="treatmentintentmv-conditiontreatmentintentmv"><code>TreatmentIntentMV</code> / <code>ConditionTreatmentIntentMV</code><a class="headerlink" href="#treatmentintentmv-conditiontreatmentintentmv" title="Permanent link">&para;</a></h2>
+<p>Treatment intent events. <code>TreatmentIntentMV</code> exposes raw intent records; <code>ConditionTreatmentIntentMV</code> joins them back to condition episode context. Intents are sourced from the modifier layer on regimen and course prescription procedures.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.intent_sact</code> and <code>RuleTarget.intent_rt</code>.</p>
+<hr />
+<h2 id="consultwindowmv"><code>ConsultWindowMV</code><a class="headerlink" href="#consultwindowmv" title="Permanent link">&para;</a></h2>
+<p>Episode-of-care consult and referral window scalars. Provides <code>referral_to_specialist</code> (days from initial GP referral to specialist) and <code>referral_to_tx</code> (days from referral to first treatment).</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.referral_to_specialist_window</code>.</p>
+<hr />
+<!-- BEGIN GENERATED: construct-contracts -->
+
+<!-- Generated from construct-contracts.toml. Do not edit by hand; run `python -m omop_constructs.core.catalogue docs/construct-catalog.md`. -->
+
+<h2 id="contracts">Contracts<a class="headerlink" href="#contracts" title="Permanent link">&para;</a></h2>
+<p>What one row of each construct represents and how rows are identified.</p>
+<ul>
+<li><strong>Rows</strong>: what one row represents.</li>
+<li><strong>Unique on</strong>: the columns that together identify one row.</li>
+<li><strong>Row IDs</strong>: whether the construct's own ID column can be stored and reused.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Construct</th>
+<th>One row per</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#contract-condition_episode_mv"><code>ConditionEpisodeMV</code></a></td>
+<td>disease episode of any type</td>
+</tr>
+<tr>
+<td><a href="#contract-condition_treatment_episode_mv"><code>ConditionTreatmentEpisode</code></a></td>
+<td>condition episode + regimen + course</td>
+</tr>
+<tr>
+<td><a href="#contract-condition_episode_intent_mv"><code>ConditionTreatmentIntentMV</code></a></td>
+<td>condition episode + child treatment episode + treatment-intent record on it</td>
+</tr>
+<tr>
+<td><a href="#contract-consult_window_mv"><code>ConsultWindowMV</code></a></td>
+<td>episode of care</td>
+</tr>
+<tr>
+<td><a href="#contract-cycle_mv"><code>CycleMV</code></a></td>
+<td>drug exposure + treatment cycle episode</td>
+</tr>
+<tr>
+<td><a href="#contract-dx_treat_start_mv"><code>DxTreatStartMV</code></a></td>
+<td>disease episode that has at least one child treatment episode</td>
+</tr>
+<tr>
+<td><a href="#contract-fraction_mv"><code>FractionMV</code></a></td>
+<td>radiotherapy procedure occurrence + fraction episode + treatment-intent record on that procedure</td>
+</tr>
+<tr>
+<td><a href="#contract-overarching_disease_episode_mv"><code>OverarchingDiseaseEpisodeMV</code></a></td>
+<td>episode of care + child disease-extent episode</td>
+</tr>
+<tr>
+<td><a href="#contract-radioisotope_mv"><code>RadioisotopeMV</code></a></td>
+<td>condition episode + radioisotope procedure inside the episode date window</td>
+</tr>
+<tr>
+<td><a href="#contract-rt_course_mv"><code>RTCourseMV</code></a></td>
+<td>radiotherapy fraction episode + course prescription procedure + treatment-intent record on that prescription</td>
+</tr>
+<tr>
+<td><a href="#contract-sact_treatment_mv"><code>SACTRegimenMV</code></a></td>
+<td>SACT cycle + regimen prescription procedure + treatment-intent record on that prescription</td>
+</tr>
+<tr>
+<td><a href="#contract-surgical_procedure_mv"><code>SurgicalProcedureMV</code></a></td>
+<td>condition episode + explicitly linked surgical procedure</td>
+</tr>
+<tr>
+<td><a href="#contract-treatment_envelope_mv"><code>TreatmentEnvelopeMV</code></a></td>
+<td>condition episode + condition start date</td>
+</tr>
+<tr>
+<td><a href="#contract-episode_treatment_mv"><code>TreatmentIntentMV</code></a></td>
+<td>treatment episode + treatment-intent measurement on that episode</td>
+</tr>
+<tr>
+<td><a href="#contract-treatment_regimen_cycle_mv"><code>TreatmentRegimenCycleMV</code></a></td>
+<td>treatment regimen episode + child treatment cycle episode</td>
+</tr>
+</tbody>
+</table>
+<h3 id="contract-condition_episode_mv"><code>ConditionEpisodeMV</code><a class="headerlink" href="#contract-condition_episode_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>condition_episode_mv</code></p>
+<p><strong>Rows:</strong> One row per disease episode of any type: episode of care, disease progression, or metastatic. The root entity every episode-attributed construct joins to.</p>
+<p><strong>Unique on:</strong> <code>episode_id</code>.</p>
+<p><strong>Row IDs:</strong> Taken from the CDM, so they stay the same across refreshes and are safe to store.</p>
+<h3 id="contract-condition_treatment_episode_mv"><code>ConditionTreatmentEpisode</code><a class="headerlink" href="#contract-condition_treatment_episode_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>condition_treatment_episode_mv</code></p>
+<p><strong>Rows:</strong> One row per (condition episode, regimen, course) treatment episode, carrying condition context alongside the regimen and course dates and concepts.</p>
+<p><strong>Unique on:</strong> <code>condition_episode_id</code>, <code>regimen_id</code>, <code>course_id</code>. <code>condition_episode_id</code>, <code>regimen_id</code>, <code>course_id</code> are NULL on rows with nothing to link.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-condition_episode_intent_mv"><code>ConditionTreatmentIntentMV</code><a class="headerlink" href="#contract-condition_episode_intent_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>condition_episode_intent_mv</code></p>
+<p><strong>Rows:</strong> One row per (condition episode, child treatment episode, treatment-intent record on it), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL. An episode whose linked conditions start on more than one date repeats its rows once per start date.</p>
+<p><strong>Unique on:</strong> No published column combination is guaranteed unique: rows can repeat, and the intent record's own ID is not included.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-consult_window_mv"><code>ConsultWindowMV</code><a class="headerlink" href="#contract-consult_window_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>consult_window_mv</code></p>
+<p><strong>Rows:</strong> One row per episode of care, carrying the earliest GP referral, earliest specialist contact, earliest palliative-care contact, and the derived referral-to-specialist and referral-to-treatment day counts. An episode whose linked conditions start on more than one date appears on several rows with the same values.</p>
+<p><strong>Unique on:</strong> No published column combination is guaranteed unique: <code>episode_id</code> can repeat on rows with the same values.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-cycle_mv"><code>CycleMV</code><a class="headerlink" href="#contract-cycle_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>cycle_mv</code></p>
+<p><strong>Rows:</strong> One row per (drug exposure, treatment cycle episode). Drug-exposure level detail beneath the regimen.</p>
+<p><strong>Unique on:</strong> <code>drug_exposure_id</code>, <code>cycle_id</code>.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-dx_treat_start_mv"><code>DxTreatStartMV</code><a class="headerlink" href="#contract-dx_treat_start_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>dx_treat_start_mv</code></p>
+<p><strong>Rows:</strong> One row per disease episode that has at least one child treatment episode, carrying the earliest treatment start, latest treatment end, and count of distinct child regimens.</p>
+<p><strong>Unique on:</strong> <code>dx_episode_id</code>.</p>
+<p><strong>Row IDs:</strong> Taken from the CDM, so they stay the same across refreshes and are safe to store.</p>
+<h3 id="contract-fraction_mv"><code>FractionMV</code><a class="headerlink" href="#contract-fraction_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>fraction_mv</code></p>
+<p><strong>Rows:</strong> One row per (radiotherapy procedure occurrence, fraction episode, treatment-intent record on that procedure). Procedure-level detail beneath the RT course.</p>
+<p><strong>Unique on:</strong> <code>procedure_occurrence_id</code>, <code>fraction_id</code> when a procedure has at most one treatment-intent record. A procedure with several intent records repeats once per record.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-overarching_disease_episode_mv"><code>OverarchingDiseaseEpisodeMV</code><a class="headerlink" href="#contract-overarching_disease_episode_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>overarching_disease_episode_mv</code></p>
+<p><strong>Rows:</strong> One row per (episode of care, child disease-extent episode) pair. An episode of care with no progression or metastatic child contributes one row with the extent columns NULL.</p>
+<p><strong>Unique on:</strong> <code>episode_id</code>, <code>extent_episode_id</code>. <code>extent_episode_id</code> is NULL on rows with nothing to link.</p>
+<p><strong>Row IDs:</strong> Taken from the CDM, so they stay the same across refreshes and are safe to store.</p>
+<h3 id="contract-radioisotope_mv"><code>RadioisotopeMV</code><a class="headerlink" href="#contract-radioisotope_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>radioisotope_mv</code></p>
+<p><strong>Rows:</strong> One row per (condition episode, radioisotope procedure inside the episode date window). Every condition episode appears, with a null spine row when no radioisotope procedure falls in the window.</p>
+<p><strong>Unique on:</strong> <code>condition_episode_id</code>, <code>ri_occurrence_id</code>. <code>ri_occurrence_id</code> is NULL on rows with nothing to link.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-rt_course_mv"><code>RTCourseMV</code><a class="headerlink" href="#contract-rt_course_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>rt_course_mv</code></p>
+<p><strong>Rows:</strong> One row per (radiotherapy fraction episode, course prescription procedure, treatment-intent record on that prescription). The dates and fraction count describe the fraction episode, not the whole course.</p>
+<p><strong>Unique on:</strong> No published column combination is guaranteed unique: a fraction episode repeats once for each prescription procedure and intent record on its course.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-sact_treatment_mv"><code>SACTRegimenMV</code><a class="headerlink" href="#contract-sact_treatment_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>sact_treatment_mv</code></p>
+<p><strong>Rows:</strong> One row per (SACT cycle, regimen prescription procedure, treatment-intent record on that prescription). The exposure dates and count describe the cycle, not the whole regimen.</p>
+<p><strong>Unique on:</strong> No published column combination is guaranteed unique: a cycle repeats once for each prescription procedure and intent record on its regimen.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-surgical_procedure_mv"><code>SurgicalProcedureMV</code><a class="headerlink" href="#contract-surgical_procedure_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>surgical_procedure_mv</code></p>
+<p><strong>Rows:</strong> One row per (condition episode, explicitly linked surgical procedure). Every condition episode appears: an episode with no linked surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules depend on it.</p>
+<p><strong>Unique on:</strong> <code>condition_episode_id</code>, <code>surgery_occurrence_id</code>. <code>surgery_occurrence_id</code> is NULL on rows with nothing to link.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-treatment_envelope_mv"><code>TreatmentEnvelopeMV</code><a class="headerlink" href="#contract-treatment_envelope_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>treatment_envelope_mv</code></p>
+<p><strong>Rows:</strong> One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date.</p>
+<p><strong>Unique on:</strong> <code>condition_episode</code>, <code>condition_start_date</code>.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-episode_treatment_mv"><code>TreatmentIntentMV</code><a class="headerlink" href="#contract-episode_treatment_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>episode_treatment_mv</code></p>
+<p><strong>Rows:</strong> One row per (treatment episode, treatment-intent measurement on that episode), with RT and SACT modality evidence flags derived from events linked directly to the episode.</p>
+<p><strong>Unique on:</strong> No published column combination is guaranteed unique: a treatment episode with two intent records of the same concept has two rows with the same <code>treatment_episode_id</code> and <code>treatment_intent_concept_id</code>.</p>
+<p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
+<h3 id="contract-treatment_regimen_cycle_mv"><code>TreatmentRegimenCycleMV</code><a class="headerlink" href="#contract-treatment_regimen_cycle_mv" title="Permanent link">&para;</a></h3>
+<p>View: <code>treatment_regimen_cycle_mv</code></p>
+<p><strong>Rows:</strong> One row per (treatment regimen episode, child treatment cycle episode) pair. A regimen with no cycles contributes one row with the cycle columns NULL.</p>
+<p><strong>Unique on:</strong> <code>episode_id</code>, <code>cycle_episode_id</code>. <code>cycle_episode_id</code> is NULL on rows with nothing to link.</p>
+<p><strong>Row IDs:</strong> Taken from the CDM, so they stay the same across refreshes and are safe to store.</p>
+<!-- END GENERATED: construct-contracts -->
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -486,9 +486,27 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../construct-catalog/" class="md-nav__link">
+    
+    
+    
+    
+      
         
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
   
   
   <span class="md-ellipsis">
@@ -502,7 +520,163 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Construct Catalog
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../construct-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/episodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Episode constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/modifiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifier constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constructs/demography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demography constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -749,44 +923,41 @@
 <p>and reversed for <code>drop_all</code>.</p>
 <p>Dependencies can point at constructs outside the currently imported set; those are treated as external and skipped during sorting rather than rejected.</p>
 <h2 id="event-attachment-strategy">Event Attachment Strategy<a class="headerlink" href="#event-attachment-strategy" title="Permanent link">&para;</a></h2>
-<p>The active event-linkage code centers on <code>omop_constructs.alchemy.events.event_factories</code>.</p>
-<p>For procedures, measurements, and observations the library supports:</p>
-<ul>
-<li>explicit attachment via <code>Episode_Event</code></li>
-<li>fallback time-window attachment to <code>ConditionEpisodeMV</code></li>
-<li>post-filtering through <code>episode_relevant_window</code></li>
-</ul>
-<p>This keeps downstream event MVs consistent:</p>
-<ul>
-<li>person identifier</li>
-<li>event identifier</li>
-<li>event date</li>
-<li>event concept metadata</li>
-<li>attached disease episode metadata</li>
-</ul>
+<p>Diagnosis-linked procedures, measurements, and observations use one attachment rule across the construct family. A valid <code>Episode_Event</code> relationship is authoritative when its event identifier, OMOP Field concept, episode identifier, and person agree. Every valid explicit relationship is retained, so an event deliberately linked to two episodes produces one row for each relationship.</p>
+<p>When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes of care, the resolver chooses one using these rules in order:</p>
+<ol>
+<li>Prefer episodes that have started by the event date.</li>
+<li>Choose the episode start nearest to the event date.</li>
+<li>If two starts are equally near, choose the lowest <code>episode_id</code>.</li>
+</ol>
+<pre class="mermaid"><code>flowchart TD
+    event[Clinical event] --&gt; explicit{Valid Episode_Event relationship?}
+    explicit -- Yes --&gt; linked[Keep every explicitly linked episode]
+    explicit -- No --&gt; eligible{Any episode of care in the date window?}
+    eligible -- No --&gt; omitted[Do not include the event in a diagnosis-linked view]
+    eligible -- Yes --&gt; started{Any eligible episode already started?}
+    started -- Yes --&gt; prior[Rank the already-started episodes]
+    started -- No --&gt; future[Rank all eligible future episodes]
+    prior --&gt; nearest[Choose the nearest episode start]
+    future --&gt; nearest
+    nearest --&gt; tie[Break an equal-distance tie with the lowest episode_id]</code></pre>
+<p>For example, consider a patient whose first lung cancer episode starts on 10 January 2024 and remains active during ongoing care through 30 June 2026. A second primary lung cancer episode starts on 1 March 2026, and an unlinked spirometry measurement is recorded on 10 March 2026. Both episodes are eligible and have already started, so the resolver selects the second episode because its start is nearest to the measurement date. If the spirometry record has a valid explicit relationship to the first episode, that relationship is used instead. If it has valid explicit relationships to both episodes, both clinically asserted relationships are retained.</p>
+<p>The resulting diagnosis-linked event views consistently expose the person identifier, event identifier, event date, event concept metadata, and attached disease episode metadata. Exact duplicates of the same source table, event, and episode relationship are removed.</p>
 <h2 id="visit-linkage">Visit Linkage<a class="headerlink" href="#visit-linkage" title="Permanent link">&para;</a></h2>
 <p>Visits are handled differently from observations and measurements.</p>
-<p><code>DxRelevantVisitMV</code> exposes provider-specialty visits linked to disease episodes. 
-It uses a ranked proximity approach rather than the generic event-factory time-window 
-attachment path:</p>
+<p><code>DxRelevantVisitMV</code> exposes provider-specialty visits linked to disease episodes. It uses a ranked proximity approach:</p>
 <ul>
 <li>visits within ±180 days of the episode start (<code>episode_prior == 1</code>) are always included</li>
-<li>for each visit, <code>rank=1</code> identifies its single highest-priority episode assignment,
-  ordered by proximity tier then absolute day distance</li>
+<li>for each visit, <code>rank=1</code> identifies its single highest-priority episode assignment, ordered by proximity tier then absolute day distance</li>
 <li>multiple visits per episode appear as separate rows</li>
 <li>each row carries one atomic specialty concept — no specialty grouping occurs here</li>
 </ul>
-<p>This design means a downstream measurable can filter <code>DxRelevantVisitMV</code> by
-<code>provider_specialty_concept_id</code> and treat the result as an event stream, with all
-grouping, de-duplication, and timing composition deferred to the measure engine.</p>
+<p>This design means a downstream measurable can filter <code>DxRelevantVisitMV</code> by <code>provider_specialty_concept_id</code> and treat the result as an event stream, with grouping, de-duplication, and timing composition handled by the measure engine.</p>
 <h2 id="treatment-window-and-consult-window-pattern">Treatment Window And Consult Window Pattern<a class="headerlink" href="#treatment-window-and-consult-window-pattern" title="Permanent link">&para;</a></h2>
 <p>The episode layer exposes two important scalar-style constructs:</p>
 <ul>
-<li><code>TreatmentEnvelopeMV</code>
-  earliest/latest treatment and treatment-derived scalar windows</li>
-<li><code>ConsultWindowMV</code>
-  referral-derived specialist and treatment windows (scalar convenience layer —
-  see below)</li>
+<li><code>TreatmentEnvelopeMV</code>: earliest/latest treatment and treatment-derived scalar windows</li>
+<li><code>ConsultWindowMV</code>: referral-derived specialist and treatment windows represented as episode-level scalars</li>
 </ul>
 <p><code>ConsultWindowMV</code> is built by combining:</p>
 <ul>
@@ -826,46 +997,38 @@ grouping, de-duplication, and timing composition deferred to the measure engine.
 <td>oncology referral-timing scalars</td>
 </tr>
 <tr>
-<td>Status</td>
-<td>active, first-class</td>
-<td>retained pending downstream migration</td>
+<td>Best suited to</td>
+<td>reusable event streams and configurable timing measures</td>
+<td>reports that require the existing episode-level oncology referral scalars</td>
 </tr>
 </tbody>
 </table>
-<p><code>ConsultWindowMV</code> is a <strong>scalar convenience layer</strong> specific to oncology
-referral-timing indicators. Its timing logic is superseded by the
-temporal-window pattern in <code>oa_cohorts</code>. It must remain in place until
-downstream measures complete migration; it should not be extended with new
-specialty groups or timing variants.</p>
+<p>Use <code>DxRelevantVisitMV</code> when a measure needs to select specialties or define its own time window. For example, a measure of days from GP referral to the first medical oncology, radiation oncology, or haematology visit can keep the referral observation as its anchor and supply all three specialty visit streams as candidates. Use <code>ConsultWindowMV</code> when a report directly consumes the existing <code>referral_to_specialist</code> or <code>referral_to_tx</code> episode scalar.</p>
 <h2 id="two-measurable-temporal-window-pattern">Two-Measurable Temporal-Window Pattern<a class="headerlink" href="#two-measurable-temporal-window-pattern" title="Permanent link">&para;</a></h2>
-<p>The preferred pattern for referral-timing indicators is:</p>
+<p>Referral-timing indicators use this pattern:</p>
 <ol>
-<li>Define an observation measurable from <code>DxObservationMV</code> — e.g. GP oncology referral
-   (filtered by <code>event_concept_id</code>) — as the <strong>anchor event</strong>.</li>
-<li>Define one or more visit measurables from <code>DxRelevantVisitMV</code> — e.g. one per
-   specialist specialty concept — as <strong>candidate events</strong>.</li>
-<li>Pass all candidate measurables to <code>measure_temporal_window</code> in <code>oa_cohorts</code>.
-   The window engine takes the minimum over all candidates and computes the
-   elapsed days against the anchor.</li>
+<li>Define an observation measurable from <code>DxObservationMV</code>, such as a GP oncology referral filtered by <code>event_concept_id</code>, as the <strong>anchor event</strong>.</li>
+<li>Define one or more visit measurables from <code>DxRelevantVisitMV</code>, such as one per specialist specialty concept, as <strong>candidate events</strong>.</li>
+<li>Pass all candidate measurables to <code>measure_temporal_window</code> in <code>oa_cohorts</code>. The window engine selects from the candidates and computes the elapsed days from the anchor.</li>
 </ol>
 <p>Example — "GP referral to first oncology specialist" indicator:</p>
-<pre><code># Anchor: GP oncology referral observation
+<div class="highlight"><pre><span></span><code># Anchor: GP oncology referral observation
 referral_obs = ObservationMeasurable(
     construct=DxObservationMV,
-    person_id_attr=&quot;person_id&quot;,
-    episode_id_attr=&quot;episode_id&quot;,
-    event_date_attr=&quot;event_date&quot;,
-    value_concept_attr=&quot;event_concept_id&quot;,
+    person_id_attr="person_id",
+    episode_id_attr="episode_id",
+    event_date_attr="event_date",
+    value_concept_attr="event_concept_id",
     concept_filter=[oncology_referral_concept_id],
 )
 
 # Candidates: specialist visits by specialty
 medonc_visit = VisitMeasurable(
     construct=DxRelevantVisitMV,
-    person_id_attr=&quot;person_id&quot;,
-    episode_id_attr=&quot;episode_id&quot;,
-    event_date_attr=&quot;visit_start_date&quot;,
-    value_concept_attr=&quot;provider_specialty_concept_id&quot;,
+    person_id_attr="person_id",
+    episode_id_attr="episode_id",
+    event_date_attr="visit_start_date",
+    value_concept_attr="provider_specialty_concept_id",
     concept_filter=[medonc_concept_id],
 )
 
@@ -887,7 +1050,7 @@ measure_temporal_window(
     candidates=[medonc_visit, radonc_visit, haematology_visit],
     threshold_days=X,
 )
-</code></pre>
+</code></pre></div>
 
 
 
