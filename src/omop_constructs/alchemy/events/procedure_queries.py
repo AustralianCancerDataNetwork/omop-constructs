@@ -1,4 +1,8 @@
-from .event_factories import procedure_attached_to_condition_episode, episode_relevant_window
+from .event_factories import (
+    EVENT_CONSTRUCT_ATTACHMENT_POLICY,
+    episode_relevant_window,
+    procedure_attached_to_condition_episode,
+)
 from omop_alchemy.cdm.model import Procedure_Occurrence
 
 dx_all_procedures = episode_relevant_window(
@@ -9,6 +13,7 @@ dx_all_procedures = episode_relevant_window(
             Procedure_Occurrence.procedure_datetime.label("procedure_datetime"),
         ],
         name="dx_all_procedures",
+        policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
     ),
     name="dx_all_procedures_windowed",
 )

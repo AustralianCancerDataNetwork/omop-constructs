@@ -70,49 +70,51 @@ Dependencies can point at constructs outside the currently imported set; those a
 
 ## Event Attachment Strategy
 
-The active event-linkage code centers on `omop_constructs.alchemy.events.event_factories`.
+Diagnosis-linked procedures, measurements, and observations use one attachment rule across the construct family. A valid `Episode_Event` relationship is authoritative when its event identifier, OMOP Field concept, episode identifier, and person agree. Every valid explicit relationship is retained, so an event deliberately linked to two episodes produces one row for each relationship.
 
-For procedures, measurements, and observations the library supports:
+When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes of care, the resolver chooses one using these rules in order:
 
-- explicit attachment via `Episode_Event`
-- fallback time-window attachment to `ConditionEpisodeMV`
-- post-filtering through `episode_relevant_window`
+1. Prefer episodes that have started by the event date.
+2. Choose the episode start nearest to the event date.
+3. If two starts are equally near, choose the lowest `episode_id`.
 
-This keeps downstream event MVs consistent:
+```mermaid
+flowchart TD
+    event[Clinical event] --> explicit{Valid Episode_Event relationship?}
+    explicit -- Yes --> linked[Keep every explicitly linked episode]
+    explicit -- No --> eligible{Any episode of care in the date window?}
+    eligible -- No --> omitted[Do not include the event in a diagnosis-linked view]
+    eligible -- Yes --> started{Any eligible episode already started?}
+    started -- Yes --> prior[Rank the already-started episodes]
+    started -- No --> future[Rank all eligible future episodes]
+    prior --> nearest[Choose the nearest episode start]
+    future --> nearest
+    nearest --> tie[Break an equal-distance tie with the lowest episode_id]
+```
 
-- person identifier
-- event identifier
-- event date
-- event concept metadata
-- attached disease episode metadata
+For example, consider a patient whose first lung cancer episode starts on 10 January 2024 and remains active during ongoing care through 30 June 2026. A second primary lung cancer episode starts on 1 March 2026, and an unlinked spirometry measurement is recorded on 10 March 2026. Both episodes are eligible and have already started, so the resolver selects the second episode because its start is nearest to the measurement date. If the spirometry record has a valid explicit relationship to the first episode, that relationship is used instead. If it has valid explicit relationships to both episodes, both clinically asserted relationships are retained.
+
+The resulting diagnosis-linked event views consistently expose the person identifier, event identifier, event date, event concept metadata, and attached disease episode metadata. Exact duplicates of the same source table, event, and episode relationship are removed.
 
 ## Visit Linkage
 
 Visits are handled differently from observations and measurements.
 
-`DxRelevantVisitMV` exposes provider-specialty visits linked to disease episodes. 
-It uses a ranked proximity approach rather than the generic event-factory time-window 
-attachment path:
+`DxRelevantVisitMV` exposes provider-specialty visits linked to disease episodes. It uses a ranked proximity approach:
 
 - visits within ±180 days of the episode start (`episode_prior == 1`) are always included
-- for each visit, `rank=1` identifies its single highest-priority episode assignment,
-  ordered by proximity tier then absolute day distance
+- for each visit, `rank=1` identifies its single highest-priority episode assignment, ordered by proximity tier then absolute day distance
 - multiple visits per episode appear as separate rows
 - each row carries one atomic specialty concept — no specialty grouping occurs here
 
-This design means a downstream measurable can filter `DxRelevantVisitMV` by
-`provider_specialty_concept_id` and treat the result as an event stream, with all
-grouping, de-duplication, and timing composition deferred to the measure engine.
+This design means a downstream measurable can filter `DxRelevantVisitMV` by `provider_specialty_concept_id` and treat the result as an event stream, with grouping, de-duplication, and timing composition handled by the measure engine.
 
 ## Treatment Window And Consult Window Pattern
 
 The episode layer exposes two important scalar-style constructs:
 
-- `TreatmentEnvelopeMV`
-  earliest/latest treatment and treatment-derived scalar windows
-- `ConsultWindowMV`
-  referral-derived specialist and treatment windows (scalar convenience layer —
-  see below)
+- `TreatmentEnvelopeMV`: earliest/latest treatment and treatment-derived scalar windows
+- `ConsultWindowMV`: referral-derived specialist and treatment windows represented as episode-level scalars
 
 `ConsultWindowMV` is built by combining:
 
@@ -129,25 +131,17 @@ The episode layer exposes two important scalar-style constructs:
 | Specialty | atomic concept per row | groups hardcoded specialty sets |
 | Aggregation | none | `min(visit_start_date)` across specialty groups |
 | Purpose | reusable event surface | oncology referral-timing scalars |
-| Status | active, first-class | retained pending downstream migration |
+| Best suited to | reusable event streams and configurable timing measures | reports that require the existing episode-level oncology referral scalars |
 
-`ConsultWindowMV` is a **scalar convenience layer** specific to oncology
-referral-timing indicators. Its timing logic is superseded by the
-temporal-window pattern in `oa_cohorts`. It must remain in place until
-downstream measures complete migration; it should not be extended with new
-specialty groups or timing variants.
+Use `DxRelevantVisitMV` when a measure needs to select specialties or define its own time window. For example, a measure of days from GP referral to the first medical oncology, radiation oncology, or haematology visit can keep the referral observation as its anchor and supply all three specialty visit streams as candidates. Use `ConsultWindowMV` when a report directly consumes the existing `referral_to_specialist` or `referral_to_tx` episode scalar.
 
 ## Two-Measurable Temporal-Window Pattern
 
-The preferred pattern for referral-timing indicators is:
+Referral-timing indicators use this pattern:
 
-1. Define an observation measurable from `DxObservationMV` — e.g. GP oncology referral
-   (filtered by `event_concept_id`) — as the **anchor event**.
-2. Define one or more visit measurables from `DxRelevantVisitMV` — e.g. one per
-   specialist specialty concept — as **candidate events**.
-3. Pass all candidate measurables to `measure_temporal_window` in `oa_cohorts`.
-   The window engine takes the minimum over all candidates and computes the
-   elapsed days against the anchor.
+1. Define an observation measurable from `DxObservationMV`, such as a GP oncology referral filtered by `event_concept_id`, as the **anchor event**.
+2. Define one or more visit measurables from `DxRelevantVisitMV`, such as one per specialist specialty concept, as **candidate events**.
+3. Pass all candidate measurables to `measure_temporal_window` in `oa_cohorts`. The window engine selects from the candidates and computes the elapsed days from the anchor.
 
 Example — "GP referral to first oncology specialist" indicator:
 

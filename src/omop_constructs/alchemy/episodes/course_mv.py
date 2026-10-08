@@ -5,6 +5,7 @@ from datetime import date
 from typing import Optional
 from .course_joins import course_join
 from .fraction_mv import FractionMV
+from ..modifiers.procedure_modifier_mv import ModifiedProcedure
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
@@ -17,7 +18,7 @@ class RTCourseMV(
     __mv_name__ = "rt_course_mv"
     __mv_select__ = select_all_columns(course_join)
     __mv_index__ = "course_id"
-    __deps__ = (FractionMV.__mv_name__,)
+    __deps__ = (FractionMV.__mv_name__, ModifiedProcedure.__mv_name__)
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 

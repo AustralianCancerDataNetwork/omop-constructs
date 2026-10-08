@@ -214,3 +214,22 @@
 - pin the resolved CDM engine URL so the oa-configurator 1.x migration can prove it did not repoint the database
 - moved to omop-alchemy 1.x, oa-configurator 1.x and orm-loader 1.x
 - concept resolver imports follow omop-alchemy's move from `cdm.handlers` to `toolkit.core.concepts`
+
+# 0.7.1 (unreleased)
+- `construct-contracts.toml`: the wheel-packaged, machine-readable D3 grain catalogue. Records the grain, intended logical key, ORM identity, surrogate stability, per-input fan-out, concurrent-refresh eligibility, 1.0 inclusion, and lung-report usage of all 43 registered constructs, plus a findings register
+- `omop_constructs.core.contracts` loads and validates that manifest; `omop_constructs.core.catalogue` renders it into `docs/construct-catalog.md`
+- new CLI subcommands `contracts` and `render-catalogue`
+- registry coverage and key-column validation tests: a construct with no declared grain, or a declared key naming a column that does not exist in both the mapper and the materialized-view select, now fails
+- focused test asserting a clean construct import emits no SQLAlchemy mapper warnings, with a companion test proving the promoted filter bites
+- `tools/release_validation/`: release comparison tools. `collect_key_metrics.py` measures a built schema against the declared keys in `construct-contracts.toml`; `compare_schemas.py` compares two built schemas with `EXCEPT ALL`, by construct and by person. Metadata comparisons stay database-side and optional clinical samples are bounded before transfer. 
+- `sact_treatment_mv` and `rt_course_mv` declare their `modified_procedure_mv` dependency, which both read but neither listed. Build order previously held only because of module import order
+- reconciled the construct catalogue prose with the actual queries for surgery attribution, SACT and RT grain, the treatment envelope, and event attachment
+- release validation normalises rendered SQL before checksumming: resolved concept-ID lists are emitted in hash-seed-dependent set order, and PostgreSQL stores the qualified schema name of every referenced object, so unnormalised checksums reported roughly a quarter of the registry as changed on every run
+
+# 0.8.0 (unreleased)
+- diagnosis-linked Measurement, Observation, and Procedure Occurrence constructs now use omop-alchemy's canonical event projection and explicit-first episode attachment policy
+- valid explicit links require the event ID, Field-concept discriminator, episode, and person to agree; exact duplicate links collapse and linked events no longer also enter date-window fallback
+- unlinked events select one eligible episode of care deterministically: already-started episodes first, then nearest episode start, then lowest episode ID; valid explicit multi-links remain intact
+- custom event factories can select an `EpisodeAttachmentPolicy` and `TemporalRankingSpec`; deprecated Boolean and direct-helper calls issue warnings that identify the policy-based replacement
+- ranked date-window fallback considers episodes of care only, so an unlinked event can no longer attach to a later-starting progression or metastatic episode; those episodes receive events only through valid explicit links. All-in-window and explicit-only policies are unchanged. Requires omop-alchemy>=1.2.1 for the separate explicit-link and fallback episode sources
+- deployments must rebuild the affected event materialized views and `consult_window_mv`; an in-place refresh does not replace a PostgreSQL materialized-view definition

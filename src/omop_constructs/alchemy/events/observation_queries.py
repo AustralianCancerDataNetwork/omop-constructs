@@ -1,4 +1,8 @@
-from .event_factories import observation_attached_to_condition_episode, episode_relevant_window
+from .event_factories import (
+    EVENT_CONSTRUCT_ATTACHMENT_POLICY,
+    episode_relevant_window,
+    observation_attached_to_condition_episode,
+)
 from omop_alchemy.cdm.model import Observation
 dx_all_observations = episode_relevant_window(
     observation_attached_to_condition_episode(
@@ -11,6 +15,7 @@ dx_all_observations = episode_relevant_window(
         ],
         name="dx_all_observations",
         unlinked_only=False,
+        policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
     ),
     name="dx_all_observations_windowed",
 )

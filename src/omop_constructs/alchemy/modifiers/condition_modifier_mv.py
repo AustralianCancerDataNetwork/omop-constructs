@@ -25,7 +25,7 @@ class StageModifier(MaterializedViewMixin, Base):
     """
     __mv_name__ = 'stage_modifier_mv'
     __mv_select__ = select_all_columns(all_stage_join)
-    __mv_pk__ = ["stage_id"]
+    __mv_pk__ = ["mv_id"]
     __table_args__ = {"extend_existing": True}
     __tablename__ = __mv_name__
     __deps__ = (

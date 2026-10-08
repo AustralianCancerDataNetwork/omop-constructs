@@ -15,3 +15,6 @@ wheels/
 _temp
 notebooks/
 .ipynb_checkpoints/
+
+scripts/release_validation/
+tests/test_transitional_release_scripts.py
