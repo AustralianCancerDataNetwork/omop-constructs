@@ -11,12 +11,12 @@ The manifest rather than the ORM classes holds this because only part of it is
 intrinsic. Grain and logical key belong to the construct; 1.0 inclusion and
 lung-report usage are release and catalogue policy that would otherwise leak
 into runtime classes. Keeping all of it in one file gives the coverage tests,
-the release validation scripts, and the rendered catalogue a single source.
+the release comparison tools, and the rendered catalogue a single source.
 
 Declared keys are *intended* keys. Where a construct does not satisfy its
 declared key today, `known_violations` names the finding. Callers that need to
 know what the data actually looks like must measure it — see
-`scripts/release_validation/` — rather than trusting the declaration.
+`tools/release_validation/collect_key_metrics.py` — rather than trusting the declaration.
 
 The manifest is shipped inside the wheel so the public catalogue CLI works from
 an installed package. An explicit path or ``OMOP_CONSTRUCTS_CONTRACTS`` can

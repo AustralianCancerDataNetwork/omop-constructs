@@ -3,7 +3,7 @@
 # The machine-readable D3 grain catalogue for every construct in the shipped
 # registry. This file is the single source for the rendered construct
 # catalogue, the registry coverage and key-column tests, and the release
-# validation scripts under `scripts/release_validation/`.
+# comparison tools under `tools/release_validation/`.
 #
 # Why a manifest rather than attributes on the ORM classes: grain and logical
 # key are intrinsic to a construct, but 1.0 inclusion and lung-report usage are
@@ -198,7 +198,7 @@ a different checksum. PostgreSQL then preserves that order in
 `pg_get_viewdef`, so the deployed definition is unstable too.
 
 This defeats checksum-based release validation: roughly a quarter of the registry
-reports as changed on every run. `scripts/release_validation/_sql_normalise.py`
+reports as changed on every run. `tools/release_validation/_sql_normalise.py`
 works around it by sorting numeric IN lists before hashing, and the orchestrator
 reports ordering-only differences separately from real ones. The underlying fix
 is for the query factories to sort resolved concept IDs before rendering them,
@@ -217,7 +217,7 @@ detail = """
 do not appear in the information schema at all, so the query returns no rows and
 every construct is reported as missing all of its columns. The method therefore
 cannot detect real schema drift. Column introspection must read `pg_attribute`,
-as `scripts/release_validation/_common.py` now does. Fix belongs with the rest
+as `tools/release_validation/_common.py` now does. Fix belongs with the rest
 of the lifecycle work in OC-3.
 """
 

@@ -11,7 +11,7 @@ What these tests deliberately do NOT check is whether a declared key actually
 holds against data. Declared keys are intended keys, and most of them are
 violated today by design — see each contract's ``known_violations``. Measuring
 the real duplicate counts needs a populated CDM and belongs to
-``scripts/release_validation/collect_key_metrics.py``.
+``tools/release_validation/collect_key_metrics.py``.
 
 Marked ``postgres`` because importing the construct manifest resolves the
 semantics registry against a live database at module scope (OC-H2). The
