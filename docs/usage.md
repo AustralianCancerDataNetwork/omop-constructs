@@ -5,13 +5,13 @@
 Typical runtime usage assumes:
 
 - `oa-configurator` is installed and a shared OMOP stack config is available
-- `omop-alchemy>=1.2.0,<2`, `omop-semantics`, and `orm-loader>=1.2.0,<2` are installed
+- `omop-alchemy>=1.2.2.dev0,<2` (the local Q4 wheel selected by `tool.uv.sources`), `omop-semantics`, and `orm-loader>=1.2.0,<2` are installed
 - `omop-semantics` runtime value sets are available
 - a PostgreSQL database is available for materialized view creation and refresh
 
 The modifier layer builds database-side concept predicates without opening a connection at import time. Other semantics-backed construct families still require database-backed resolver setup.
 
-Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode of care: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest `episode_id`. For example, an unlinked pathology observation recorded after one cancer episode began but shortly before a second episode began is assigned to the episode already in progress. A valid explicit relationship to the second episode takes precedence over this date-based choice. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. Custom queries can override the default with explicit `policy` and `ranking` arguments.
+Diagnosis-linked measurements, procedures, and observations preserve every valid explicit episode link. An event without an explicit link attaches to one episode of care: an episode already started at the event date is preferred, followed by the nearest episode start and then the lowest `episode_id`. When the nearest eligible already-started episode began at least 365 days before the event, choose the earliest eligible upcoming episode starting within 60 days after the event, breaking equal starts by the lowest episode ID. Both thresholds are inclusive. A more recent started episode blocks this override, and a same-day start is already started. A valid explicit relationship to the second episode takes precedence over this date-based choice. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. Custom queries can override the default with explicit `policy` and `ranking` arguments.
 
 ## Configuration With `omop-config`
 
@@ -97,11 +97,14 @@ These helpers assume PostgreSQL materialized views and use `pg_matviews` for exi
 
 The diagnosis-linked event constructs use an explicit-first attachment policy. A valid `Episode_Event` relationship must match the event ID, Field-concept discriminator, and person. It is emitted once and suppresses date-window fallback for that table-scoped event. An event without a valid explicit relationship is attached to one eligible episode of care using the deterministic ranking described above.
 
+The default lower bound is the episode-of-care start minus 90 days. Its upper bound is the greatest of its own window end and the latest window end of its same-person nested progression or metastatic diagnoses. Each episode's own window end is its recorded end date, or its start plus 365 days when the end is absent. Extension changes fallback eligibility only: explicit links, root-start ranking, and recorded episode dates in the output remain unchanged. Custom `EpisodeWindowSpec` horizons and bound inclusivity also apply to the extended candidate. All-in-window and explicit-only policies retain their existing behaviour. 
+
 The attachment policy is part of each materialized-view definition. PostgreSQL `REFRESH MATERIALIZED VIEW` repopulates the definition already stored in the database, so installing a release with a changed attachment policy requires a rebuild. The affected definitions are:
 
 - `dx_measurement_mv`, `dx_observation_mv`, and `dx_procedure_mv`
 - the concept-specific measurement views (`weight_dx_mv`, `weight_change_dx_mv`, `height_dx_mv`, `bsa_dx_mv`, `creatinine_clearance_dx_mv`, `egfr_dx_mv`, `fev1_dx_mv`, `dtherm_dx_mv`, `ecog_dx_mv`, and `smoking_pyh_dx_mv`)
 - `consult_window_mv`, which depends on `dx_observation_mv`.
+
 
 For a registry-managed deployment, rebuild the managed construct set in dependency order:
 
@@ -183,3 +186,6 @@ Together, these views compute episode-level referral-to-specialist and referral-
 - Import-time resolver errors: check the active `oa-configurator` stack config before importing modifier-heavy modules.
 - Schema mismatch during validation: the mapped class and underlying materialized view definition have drifted.
 - Missing construct in downstream code: confirm the module containing that construct class has actually been imported.
+
+
+Ranked attachment queries carry a private `_fallback_window_end` alongside `attachment_method`. `episode_relevant_window` consumes both, so its final filter honours the extension while materialized views retain recorded episode dates and their existing columns. Configure ranked open-end horizons with `EpisodeWindowSpec` at attachment time. All-in-window and explicit-only queries keep their original window path.

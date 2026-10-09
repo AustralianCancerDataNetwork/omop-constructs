@@ -72,11 +72,13 @@ Dependencies can point at constructs outside the currently imported set; those a
 
 Diagnosis-linked procedures, measurements, and observations use one attachment rule across the construct family. A valid `Episode_Event` relationship is authoritative when its event identifier, OMOP Field concept, episode identifier, and person agree. Every valid explicit relationship is retained, so an event deliberately linked to two episodes produces one row for each relationship.
 
-When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes of care, the resolver chooses one using these rules in order:
+When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The default lower bound is the episode-of-care start minus 90 days. Its upper bound is the greatest of its own window end and the latest window end of its same-person nested progression or metastatic diagnoses. Each episode's own window end is its recorded end date, or its start plus 365 days when the end is absent. Extension changes fallback eligibility only: explicit links, root-start ranking, and recorded episode dates in the output remain unchanged. From the eligible episodes of care, the resolver chooses one using these rules in order:
 
 1. Prefer episodes that have started by the event date.
 2. Choose the episode start nearest to the event date.
 3. If two starts are equally near, choose the lowest `episode_id`.
+
+When the nearest eligible already-started episode began at least 365 days before the event, choose the earliest eligible upcoming episode starting within 60 days after the event, breaking equal starts by the lowest episode ID. Both thresholds are inclusive. A more recent started episode blocks this override, and a same-day start is already started. No concept list is used.
 
 ```mermaid
 flowchart TD
@@ -87,7 +89,10 @@ flowchart TD
     eligible -- Yes --> started{Any eligible episode already started?}
     started -- Yes --> prior[Rank the already-started episodes]
     started -- No --> future[Rank all eligible future episodes]
-    prior --> nearest[Choose the nearest episode start]
+    prior --> override{"Started winner aged at least 365 days<br/>with an eligible upcoming start within 60 days?"}
+    override -- Yes --> upcoming[Keep upcoming starts within 60 days]
+    override -- No --> nearest[Choose the nearest episode start]
+    upcoming --> nearest
     future --> nearest
     nearest --> tie[Break an equal-distance tie with the lowest episode_id]
 ```
@@ -185,3 +190,6 @@ measure_temporal_window(
     threshold_days=X,
 )
 ```
+
+
+Ranked attachment queries carry a private `_fallback_window_end` alongside `attachment_method`. `episode_relevant_window` consumes both, so its final filter honours the extension while materialized views retain recorded episode dates and their existing columns. Configure ranked open-end horizons with `EpisodeWindowSpec` at attachment time. All-in-window and explicit-only queries keep their original window path.
