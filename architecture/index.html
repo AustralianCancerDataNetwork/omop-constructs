@@ -924,12 +924,13 @@
 <p>Dependencies can point at constructs outside the currently imported set; those are treated as external and skipped during sorting rather than rejected.</p>
 <h2 id="event-attachment-strategy">Event Attachment Strategy<a class="headerlink" href="#event-attachment-strategy" title="Permanent link">&para;</a></h2>
 <p>Diagnosis-linked procedures, measurements, and observations use one attachment rule across the construct family. A valid <code>Episode_Event</code> relationship is authoritative when its event identifier, OMOP Field concept, episode identifier, and person agree. Every valid explicit relationship is retained, so an event deliberately linked to two episodes produces one row for each relationship.</p>
-<p>When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The eligible window begins 90 days before the episode start and ends on the episode end date. An episode without an end date remains eligible for 365 days after its start. From the eligible episodes of care, the resolver chooses one using these rules in order:</p>
+<p>When an event has no valid explicit relationship, the event date determines its episode of care. Progression and metastatic episodes are never chosen by date; they receive events only through valid explicit links. The default lower bound is the episode-of-care start minus 90 days. Its upper bound is the greatest of its own window end and the latest window end of its same-person nested progression or metastatic diagnoses. Each episode's own window end is its recorded end date, or its start plus 365 days when the end is absent. Extension changes fallback eligibility only: explicit links, root-start ranking, and recorded episode dates in the output remain unchanged. From the eligible episodes of care, the resolver chooses one using these rules in order:</p>
 <ol>
 <li>Prefer episodes that have started by the event date.</li>
 <li>Choose the episode start nearest to the event date.</li>
 <li>If two starts are equally near, choose the lowest <code>episode_id</code>.</li>
 </ol>
+<p>When the nearest eligible already-started episode began at least 365 days before the event, choose the earliest eligible upcoming episode starting within 60 days after the event, breaking equal starts by the lowest episode ID. Both thresholds are inclusive. A more recent started episode blocks this override, and a same-day start is already started. No concept list is used.</p>
 <pre class="mermaid"><code>flowchart TD
     event[Clinical event] --&gt; explicit{Valid Episode_Event relationship?}
     explicit -- Yes --&gt; linked[Keep every explicitly linked episode]
@@ -938,7 +939,10 @@
     eligible -- Yes --&gt; started{Any eligible episode already started?}
     started -- Yes --&gt; prior[Rank the already-started episodes]
     started -- No --&gt; future[Rank all eligible future episodes]
-    prior --&gt; nearest[Choose the nearest episode start]
+    prior --&gt; override{"Started winner aged at least 365 days&lt;br/&gt;with an eligible upcoming start within 60 days?"}
+    override -- Yes --&gt; upcoming[Keep upcoming starts within 60 days]
+    override -- No --&gt; nearest[Choose the nearest episode start]
+    upcoming --&gt; nearest
     future --&gt; nearest
     nearest --&gt; tie[Break an equal-distance tie with the lowest episode_id]</code></pre>
 <p>For example, consider a patient whose first lung cancer episode starts on 10 January 2024 and remains active during ongoing care through 30 June 2026. A second primary lung cancer episode starts on 1 March 2026, and an unlinked spirometry measurement is recorded on 10 March 2026. Both episodes are eligible and have already started, so the resolver selects the second episode because its start is nearest to the measurement date. If the spirometry record has a valid explicit relationship to the first episode, that relationship is used instead. If it has valid explicit relationships to both episodes, both clinically asserted relationships are retained.</p>
@@ -1051,6 +1055,7 @@ measure_temporal_window(
     threshold_days=X,
 )
 </code></pre></div>
+<p>Ranked attachment queries carry a private <code>_fallback_window_end</code> alongside <code>attachment_method</code>. <code>episode_relevant_window</code> consumes both, so its final filter honours the extension while materialized views retain recorded episode dates and their existing columns. Configure ranked open-end horizons with <code>EpisodeWindowSpec</code> at attachment time. All-in-window and explicit-only queries keep their original window path.</p>
 
 
 
