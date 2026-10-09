@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "oa-configurator>=1.2.1,<2",
-    "omop-alchemy[postgres]>=1.2.1,<2",
+    "omop-alchemy[postgres]>=1.2.2,<2",
     "omop-semantics>=0.6.0",
     "orm-loader>=1.2.0,<2",
     "sqlalchemy>=2.0.45",
@@ -18,10 +18,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ipython>=9.8.0",
-    # <0.16 deliberately: ruff 0.16 widened its default rule set enormously
-    # (omop-alchemy reports 0 findings on 0.15.14 and 607 on 0.16.3). Every
-    # sibling is green only because its lockfile predates 0.16. Lifting this
-    # bound is a stack-wide decision, not a per-repo one.
     "ruff>=0.15,<0.16",
     "ty==0.0.61",
     "pytest>=9.0.3",

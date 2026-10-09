@@ -263,6 +263,7 @@ def test_attachment_method_is_consumed_not_exposed(windowed_selects):
     """The window needs the provenance column; the views must not carry it."""
     for name, query in windowed_selects.items():
         assert "attachment_method" not in query.c, name
+        assert "_fallback_window_end" not in query.c, name
 
 
 @pytest.mark.parametrize("name", sorted(WINDOWED_SHAPES))
@@ -278,18 +279,18 @@ def test_explicit_attachments_are_exempt_from_the_window(windowed_selects, name)
 
 
 @pytest.mark.parametrize("name", sorted(WINDOWED_SHAPES))
-def test_the_window_bound_respects_the_recorded_episode_end(
+def test_the_window_bound_uses_the_extended_attachment_end(
     windowed_selects, name
 ):
-    """The bound must be the attachment builder's, not a fixed days-post cap.
+    """The outer filter must reuse the admitted end, not truncate it to the root.
 
-    Comparing against ``episode_start_date + days_post`` ignores
-    ``episode_end_date`` and truncates any closed episode longer than that
-    horizon partway through itself.
+    Recorded dates remain projected, while the private bounded end includes
+    the root's own end and its later nested diagnoses.
     """
     compiled = " ".join(
         str(windowed_selects[name].select().compile(dialect=postgresql.dialect())).split()
     )
     where = compiled[compiled.rindex("WHERE"):]
     assert "coalesce" in where.lower(), name
-    assert "episode_end_date" in where, name
+    assert "_fallback_window_end" in where, name
+    assert "CASE WHEN" in compiled and "max(" in compiled.lower(), name

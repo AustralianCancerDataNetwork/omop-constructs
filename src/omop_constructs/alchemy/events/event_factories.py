@@ -14,7 +14,7 @@ from sqlalchemy.sql.selectable import FromClause, SelectBase
 
 from omop_alchemy.cdm.model import Concept, Measurement, Observation, Procedure_Occurrence
 from omop_alchemy.cdm.model.clinical.event_metadata import clinical_event_model_spec
-from omop_alchemy.cdm.model.structural import Episode_Event
+from omop_alchemy.cdm.model.structural import Episode, Episode_Event
 from omop_alchemy.toolkit.core.events import (
     ClinicalEventColumn,
     canonical_event_projection,
@@ -27,7 +27,9 @@ from omop_alchemy.toolkit.episodes.derivation import (
     TemporalRankingSpec,
     TemporalSelectionPolicy,
     TemporalSidePreference,
+    UpcomingEpisodePreference,
     episode_attachment_queries,
+    episode_window_bounds,
     episode_window_predicate,
 )
 
@@ -48,6 +50,11 @@ EVENT_CONSTRUCT_ATTACHMENT_RANKING = TemporalRankingSpec(
     side_preference=TemporalSidePreference.on_or_before_anchor,
 )
 
+EVENT_CONSTRUCT_UPCOMING_PREFERENCE = UpcomingEpisodePreference(
+    max_days_before_start=60,
+    min_started_age_days=365,
+)
+
 modifier_concept = so.aliased(Concept, name="modifier_concept")
 procedure_concept = so.aliased(Concept, name="procedure_concept")
 observation_concept = so.aliased(Concept, name="observation_concept")
@@ -62,6 +69,7 @@ _COMPATIBILITY_HIDDEN_EVENT_COLUMNS = frozenset(
         str(ClinicalEventColumn.event_source_table),
     }
 )
+_FALLBACK_WINDOW_END = "_fallback_window_end"
 _EPISODE_COMPATIBILITY_COLUMNS = (
     "episode_concept_id",
     "episode_label",
@@ -159,25 +167,82 @@ def _empty_episode_events() -> FromClause:
     )
 
 
+def _nested_diagnosis_window_ends(
+    episodes: FromClause,
+    window: EpisodeWindowSpec,
+) -> sa.Subquery:
+    """Resolve hierarchy and aggregate one bounded end per parent and person."""
+    children = (
+        episodes.alias("nested_diagnoses")
+        if "episode_parent_id" in episodes.c
+        else Episode.__table__.alias("nested_diagnoses")
+    )
+    _, child_end = episode_window_bounds(
+        children.c.episode_start_date, children.c.episode_end_date, window=window
+    )
+    return (
+        sa.select(
+            children.c.person_id,
+            children.c.episode_parent_id,
+            sa.func.max(child_end).label("latest_window_end"),
+        )
+        .where(
+            children.c.episode_concept_id.in_(
+                [
+                    runtime.types.disease_episode_types.disease_progression,
+                    runtime.types.disease_episode_types.metastatic,
+                ]
+            )
+        )
+        .group_by(children.c.person_id, children.c.episode_parent_id)
+        .subquery("nested_diagnosis_window_ends")
+    )
+
+
 def _fallback_episodes(
     episodes: FromClause,
     policy: EpisodeAttachmentPolicy,
+    window: EpisodeWindowSpec,
 ) -> FromClause | None:
-    """Choose the episodes a policy may attach unlinked events to by date.
+    """Extend ranked root windows to cover their same-person disease children.
 
-    Ranked fallback chooses among episodes of care only. A progression or
-    metastatic episode starts on or after its episode of care, so admitting it
-    would let a nested diagnosis win the ranking, and cohort rows are keyed on
-    the episode of care. All-in-window fallback keeps every disease episode, and
-    explicit-only attachment has no fallback stage. Explicit links are validated
-    against the full source in every case.
+    Only the fallback candidate's end changes; the final projection and explicit
+    validation retain recorded episode dates. All-in-window and explicit-only
+    policies keep their original sources. Custom sources can supply parent IDs;
+    otherwise the CDM Episode table supplies the hierarchy and child dates.
     """
     if not policy.uses_fallback:
         return None
     if not policy.requires_fallback_ranking:
         return episodes
+
+    child_ends = _nested_diagnosis_window_ends(episodes, window)
+    _, own_end = episode_window_bounds(
+        episodes.c.episode_start_date, episodes.c.episode_end_date, window=window
+    )
+    # CASE is the portable greatest(own end, latest child end), including the
+    # no-child case. Alchemy supplies both bounded ends with the caller's window.
+    extended_end = sa.case(
+        (child_ends.c.latest_window_end > own_end, child_ends.c.latest_window_end),
+        else_=own_end,
+    ).label("episode_end_date")
+    carried_end = sa.case(
+        (child_ends.c.latest_window_end > own_end, child_ends.c.latest_window_end),
+        else_=episodes.c.episode_end_date,
+    ).label(_FALLBACK_WINDOW_END)
     return (
-        sa.select(episodes)
+        sa.select(
+            *(extended_end if column.key == "episode_end_date" else column
+              for column in episodes.c),
+            carried_end,
+        )
+        .outerjoin(
+            child_ends,
+            sa.and_(
+                child_ends.c.episode_parent_id == episodes.c.episode_id,
+                child_ends.c.person_id == episodes.c.person_id,
+            ),
+        )
         .where(
             episodes.c.episode_concept_id
             == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
@@ -195,6 +260,7 @@ def _legacy_attachment_result(
     ranking: TemporalRankingSpec | None,
     window: EpisodeWindowSpec,
     name: str,
+    upcoming_preference: UpcomingEpisodePreference | None = None,
 ) -> sa.Subquery:
     _require_columns(
         episodes,
@@ -205,14 +271,16 @@ def _legacy_attachment_result(
         ),
         role="condition episode source",
     )
+    fallback_episodes = _fallback_episodes(episodes, policy, window)
     attachments = episode_attachment_queries(
         events,
         explicit_episodes=episodes,
-        fallback_episodes=_fallback_episodes(episodes, policy),
+        fallback_episodes=fallback_episodes,
         episode_events=episode_events,
         policy=policy,
         ranking=ranking,
         window=window,
+        upcoming_preference=upcoming_preference,
     ).attachments.subquery(f"{name}_canonical_attachments")
     event_columns = tuple(
         column.key
@@ -220,7 +288,7 @@ def _legacy_attachment_result(
         if column.key not in _COMPATIBILITY_HIDDEN_EVENT_COLUMNS
     )
 
-    return (
+    result = (
         sa.select(
             *(attachments.c[column] for column in event_columns),
             episodes.c.episode_id,
@@ -231,8 +299,18 @@ def _legacy_attachment_result(
             attachments.c[ATTACHMENT_METHOD],
         )
         .join(episodes, episodes.c.episode_id == attachments.c.episode_id)
-        .subquery(name=name)
     )
+    if policy.requires_fallback_ranking and fallback_episodes is not None:
+        # Carry the admitted bound separately from recorded dates so the view's
+        # final window filter cannot discard extended fallback attachments.
+        window_ends = sa.select(
+            fallback_episodes.c.episode_id, fallback_episodes.c[_FALLBACK_WINDOW_END]
+        ).distinct().subquery("attachment_fallback_window_ends")
+        result = result.outerjoin(
+            window_ends,
+            window_ends.c.episode_id == attachments.c.episode_id,
+        ).add_columns(window_ends.c[_FALLBACK_WINDOW_END])
+    return result.subquery(name=name)
 
 
 def _resolve_attachment_policy(
@@ -357,6 +435,8 @@ def attach_to_condition_episode(
     The default policy preserves valid explicit relationships. Events without
     one are assigned to a single eligible episode, preferring episodes that
     have started, then the nearest start, then the lowest episode identifier.
+    An upcoming episode within 60 days overrides a started winner aged at least
+    365 days. Explicit caller-supplied rankings do not receive this preference.
     """
     resolved_policy = _resolve_attachment_policy(
         policy=policy,
@@ -384,6 +464,11 @@ def attach_to_condition_episode(
         ranking=resolved_ranking,
         window=window,
         name=name,
+        upcoming_preference=(
+            EVENT_CONSTRUCT_UPCOMING_PREFERENCE
+            if resolved_policy is EVENT_CONSTRUCT_ATTACHMENT_POLICY and ranking is None
+            else None
+        ),
     )
 
 
@@ -609,11 +694,21 @@ def episode_relevant_window(
     outside the date window. Date-based relationships use the same window rule
     as candidate selection. ``attachment_method`` is consumed here because the
     materialized views select the remaining result columns positionally.
+    Ranked attachment also carries a private bounded end, consumed here, so
+    recorded episode dates remain intact. Configure
+    ranked open-end horizons in the attachment's EpisodeWindowSpec; the legacy
+    max_days_post argument still bounds roots with no extension and inputs
+    without the private end.
     """
+    window_end = (
+        starting_query.c[_FALLBACK_WINDOW_END]
+        if _FALLBACK_WINDOW_END in starting_query.c
+        else starting_query.c.episode_end_date
+    )
     in_window = episode_window_predicate(
         starting_query.c.event_date,
         starting_query.c.episode_start_date,
-        starting_query.c.episode_end_date,
+        window_end,
         window=EpisodeWindowSpec(
             days_prior=max_days_prior, open_end_fallback_days=max_days_post
         ),
@@ -633,7 +728,7 @@ def episode_relevant_window(
             *(
                 column
                 for column in starting_query.c
-                if column.key != ATTACHMENT_METHOD
+                if column.key not in {ATTACHMENT_METHOD, _FALLBACK_WINDOW_END}
             ),
         )
         .where(keep)
