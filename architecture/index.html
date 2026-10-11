@@ -434,6 +434,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#treatment-attribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treatment attribution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#treatment-window-and-consult-window-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -802,6 +813,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#treatment-attribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treatment attribution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#treatment-window-and-consult-window-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -957,6 +979,53 @@
 <li>each row carries one atomic specialty concept — no specialty grouping occurs here</li>
 </ul>
 <p>This design means a downstream measurable can filter <code>DxRelevantVisitMV</code> by <code>provider_specialty_concept_id</code> and treat the result as an event stream, with grouping, de-duplication, and timing composition handled by the measure engine.</p>
+<h2 id="treatment-attribution">Treatment attribution<a class="headerlink" href="#treatment-attribution" title="Permanent link">&para;</a></h2>
+<p>Recorded ownership determines which cancer receives treatment evidence. The recorded diagnosis keeps its evidence; an eligible nested diagnosis also contributes to its episode-of-care parent.</p>
+<pre class="mermaid"><code>flowchart TD
+    subgraph activity["Physical treatment activity"]
+        dose["Drug exposure → cycle → regimen"]
+        fraction["RT procedure → fraction → course"]
+        surgery["Performed surgery"]
+    end
+
+    dose --&gt; validate["Validate source type, person and recorded owner"]
+    fraction --&gt; validate
+    surgery --&gt; validate
+    validate --&gt; count["Deduplicate physical links and count distinct sources
+    before prescription and intent joins"]
+    count --&gt; owner["Recorded disease owner"]
+
+    intent["Intent measurement on a treatment episode"] --&gt; rawIntent["Validate person and ownership;
+    retain measurement ID and raw recorded owner"]
+    rawIntent --&gt; owner
+
+    owner --&gt; direct["Credit the recorded diagnosis"]
+    owner --&gt; parent{"Progression or metastatic diagnosis with a valid
+    same-person, one-level episode-of-care parent?"}
+    parent -- "Yes" --&gt; root["Also credit the episode-of-care parent"]
+    parent -- "No" --&gt; direct
+
+    direct --&gt; targets["Deduplicate evidence per target diagnosis and source identity"]
+    root --&gt; targets
+
+    targets --&gt; detail["SACT / RT detail:
+    cycle or fraction × prescription × intent"]
+    targets --&gt; performed["Surgery:
+    distinct performed procedures, or one null-surgery row"]
+    targets --&gt; attributedIntent["Diagnosis-attributed intent:
+    preserve measurement IDs;
+    join concurrency once per person and episode"]
+    detail --&gt; summary["Treatment summaries:
+    regimen × course combinations;
+    envelope and consult rows per condition date"]
+    performed --&gt; summary
+    summary -- "Concurrency grouped by person and episode" --&gt; attributedIntent
+    detail --&gt; measures["oa-cohorts measurables:
+    apply criteria and timing to the attributed episode"]
+    performed --&gt; measures
+    attributedIntent --&gt; measures
+    summary --&gt; measures</code></pre>
+<p>The attribution map uses SQL projections of <code>overarching_disease_episode</code> and disease episodes, keyed by <code>(person_id, owner_id, target_id)</code>. Modality flags reflect events linked directly to the measured treatment episode. Summary row counts are not patient or treatment counts; consumers use source identities and the published grains.</p>
 <h2 id="treatment-window-and-consult-window-pattern">Treatment Window And Consult Window Pattern<a class="headerlink" href="#treatment-window-and-consult-window-pattern" title="Permanent link">&para;</a></h2>
 <p>The episode layer exposes two important scalar-style constructs:</p>
 <ul>

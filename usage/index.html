@@ -379,8 +379,30 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rebuilding-treatment-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebuilding treatment views
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatment-on-nested-diagnoses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treatment On Nested Diagnoses
+      
+    </span>
+  </a>
   
 </li>
       
@@ -768,8 +790,30 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rebuilding-treatment-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebuilding treatment views
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treatment-on-nested-diagnoses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treatment On Nested Diagnoses
+      
+    </span>
+  </a>
   
 </li>
       
@@ -861,7 +905,7 @@
 <p>Typical runtime usage assumes:</p>
 <ul>
 <li><code>oa-configurator</code> is installed and a shared OMOP stack config is available</li>
-<li><code>omop-alchemy&gt;=1.2.2.dev0,&lt;2</code> (the local Q4 wheel selected by <code>tool.uv.sources</code>), <code>omop-semantics</code>, and <code>orm-loader&gt;=1.2.0,&lt;2</code> are installed</li>
+<li><code>omop-alchemy&gt;=1.2.2,&lt;2</code>, <code>omop-semantics</code>, and <code>orm-loader&gt;=1.2.0,&lt;2</code> are installed</li>
 <li><code>omop-semantics</code> runtime value sets are available</li>
 <li>a PostgreSQL database is available for materialized view creation and refresh</li>
 </ul>
@@ -940,6 +984,33 @@ omop-config<span class="w"> </span>configure<span class="w"> </span>omop_constru
     <span class="n">registry</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
 </code></pre></div>
 <p>Validate the rebuilt views in a side schema before replacing a populated clinical deployment. A selective rebuild is also possible, but the operator must drop downstream views before their inputs and recreate inputs before downstream views; the registry does not expose a selective cascade planner.</p>
+<h3 id="rebuilding-treatment-views">Rebuilding treatment views<a class="headerlink" href="#rebuilding-treatment-views" title="Permanent link">&para;</a></h3>
+<p>When treatment view definitions change, rebuild <code>cycle_mv</code>, <code>fraction_mv</code>,
+<code>sact_treatment_mv</code>, <code>rt_course_mv</code>, <code>surgical_procedure_mv</code>, <code>dx_treat_start_mv</code>,
+<code>episode_treatment_mv</code>, <code>condition_treatment_episode_mv</code>, <code>treatment_envelope_mv</code>
+and <code>condition_episode_intent_mv</code>, plus dependent outputs such as
+<code>consult_window_mv</code>, in registry dependency order. ANALYZE each after building.
+Use the rebuild procedure above and validate in a side schema before replacing
+an existing deployment.</p>
+<h2 id="treatment-on-nested-diagnoses">Treatment On Nested Diagnoses<a class="headerlink" href="#treatment-on-nested-diagnoses" title="Permanent link">&para;</a></h2>
+<p>Query treatment constructs using the diagnosis you want to report on. Treatment,
+intent and performed surgery recorded against a progression or metastatic
+diagnosis are available against both that diagnosis and its valid, same-person
+episode-of-care parent. This follows one recorded parent link.</p>
+<p>When using these views:</p>
+<ul>
+<li>Count distinct source records at the <a href="../constructs/episodes/">published grain</a>,
+  rather than counting detail or summary rows. The same evidence can appear for
+  both a nested diagnosis and its parent.</li>
+<li>Use performed procedures to identify surgery. Surgical history observations
+  do not establish surgery during the episode; a null-surgery row represents no
+  qualifying performed surgery.</li>
+<li>Apply the indicator's configured dates and windows to the diagnosis being
+  measured. For example, child treatment more than 90 days after the root
+  diagnosis remains outside a diagnosis-relative 0..90-day window.</li>
+</ul>
+<p>See <a href="../architecture/#treatment-attribution">Treatment attribution</a> for the
+attribution flow and source validation rules.</p>
 <h2 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
 <p>The package exposes a small command-line interface for registry artefacts:</p>
 <div class="highlight"><pre><span></span><code>omop-constructs<span class="w"> </span>schema-snapshot<span class="w"> </span>tests/artifacts/construct_registry_schema.csv
