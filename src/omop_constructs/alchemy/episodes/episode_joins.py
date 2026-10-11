@@ -1,5 +1,5 @@
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
-from .episode_factories import get_episode_query, get_episode_hierarchy_query, dx_treatment_window
+from .episode_factories import get_episode_query, get_episode_hierarchy_query, dx_treatment_window, diagnosis_attribution
 
 episode_of_care_select = get_episode_query(
         [runtime.types.disease_episode_types.episode_of_care],  # type: ignore
@@ -39,7 +39,8 @@ treatment_regimen_with_cycles = get_episode_hierarchy_query(
     child_label="cycle_episode"
 )
 
-dx_window_select = dx_treatment_window()
+treatment_attribution = diagnosis_attribution(condition_episode_select, overarching_disease_episode)
 
+dx_window_select = dx_treatment_window(treatment_attribution)
 
 

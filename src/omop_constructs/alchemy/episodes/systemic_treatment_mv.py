@@ -40,3 +40,5 @@ class SACTRegimenMV(
     intent_concept_id: so.Mapped[Optional[int]] = so.mapped_column(sa.Integer, nullable=True)
     intent_concept: so.Mapped[Optional[str]] = so.mapped_column(sa.String, nullable=True)
     
+
+    intent_id: so.Mapped[int | None] = so.mapped_column(sa.Integer, nullable=True)

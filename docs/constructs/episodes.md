@@ -2,7 +2,13 @@
 
 From `omop_constructs.alchemy.episodes`.
 
-Episode constructs represent clinical episodes and the treatment activity within them. The central organizing entity throughout is the condition episode, to which all treatment and event data is ultimately attributed.
+Episode constructs represent clinical episodes and the treatment activity within them. The central organizing entity throughout is the condition episode, to which treatment and event data is attributed.
+
+Treatment recorded on a progression or metastatic diagnosis remains available
+on that diagnosis and also counts for its valid same-person episode-of-care
+parent. Attribution follows one recorded parent. Siblings and
+other primaries do not inherit the evidence. Generic events use their own
+attachment rules, and indicator windows determine report eligibility.
 
 ---
 
@@ -24,9 +30,12 @@ Cancer-relevant surgical procedures attributed to condition episodes.
 
 **Source:** `Procedure_Occurrence` records whose concept is a descendant of the broad surgical-procedure ancestor, excluding radiotherapy and radioisotope descendants. Surgical history observations (i.e. procedures reported as prior history rather than performed procedures) are excluded — their timestamps record when the history was noted, not when the surgery happened, so they are not suitable for treatment timing.
 
-**Episode attribution:** Explicit `Episode_Event` linkage. Pipeline-runtime chooses which diagnosis episode owns each surgery, so there is no date-window fan-out across overlapping primaries.
+**Episode attribution:** Typed, same-person `Episode_Event` linkage supplies the
+recorded diagnosis owner. Valid child evidence also counts for the root, with each
+performed source procedure deduplicated per target, including one linked to both root
+and child. There is no date-window fan-out across overlapping primaries.
 
-`ConditionEpisodeMV` remains the spine, so **every** condition episode appears: one with no linked surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules identify non-surgical episodes with `WHERE surgery_concept_id IS NULL`.
+`ConditionEpisodeMV` remains the spine, so **every** condition episode appears: one with no valid own or inherited performed surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules identify non-surgical episodes with `WHERE surgery_concept_id IS NULL`.
 
 Radioisotope therapy shares the `Procedure_Occurrence` source but is a separate construct (`RadioisotopeMV`) and does still attach by date window. The asymmetry is deliberate.
 
@@ -38,7 +47,12 @@ Radioisotope therapy shares the `Procedure_Occurrence` source but is a separate 
 
 ## `SACTRegimenMV`
 
-Systemic anti-cancer therapy (SACT) treatment, one row per cycle. Each row pairs a cycle with a prescription procedure and its treatment-intent record from the cycle's regimen, and carries the cycle's first and last exposure dates. Regimen episodes are explicitly linked to their parent condition episode via `Episode.episode_parent_id`, making episode attribution exact rather than date-inferred.
+Systemic anti-cancer therapy (SACT) detail, one row per attributed diagnosis ×
+cycle × prescription × intent measurement. Prescription and intent may be NULL.
+Each cycle carries its first/last exposure dates and distinct physical exposure
+count. Recorded regimen ownership supplies the direct diagnosis and, for an
+eligible nested diagnosis, its episode-of-care root. Multiple same-concept intents stay
+separate through `intent_id`.
 
 **Key fields:** `condition_episode_id`, `first_exposure_date`, `last_exposure_date`, `regimen_concept`, `intent_concept`.
 
@@ -48,7 +62,13 @@ Systemic anti-cancer therapy (SACT) treatment, one row per cycle. Each row pairs
 
 ## `RTCourseMV`
 
-Radiotherapy treatment, one row per fraction episode. Each row pairs a fraction episode with a prescription procedure and its treatment-intent record from the course, and carries that fraction episode's first and last procedure dates. Like SACT, RT courses are explicitly linked to their parent condition episode via `Episode.episode_parent_id`.
+Radiotherapy detail, one row per attributed diagnosis × fraction episode ×
+prescription × intent measurement. Prescription and intent may be NULL. Dates and
+distinct performed-procedure counts come from the fraction before detail fan-out.
+Recorded course ownership supplies the direct diagnosis and its eligible
+episode-of-care root.
+Current MOSAIQ courses use treatment-regimen episode type 32531; independently
+typed radiotherapy courses (32940) remain separate compatibility work.
 
 **Key fields:** `condition_episode_id`, `first_exposure_date`, `last_exposure_date`, `course_concept`, `intent_concept`.
 
@@ -64,7 +84,7 @@ Individual treatment cycles within a SACT regimen. Provides drug-exposure level 
 
 ## `FractionMV`
 
-Individual radiotherapy fractions within a course. Provides procedure-level detail below the RT course. Summarised per fraction episode by `RTCourseMV`.
+Individual radiotherapy fractions within a course. Provides procedure × fraction × intent-measurement detail below the RT course, retaining nullable `intent_id`. Summarised per fraction episode by `RTCourseMV`.
 
 ---
 
@@ -105,7 +125,11 @@ Treatment regimen rows with optional linked cycle episodes. Provides a hierarchi
 
 ## `ConditionTreatmentEpisode`
 
-Treatment summary view joining condition episode context to SACT and RT summaries, carrying the parent condition episode metadata alongside the treatment dates and concepts.
+Treatment summary joining condition context to SACT and RT summaries, including
+valid nested-diagnosis evidence. Its rows represent regimen/intent-concept × course/intent-concept
+product. Physical source counts precede detail fan-out; regimen/course counts are
+distinct IDs within each summary group (normally one), not totals for the diagnosis.
+Do not count wide rows as treatments or patients.
 
 **oa-cohorts:** Accessed via `RuleTarget.tx_chemotherapy` and `RuleTarget.tx_radiotherapy`.
 
@@ -113,7 +137,7 @@ Treatment summary view joining condition episode context to SACT and RT summarie
 
 ## `DxTreatStartMV`
 
-Diagnosis-to-treatment timing summary. One row per condition episode that has at least one linked treatment regimen. Exposes `treatment_start` (earliest regimen start) and `treatment_end` (latest regimen end) relative to the diagnosis episode.
+Diagnosis-to-treatment timing summary. One row per condition episode that has at least one valid own or inherited treatment episode. Exposes `treatment_start` (earliest regimen start) and `treatment_end` (latest regimen end) relative to the diagnosis episode.
 
 **oa-cohorts:** Accessed via `RuleTarget.tx_current_episode`.
 
@@ -121,7 +145,15 @@ Diagnosis-to-treatment timing summary. One row per condition episode that has at
 
 ## `TreatmentIntentMV` / `ConditionTreatmentIntentMV`
 
-Treatment intent events. `TreatmentIntentMV` exposes raw intent records; `ConditionTreatmentIntentMV` joins them back to condition episode context. Intents are sourced from the modifier layer on regimen and course prescription procedures.
+Treatment intent measurements recorded directly against treatment episodes.
+`TreatmentIntentMV` retains the recorded owner and exposes `person_id` and
+`intent_measurement_id`. `ConditionTreatmentIntentMV` additionally credits valid
+roots and carries `intent_measurement_id`; it preserves one null-intent row when
+none exists. Prescription-procedure intent is separate detail in the SACT/RT views.
+Concurrency is reduced to one person/episode value before this join, so multiple
+condition start dates do not multiply intent. Modality flags still require events
+linked directly to the measured treatment episode; activity on descendants is
+not inferred.
 
 **oa-cohorts:** Accessed via `RuleTarget.intent_sact` and `RuleTarget.intent_rt`.
 
@@ -150,17 +182,17 @@ What one row of each construct represents and how rows are identified.
 | Construct | One row per |
 |---|---|
 | [`ConditionEpisodeMV`](#contract-condition_episode_mv) | disease episode of any type |
-| [`ConditionTreatmentEpisode`](#contract-condition_treatment_episode_mv) | condition episode + regimen + course |
-| [`ConditionTreatmentIntentMV`](#contract-condition_episode_intent_mv) | condition episode + child treatment episode + treatment-intent record on it |
+| [`ConditionTreatmentEpisode`](#contract-condition_treatment_episode_mv) | condition occurrence × regimen/intent-concept × course/intent-concept combination |
+| [`ConditionTreatmentIntentMV`](#contract-condition_episode_intent_mv) | Own diagnosis evidence and valid same-person child-to-root evidence |
 | [`ConsultWindowMV`](#contract-consult_window_mv) | episode of care |
-| [`CycleMV`](#contract-cycle_mv) | drug exposure + treatment cycle episode |
-| [`DxTreatStartMV`](#contract-dx_treat_start_mv) | disease episode that has at least one child treatment episode |
-| [`FractionMV`](#contract-fraction_mv) | radiotherapy procedure occurrence + fraction episode + treatment-intent record on that procedure |
+| [`CycleMV`](#contract-cycle_mv) | distinct (drug exposure |
+| [`DxTreatStartMV`](#contract-dx_treat_start_mv) | disease target with treatment |
+| [`FractionMV`](#contract-fraction_mv) | Procedure/intent detail remains explicit; duplicate links collapse before mv_id |
 | [`OverarchingDiseaseEpisodeMV`](#contract-overarching_disease_episode_mv) | episode of care + child disease-extent episode |
 | [`RadioisotopeMV`](#contract-radioisotope_mv) | condition episode + radioisotope procedure inside the episode date window |
-| [`RTCourseMV`](#contract-rt_course_mv) | radiotherapy fraction episode + course prescription procedure + treatment-intent record on that prescription |
-| [`SACTRegimenMV`](#contract-sact_treatment_mv) | SACT cycle + regimen prescription procedure + treatment-intent record on that prescription |
-| [`SurgicalProcedureMV`](#contract-surgical_procedure_mv) | condition episode + explicitly linked surgical procedure |
+| [`RTCourseMV`](#contract-rt_course_mv) | RT detail remains cycle/fraction detail |
+| [`SACTRegimenMV`](#contract-sact_treatment_mv) | SACT detail remains cycle/fraction detail |
+| [`SurgicalProcedureMV`](#contract-surgical_procedure_mv) | target diagnosis + performed procedure |
 | [`TreatmentEnvelopeMV`](#contract-treatment_envelope_mv) | condition episode + condition start date |
 | [`TreatmentIntentMV`](#contract-episode_treatment_mv) | treatment episode + treatment-intent measurement on that episode |
 | [`TreatmentRegimenCycleMV`](#contract-treatment_regimen_cycle_mv) | treatment regimen episode + child treatment cycle episode |
@@ -179,7 +211,7 @@ View: `condition_episode_mv`
 
 View: `condition_treatment_episode_mv`
 
-**Rows:** One row per (condition episode, regimen, course) treatment episode, carrying condition context alongside the regimen and course dates and concepts.
+**Rows:** One row per condition occurrence × regimen/intent-concept × course/intent-concept combination. The N×M compatibility product and existing condition date spine remain.
 
 **Unique on:** `condition_episode_id`, `regimen_id`, `course_id`. `condition_episode_id`, `regimen_id`, `course_id` are NULL on rows with nothing to link.
 
@@ -189,9 +221,9 @@ View: `condition_treatment_episode_mv`
 
 View: `condition_episode_intent_mv`
 
-**Rows:** One row per (condition episode, child treatment episode, treatment-intent record on it), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL. An episode whose linked conditions start on more than one date repeats its rows once per start date.
+**Rows:** Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Envelope concurrency is reduced to one person/episode row before the join.
 
-**Unique on:** No published column combination is guaranteed unique: rows can repeat, and the intent record's own ID is not included.
+**Unique on:** episode_id, treatment_episode_id, intent_measurement_id (NULLS NOT DISTINCT).
 
 **Row IDs:** Numbered afresh on every refresh. Do not store them or join on them across refreshes.
 
@@ -209,7 +241,7 @@ View: `consult_window_mv`
 
 View: `cycle_mv`
 
-**Rows:** One row per (drug exposure, treatment cycle episode). Drug-exposure level detail beneath the regimen.
+**Rows:** One row per distinct (drug exposure, treatment cycle), after same-person cycle/regimen/disease-owner and episode-type guards.
 
 **Unique on:** `drug_exposure_id`, `cycle_id`.
 
@@ -219,9 +251,9 @@ View: `cycle_mv`
 
 View: `dx_treat_start_mv`
 
-**Rows:** One row per disease episode that has at least one child treatment episode, carrying the earliest treatment start, latest treatment end, and count of distinct child regimens.
+**Rows:** One row per disease target with treatment: own recorded treatment episodes plus treatment of valid same-person progression/metastatic children for an episode-of-care root. Dates are MIN/MAX and treatment_regimen_count counts distinct accepted treatment episode IDs.
 
-**Unique on:** `dx_episode_id`.
+**Unique on:** dx_episode_id; no-treatment diagnoses remain absent.
 
 **Row IDs:** Taken from the CDM, so they stay the same across refreshes and are safe to store.
 
@@ -229,9 +261,9 @@ View: `dx_treat_start_mv`
 
 View: `fraction_mv`
 
-**Rows:** One row per (radiotherapy procedure occurrence, fraction episode, treatment-intent record on that procedure). Procedure-level detail beneath the RT course.
+**Rows:** Procedure/intent detail remains explicit; duplicate links collapse before mv_id. Count distinct physical procedure IDs in aggregates.
 
-**Unique on:** `procedure_occurrence_id`, `fraction_id` when a procedure has at most one treatment-intent record. A procedure with several intent records repeats once per record.
+**Unique on:** procedure_occurrence_id, fraction_id, intent_id (NULLS NOT DISTINCT).
 
 **Row IDs:** Numbered afresh on every refresh. Do not store them or join on them across refreshes.
 
@@ -259,9 +291,9 @@ View: `radioisotope_mv`
 
 View: `rt_course_mv`
 
-**Rows:** One row per (radiotherapy fraction episode, course prescription procedure, treatment-intent record on that prescription). The dates and fraction count describe the fraction episode, not the whole course.
+**Rows:** RT detail remains cycle/fraction detail, not a regimen/course stream. Physical counts are deduplicated before prescription/intent and hierarchy expansion.
 
-**Unique on:** No published column combination is guaranteed unique: a fraction episode repeats once for each prescription procedure and intent record on its course.
+**Unique on:** condition_episode_id, fraction_id, course_prescription_id, intent_id (NULLS NOT DISTINCT).
 
 **Row IDs:** Numbered afresh on every refresh. Do not store them or join on them across refreshes.
 
@@ -269,9 +301,9 @@ View: `rt_course_mv`
 
 View: `sact_treatment_mv`
 
-**Rows:** One row per (SACT cycle, regimen prescription procedure, treatment-intent record on that prescription). The exposure dates and count describe the cycle, not the whole regimen.
+**Rows:** SACT detail remains cycle/fraction detail, not a regimen/course stream. Physical counts are deduplicated before prescription/intent and hierarchy expansion.
 
-**Unique on:** No published column combination is guaranteed unique: a cycle repeats once for each prescription procedure and intent record on its regimen.
+**Unique on:** condition_episode_id, cycle_id, regimen_prescription_id, intent_id (NULLS NOT DISTINCT).
 
 **Row IDs:** Numbered afresh on every refresh. Do not store them or join on them across refreshes.
 
@@ -279,7 +311,7 @@ View: `sact_treatment_mv`
 
 View: `surgical_procedure_mv`
 
-**Rows:** One row per (condition episode, explicitly linked surgical procedure). Every condition episode appears: an episode with no linked surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules depend on it.
+**Rows:** One row per (target diagnosis, performed procedure), including valid same-person child-to-root credit. Each target without performed surgery contributes exactly one null surgery row.
 
 **Unique on:** `condition_episode_id`, `surgery_occurrence_id`. `surgery_occurrence_id` is NULL on rows with nothing to link.
 
@@ -301,7 +333,7 @@ View: `episode_treatment_mv`
 
 **Rows:** One row per (treatment episode, treatment-intent measurement on that episode), with RT and SACT modality evidence flags derived from events linked directly to the episode.
 
-**Unique on:** No published column combination is guaranteed unique: a treatment episode with two intent records of the same concept has two rows with the same `treatment_episode_id` and `treatment_intent_concept_id`.
+**Unique on:** treatment_episode_id, intent_measurement_id.
 
 **Row IDs:** Numbered afresh on every refresh. Do not store them or join on them across refreshes.
 

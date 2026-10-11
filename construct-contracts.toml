@@ -1,30 +1,15 @@
 # Construct contracts
 #
-# The machine-readable D3 grain catalogue for every construct in the shipped
-# registry. This file is the single source for the rendered construct
-# catalogue, the registry coverage and key-column tests, and the release
-# comparison tools under `tools/release_validation/`.
+# Grains, logical keys, ORM identities, join behaviour and refresh constraints
+# for the registered constructs. This manifest supplies the public catalogue,
+# registry consistency tests and schema comparison tools.
 #
-# Why a manifest rather than attributes on the ORM classes: grain and logical
-# key are intrinsic to a construct, but 1.0 inclusion and lung-report usage are
-# release and catalogue concerns. Holding all of it here keeps release policy
-# out of the runtime classes and gives documentation, tests, and the transition
-# scripts one thing to read.
-#
-# Declared keys are the *intended* logical keys — the key each construct must
-# satisfy to enter a 1.0 release candidate. Where a construct does not satisfy
-# its declared key today, `known_violations` names the finding and
-# `violation_note` says what is actually being produced. The uniqueness runner
-# reports the real duplicate counts; it does not assume the declared key holds.
+# Declared keys are contract requirements. current_grain and current_unique_on
+# describe output that differs from those requirements. Measure uniqueness on
+# the target schema; a declaration is not evidence that deployed rows satisfy it.
 
 [meta]
 schema_version = "1"
-created = "2026-08-31"
-milestone = "OC-0"
-source_review = "joint-code-review-oa-cohorts-0a3efc9-omop-constructs-09497d4-omop-alchemy-3b5236b.md"
-delivery_plan = "phased-delivery-plan-oa-cohorts-omop-constructs-omop-alchemy.md"
-lung_report_library_id = "REP-000001"
-lung_report_bundle = "dashboard-stack/oa-cohorts/dash_config/20260827_post_migration/bundle.json"
 
 # Vocabularies used by the per-construct fields, so a reader does not have to
 # infer the enumerations from the values that happen to appear below.
@@ -49,206 +34,6 @@ lung_report_role = [
   "dependency",  # built because a direct construct depends on it
   "unused",      # not reachable from the lung report
 ]
-
-# ---------------------------------------------------------------------------
-# Findings register
-# ---------------------------------------------------------------------------
-# `known_violations` on a construct refers to these IDs. OC-* IDs are the joint
-# review's own numbering. OC-0-N* were found while cataloguing grains for this
-# milestone and are new.
-
-[findings.OC-B3]
-scope = "construct"
-severity = "blocker"
-origin = "joint review"
-summary = "ORM primary keys contradict multi-row view grains, so SQLAlchemy's identity map collapses child-specific values."
-
-[findings.OC-B4]
-scope = "construct"
-severity = "blocker"
-origin = "joint review"
-summary = "Demography postcode, country-of-birth, and language subqueries are unranked, producing an N x M x K product per person/episode."
-
-[findings.OC-B5]
-scope = "package"
-severity = "blocker"
-origin = "joint review"
-summary = "Materialized-view lifecycle operations are unqualified, so they depend on search_path rather than the inspected schema."
-
-[findings.OC-H1]
-scope = "construct"
-severity = "high"
-origin = "joint review"
-summary = "Treatment queries carry undocumented many-to-many multipliers; regimen and course views are really cycle- and fraction-grain."
-
-[findings.OC-H2]
-scope = "package"
-severity = "high"
-origin = "joint review"
-summary = "Concept resolution performs import-time database I/O and duplicates omop-alchemy."
-
-[findings.OC-H3]
-scope = "construct"
-severity = "high"
-origin = "joint review"
-summary = "Visit-to-episode ranking orders by signed delta rather than absolute proximity, and the first tier excludes the exact 180-day boundary."
-
-[findings.OC-H4]
-scope = "construct"
-severity = "high"
-origin = "joint review"
-summary = "Treatment modality intent inspects only events linked directly to the intent episode, omitting events on child episodes."
-
-[findings.OC-M1]
-scope = "construct"
-severity = "medium"
-origin = "joint review"
-summary = "Surgery attribution is explicit-link plus null spine while the catalogue described date windows; the radioisotope path still uses date windows."
-
-[findings.OC-M2]
-scope = "package"
-severity = "medium"
-origin = "joint review"
-summary = "Standard-concept mapping mislabels vocabulary_id and collapses one-to-many 'Maps to' relationships."
-
-[findings.OC-M3]
-scope = "construct"
-severity = "medium"
-origin = "joint review"
-summary = "Public identifiers are frequently unordered row_number() surrogates: unique within one materialization, not stable across refreshes."
-
-[findings.OC-M4]
-scope = "package"
-severity = "medium"
-origin = "joint review"
-summary = "Repeated mapper-registration warnings hide genuine mapping conflicts."
-
-[findings.OC-0-N2]
-scope = "construct"
-severity = "high"
-origin = "OC-0"
-summary = "cycle_mv inner-joins route_concept, silently dropping drug exposures with no resolvable route."
-detail = """
-`cycle_join` inner-joins both `drug_concept` and `route_concept`. A
-Drug_Exposure whose `route_concept_id` is 0, NULL, or absent from the deployed
-vocabulary is dropped from cycle_mv, and therefore from sact_treatment_mv,
-condition_treatment_episode_mv, and the SACT window of treatment_envelope_mv.
-Route is descriptive metadata; it should not gate SACT membership.
-"""
-
-[findings.OC-0-N4]
-scope = "construct"
-severity = "high"
-origin = "OC-0"
-summary = "episode_treatment_mv has no executable complete logical key: the intent measurement identity is not projected."
-detail = """
-`episode_intent` joins Episode to Measurement on the intent modifier, so the row
-grain is (episode, intent measurement). Only `measurement_concept_id` is
-projected, not `measurement_id`, so two intent measurements on one episode with
-the same concept are indistinguishable in the output. The declared key
-(treatment_episode_id, treatment_intent_concept_id) is the widest key expressible
-from the current columns; OC-2 must project the measurement identity.
-"""
-
-[findings.OC-0-N5]
-scope = "construct"
-severity = "blocker"
-origin = "OC-0"
-summary = "rt_course_mv resolves the course episode with the treatment_regimen concept, not radiotherapy."
-detail = """
-`course_join` joins the course episode with
-`Episode.episode_concept_id == treatment_episode_types.treatment_regimen`
-(32531). omop-semantics also defines `treatment_episode_types.radiotherapy`
-(32940). Unless RT courses are recorded in this CDM as treatment_regimen
-episodes, the left join misses and course_number, condition_episode_id,
-course_prescription_id, course_concept_id, course_concept, and every intent
-field are NULL for real courses. A NULL condition_episode_id also removes RT
-from the rt_window join in treatment_envelope_mv and from
-condition_treatment_episode_mv. This must be confirmed against clinical data
-before OC-1: if RT courses are not typed as regimens, radiotherapy is currently
-absent from the treatment envelope.
-"""
-
-[findings.OC-0-N6]
-scope = "construct"
-severity = "medium"
-origin = "OC-0"
-summary = "condition_treatment_episode_mv regimen_count and course_count are always 1."
-detail = """
-`regimen_summary_join` computes `count(regimen_id)` while grouping by
-`regimen_id`, and `course_summary_join` computes `count(course_id)` while
-grouping by `course_id`. Each group therefore contains exactly one distinct
-value and the count is 1 (or 0 when the id is NULL). oa-cohorts binds
-`course_count` as the RT measurable's value_concept_attr, so the exposed value
-carries no information.
-"""
-
-[findings.OC-0-N10]
-scope = "package"
-severity = "medium"
-origin = "OC-0"
-summary = "Compiled construct SQL is not reproducible: embedded concept-ID IN lists render in hash-seed-dependent set order."
-detail = """
-Constructs that embed a resolved concept set — the four per-stage-type modifier
-views, the modifier views, fraction_mv, episode_treatment_mv, and every
-concept-restricted measurement slice — pass a Python `set` to `.in_()`. SQLAlchemy
-renders it in set-iteration order, which varies between processes, so the same
-construct built twice by the same library version produces different SQL text and
-a different checksum. PostgreSQL then preserves that order in
-`pg_get_viewdef`, so the deployed definition is unstable too.
-
-This defeats checksum-based release validation: roughly a quarter of the registry
-reports as changed on every run. `tools/release_validation/_sql_normalise.py`
-works around it by sorting numeric IN lists before hashing, and the orchestrator
-reports ordering-only differences separately from real ones. The underlying fix
-is for the query factories to sort resolved concept IDs before rendering them,
-which also makes deployed view definitions reviewable across rebuilds. Belongs
-with the runtime-concept work in OC-3.
-"""
-
-[findings.OC-0-N9]
-scope = "package"
-severity = "medium"
-origin = "OC-0"
-summary = "ConstructRegistry.validate() reads information_schema.columns, which does not list materialized views."
-detail = """
-`validate()` compares the mapper's columns against
-`information_schema.columns`. Materialized views are a PostgreSQL extension and
-do not appear in the information schema at all, so the query returns no rows and
-every construct is reported as missing all of its columns. The method therefore
-cannot detect real schema drift. Column introspection must read `pg_attribute`,
-as `tools/release_validation/_common.py` now does. Fix belongs with the rest
-of the lifecycle work in OC-3.
-"""
-
-[findings.OC-0-N8]
-scope = "construct"
-severity = "medium"
-origin = "OC-0"
-summary = "sact_treatment_mv and rt_course_mv read modified_procedure_mv without declaring it."
-detail = """
-Both `regimen_join` and `course_join` join ModifiedProcedure to resolve the
-prescription procedure and its intent, but neither construct listed
-modified_procedure_mv in `__deps__`. `__deps__` is what topo_sort uses to order
-the build, so the correct order held only because the bootstrap manifest happens
-to import the modifier family before the episode family. Any build driven by the
-dependency graph alone — including the OC-0 side-schema runner — could create
-either view before its input existed. Corrected in OC-0 by declaring the
-dependency; no query or result changes.
-"""
-
-[findings.OC-0-N7]
-scope = "construct"
-severity = "low"
-origin = "OC-0"
-summary = "condition_treatment_episode_mv materialises four duplicate unmapped columns."
-detail = """
-`condition_treatment_join` splats both summary subqueries, so person_id and
-condition_episode_id are each selected three times. The materialized view gains
-person_id_1, condition_episode_id_1, person_id_2, and condition_episode_id_2,
-which no mapper reads. compile_check only requires mapped columns to be a subset
-of the selectable, so it does not surface this.
-"""
 
 # ===========================================================================
 # Modifier family
@@ -277,7 +62,6 @@ inputs = [
   { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
 fan_out_note = "The ranking guarantees at most one row per person-scoped target identity, which is why the modifier views can be left-joined to Condition_Occurrence without multiplying it."
-known_violations = []
 
 [constructs.n_stage_mv]
 class_name = "NStageMV"
@@ -301,7 +85,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
   { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.m_stage_mv]
 class_name = "MStageMV"
@@ -325,7 +108,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
   { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.group_stage_mv]
 class_name = "GroupStageMV"
@@ -349,7 +131,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
   { name = "row_number ranking", kind = "window", fan_out = "filter", note = "rn = 1 per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.size_modifier_mv]
 class_name = "SizeModifierMV"
@@ -373,7 +154,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join on unit_concept_id" },
   { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.grade_modifier_mv]
 class_name = "GradeModifierMV"
@@ -397,7 +177,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
   { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.laterality_modifier_mv]
 class_name = "LateralityModifierMV"
@@ -421,7 +200,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join on value_as_concept_id" },
   { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.metastatic_disease_modifier_mv]
 class_name = "MetastaticDiseaseModifierMV"
@@ -445,7 +223,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
   { name = "earliest_modifier ranking", kind = "window", fan_out = "filter", note = "rn = 1 by measurement_date per (person_id, meas_event_field_concept_id, measurement_event_id) target partition" },
 ]
-known_violations = []
 
 [constructs.all_stage_modifier_mv]
 class_name = "AllStageModifierMV"
@@ -468,7 +245,6 @@ inputs = [
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
 ]
 fan_out_note = "Unlike the per-stage-type views this one does not rank, so a condition occurrence with several stage measurements contributes several rows. Every consumer must aggregate or rank it explicitly."
-known_violations = []
 
 [constructs.modified_procedure_mv]
 class_name = "ModifiedProcedure"
@@ -493,8 +269,6 @@ inputs = [
   { name = "procedure_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops procedures whose procedure_concept_id is absent from the deployed vocabulary" },
   { name = "modifier_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "mv_id is an unordered row_number() and is the ORM identity. Downstream references must use (procedure_occurrence_id, intent_id)."
 
 [constructs.stage_modifier_mv]
 class_name = "StageModifier"
@@ -521,8 +295,6 @@ inputs = [
   { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary" },
   { name = "stage_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer optional-modifier label lookup; must preserve the null-bearing condition spine when no stage modifier or label is present" },
 ]
-known_violations = ["OC-B3", "OC-M3"]
-violation_note = "The logical key includes nullable condition_episode and stage_id for the restored null spine; the ORM identity is the refresh-local mv_id."
 
 [constructs.modified_conditions_mv]
 class_name = "ModifiedCondition"
@@ -556,8 +328,6 @@ inputs = [
   { name = "condition_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "intentional required-spine lookup; drops conditions whose concept is absent from the deployed vocabulary" },
 ]
 fan_out_note = "The eight modifier joins use target Field concept, target event ID, and person_id; they are safe because the modifier views rank to one row per modified event. The validated explicit attachment can multiply a condition only when it has several valid Episode_Event links."
-known_violations = ["OC-M3"]
-violation_note = "mv_id is an unordered row_number() and is the ORM identity."
 
 [constructs.primary_diagnosis_condition_mv]
 class_name = "PrimaryDiagnosisConditionMV"
@@ -581,8 +351,6 @@ inputs = [
   { name = "overarching_disease_episode_mv", kind = "construct", fan_out = "many_to_one", note = "inner join to a DISTINCT projection of the four episode-of-care columns, which collapses the extent fan-out before the join and restricts output to episode-of-care rows" },
 ]
 fan_out_note = "The DISTINCT subquery is what keeps this at condition/episode grain; joining overarching_disease_episode_mv directly would multiply by the number of child extent episodes."
-known_violations = ["OC-M3"]
-violation_note = "mv_id is inherited from modified_conditions_mv, so it is unique here, but it remains refresh-local and must not be referenced externally."
 
 # ===========================================================================
 # Episode family
@@ -609,7 +377,6 @@ inputs = [
   { name = "episode_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies episode_label" },
 ]
 fan_out_note = "get_episode_query() guarantees at most one row per episode_id: the only join is an outer lookup on the concept primary key."
-known_violations = []
 
 [constructs.overarching_disease_episode_mv]
 class_name = "OverarchingDiseaseEpisodeMV"
@@ -632,8 +399,7 @@ inputs = [
   { name = "episode (parent)", kind = "cdm_table", fan_out = "filter", note = "restricted to episode_of_care" },
   { name = "episode (child)", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on episode_parent_id, restricted to disease_progression and metastatic; several children multiply the parent" },
 ]
-known_violations = ["OC-B3"]
-violation_note = "The ORM primary key is episode_id alone while SQL returns one row per parent/child pair, so SQLAlchemy's identity map collapses the extent columns to whichever child loaded first."
+fan_out_note = "The ORM identity uses episode_id alone; ORM loading can collapse distinct child rows. Use SQL projections when child identity is required."
 
 [constructs.treatment_regimen_cycle_mv]
 class_name = "TreatmentRegimenCycleMV"
@@ -656,14 +422,14 @@ inputs = [
   { name = "episode (parent)", kind = "cdm_table", fan_out = "filter", note = "restricted to treatment_regimen" },
   { name = "episode (child)", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on episode_parent_id, restricted to treatment_cycle; several cycles multiply the regimen" },
 ]
-known_violations = ["OC-B3"]
-violation_note = "Same shape as overarching_disease_episode_mv: the ORM primary key is the parent episode_id while SQL is at regimen/cycle grain."
+fan_out_note = "The ORM identity uses the parent episode_id; ORM loading can collapse distinct cycles. Use SQL projections when cycle identity is required."
 
 [constructs.dx_treat_start_mv]
 class_name = "DxTreatStartMV"
 module = "omop_constructs.alchemy.episodes.condition_episode_mv"
 family = "episodes"
-grain = "One row per disease episode that has at least one child treatment episode, carrying the earliest treatment start, latest treatment end, and count of distinct child regimens."
+current_unique_on = "dx_episode_id; no-treatment diagnoses remain absent."
+grain = "One row per disease target with treatment: own recorded treatment episodes plus treatment of valid same-person progression/metastatic children for an episode-of-care root. Dates are MIN/MAX and treatment_regimen_count counts distinct accepted treatment episode IDs."
 logical_key = ["dx_episode_id"]
 logical_key_complete = true
 key_nullable_columns = []
@@ -680,12 +446,13 @@ inputs = [
   { name = "episode (regimen)", kind = "cdm_table", fan_out = "aggregate", note = "inner join on episode_parent_id, restricted to the treatment episode types, then GROUP BY the diagnosis episode" },
 ]
 fan_out_note = "The inner join means episodes with no linked treatment are absent entirely, not present with NULL dates. The GROUP BY keys are all functionally determined by dx_episode_id, so the output is one row per episode. Note that __deps__ names condition_episode_mv and treatment_regimen_cycle_mv, but the SQL reads the Episode table directly; the declared dependencies only order the build."
-known_violations = []
 
 [constructs.cycle_mv]
 class_name = "CycleMV"
 module = "omop_constructs.alchemy.episodes.cycle_mv"
 family = "episodes"
+fan_out_note = "Duplicate source links collapse before row_number. Missing route vocabulary drops activity. No child-to-root expansion occurs in this raw dose input."
+current_grain = "One row per distinct (drug exposure, treatment cycle), after same-person cycle/regimen/disease-owner and episode-type guards."
 grain = "One row per (drug exposure, treatment cycle episode). Drug-exposure level detail beneath the regimen."
 logical_key = ["drug_exposure_id", "cycle_id"]
 logical_key_complete = true
@@ -701,106 +468,98 @@ oa_cohorts_rule_targets = []
 inputs = [
   { name = "drug_exposure", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
   { name = "drug_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops exposures whose drug concept is absent" },
-  { name = "route_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "see OC-0-N2: drops exposures with no resolvable route" },
+  { name = "route_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops exposures with no resolvable route" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "inner join on the drug_exposure_id discriminator; an exposure linked to several episodes multiplies" },
-  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "no episode-type filter, so any linked episode becomes a cycle" },
+  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "same-person treatment_cycle → treatment_regimen → disease owner chain; duplicate links collapse" },
   { name = "cycle_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops rows whose episode concept is absent" },
 ]
-known_violations = ["OC-M3", "OC-0-N2"]
-violation_note = "mv_id is an unordered row_number(). The route_concept inner join silently removes SACT activity from every downstream treatment construct."
 
 [constructs.sact_treatment_mv]
 class_name = "SACTRegimenMV"
 module = "omop_constructs.alchemy.episodes.systemic_treatment_mv"
 family = "episodes"
-grain = "Declared: one row per SACT regimen episode, with first and last exposure dates aggregated from its cycles."
-current_grain = "One row per (SACT cycle, regimen prescription procedure, treatment-intent record on that prescription). The exposure dates and count describe the cycle, not the whole regimen."
-current_unique_on = "No published column combination is guaranteed unique: a cycle repeats once for each prescription procedure and intent record on its regimen."
-logical_key = ["regimen_id"]
+grain = "One row per (target diagnosis, cycle_id, prescription procedure, prescription intent measurement). Own evidence is retained and valid child evidence additionally credits its episode-of-care root."
+current_grain = "SACT detail remains cycle/fraction detail, not a regimen/course stream. Physical counts are deduplicated before prescription/intent and hierarchy expansion."
+current_unique_on = "condition_episode_id, cycle_id, regimen_prescription_id, intent_id (NULLS NOT DISTINCT)."
+logical_key = ["condition_episode_id", "cycle_id", "regimen_prescription_id", "intent_id"]
 logical_key_complete = true
-key_nullable_columns = []
-unique_index_columns = ["regimen_id"]
+key_nullable_columns = ["regimen_prescription_id", "intent_id"]
+unique_index_columns = ["condition_episode_id", "cycle_id", "regimen_prescription_id", "intent_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
-concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-2 brings the output to the declared regimen grain; the declared key is not currently unique."
+concurrent_refresh_eligible = true
+concurrent_refresh_note = "Complete source/target key; requires UNIQUE NULLS NOT DISTINCT for absent prescription/intent. Definition changes require rebuild, not refresh."
 public_api_1_0 = true
 lung_report_role = "dependency"
 oa_cohorts_rule_targets = []
 inputs = [
   { name = "cycle_mv", kind = "construct", fan_out = "aggregate", note = "GROUP BY (person, cycle_id, cycle_number, regimen_id, cycle_concept) — collapses to CYCLE grain, not regimen grain" },
-  { name = "episode (regimen)", kind = "cdm_table", fan_out = "many_to_one", note = "outer join on the cycle's regimen_id, restricted to treatment_regimen" },
+  { name = "episode (regimen)", kind = "cdm_table", fan_out = "many_to_one", note = "same-person inner join on the cycle regimen_id, restricted to treatment_regimen; owner targets include self and valid root" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on the procedure_occurrence_id discriminator; several prescription procedures multiply" },
   { name = "modified_procedure_mv", kind = "construct", fan_out = "one_to_many", note = "outer join; itself at procedure/intent grain, so several intents multiply again" },
 ]
-fan_out_note = "The actual output grain is (cycle_id, regimen_prescription_id, intent) despite the regimen naming. Everything downstream that treats a row as one regimen over-counts."
-known_violations = ["OC-H1", "OC-M3", "OC-0-N8"]
-violation_note = "Driven by cycle rows and multiplied by regimen prescription procedures, so it is effectively regimen-cycle-prescription grain. OC-2 must pre-aggregate to the regimen before exposing it as a regimen stream."
+fan_out_note = "Same-person source chains only. Distinct source links are reduced before activity counts; distinct prescriptions and intent measurement IDs deliberately retain detail multiplicity. A root/child target pair is not additive across targets."
 
 [constructs.rt_course_mv]
 class_name = "RTCourseMV"
 module = "omop_constructs.alchemy.episodes.course_mv"
 family = "episodes"
-grain = "Declared: one row per radiotherapy course episode, with first and last exposure dates aggregated from its fractions."
-current_grain = "One row per (radiotherapy fraction episode, course prescription procedure, treatment-intent record on that prescription). The dates and fraction count describe the fraction episode, not the whole course."
-current_unique_on = "No published column combination is guaranteed unique: a fraction episode repeats once for each prescription procedure and intent record on its course."
-logical_key = ["course_id"]
+grain = "One row per (target diagnosis, fraction_id, prescription procedure, prescription intent measurement). Own evidence is retained and valid child evidence additionally credits its episode-of-care root."
+current_grain = "RT detail remains cycle/fraction detail, not a regimen/course stream. Physical counts are deduplicated before prescription/intent and hierarchy expansion."
+current_unique_on = "condition_episode_id, fraction_id, course_prescription_id, intent_id (NULLS NOT DISTINCT)."
+logical_key = ["condition_episode_id", "fraction_id", "course_prescription_id", "intent_id"]
 logical_key_complete = true
-key_nullable_columns = []
-unique_index_columns = ["course_id"]
+key_nullable_columns = ["course_prescription_id", "intent_id"]
+unique_index_columns = ["condition_episode_id", "fraction_id", "course_prescription_id", "intent_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
-concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-2 brings the output to the declared course grain."
+concurrent_refresh_eligible = true
+concurrent_refresh_note = "Complete source/target key; requires UNIQUE NULLS NOT DISTINCT for absent prescription/intent. Definition changes require rebuild, not refresh."
 public_api_1_0 = true
 lung_report_role = "dependency"
 oa_cohorts_rule_targets = []
 inputs = [
   { name = "fraction_mv", kind = "construct", fan_out = "aggregate", note = "GROUP BY (person, fraction_id, fraction_number, course_id, fraction_name) — collapses to FRACTION grain, not course grain" },
-  { name = "episode (course)", kind = "cdm_table", fan_out = "many_to_one", note = "outer join on the fraction's course_id, restricted to treatment_regimen — see OC-0-N5" },
+  { name = "episode (course)", kind = "cdm_table", fan_out = "many_to_one", note = "same-person inner join on fraction course_id, restricted to treatment_regimen; owner targets include self and valid root" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on the procedure_occurrence_id discriminator; several prescription procedures multiply" },
   { name = "modified_procedure_mv", kind = "construct", fan_out = "one_to_many", note = "outer join; itself at procedure/intent grain" },
 ]
-fan_out_note = "The actual output grain is (fraction_id, course_prescription_id, intent) despite the course naming."
-known_violations = ["OC-H1", "OC-M3", "OC-0-N5", "OC-0-N8"]
-violation_note = "Driven by fraction rows, and the course episode is resolved with the treatment_regimen concept rather than radiotherapy, so course and condition-episode metadata may be NULL throughout. OC-0-N5 must be confirmed against clinical data before OC-1."
+fan_out_note = "Same-person source chains only. Distinct source links are reduced before activity counts; distinct prescriptions and intent measurement IDs deliberately retain detail multiplicity. A root/child target pair is not additive across targets. Courses use treatment_regimen episode type 32531. Independently typed radiotherapy courses (32940) do not supply activity through this path."
 
 [constructs.fraction_mv]
 class_name = "FractionMV"
 module = "omop_constructs.alchemy.episodes.fraction_mv"
 family = "episodes"
-grain = "Declared: one row per (radiotherapy procedure occurrence, fraction episode). Procedure-level detail beneath the RT course."
-current_grain = "One row per (radiotherapy procedure occurrence, fraction episode, treatment-intent record on that procedure). Procedure-level detail beneath the RT course."
-current_unique_on = "`procedure_occurrence_id`, `fraction_id` when a procedure has at most one treatment-intent record. A procedure with several intent records repeats once per record."
-logical_key = ["procedure_occurrence_id", "fraction_id"]
+grain = "One row per (RT procedure occurrence, fraction episode, procedure intent measurement), guarded by same-person fraction/course/disease ownership."
+current_grain = "Procedure/intent detail remains explicit; duplicate links collapse before mv_id. Count distinct physical procedure IDs in aggregates."
+current_unique_on = "procedure_occurrence_id, fraction_id, intent_id (NULLS NOT DISTINCT)."
+logical_key = ["procedure_occurrence_id", "fraction_id", "intent_id"]
 logical_key_complete = true
-key_nullable_columns = []
-unique_index_columns = ["procedure_occurrence_id", "fraction_id"]
+key_nullable_columns = ["intent_id"]
+unique_index_columns = ["procedure_occurrence_id", "fraction_id", "intent_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
-concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until the intent multiplication is removed."
+concurrent_refresh_eligible = true
+concurrent_refresh_note = "Complete detail key, requiring UNIQUE NULLS NOT DISTINCT when intent is absent."
 public_api_1_0 = true
 lung_report_role = "dependency"
 oa_cohorts_rule_targets = []
 inputs = [
   { name = "modified_procedure_mv", kind = "construct", fan_out = "one_to_many", note = "spine at procedure/intent grain, so a procedure with several intents multiplies" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "inner join on the procedure_occurrence_id discriminator" },
-  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "no episode-type filter, so any episode linked to an RT procedure becomes a fraction" },
+  { name = "episode", kind = "cdm_table", fan_out = "many_to_one", note = "same-person treatment_cycle → treatment_regimen → disease owner chain; duplicate links collapse" },
   { name = "fraction_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "joined on episode_object_concept_id; drops rows where it is absent" },
   { name = "rt_procedures concept set", kind = "semantics", fan_out = "filter", note = "restricted to resolved RT procedure concepts" },
 ]
-known_violations = ["OC-H1", "OC-M3"]
-violation_note = "Inherits procedure/intent grain from its modified_procedure_mv spine, so the declared key is not unique when a procedure carries more than one treatment-intent modifier."
 
 [constructs.surgical_procedure_mv]
 class_name = "SurgicalProcedureMV"
 module = "omop_constructs.alchemy.episodes.surgical_procedure_mv"
 family = "episodes"
-grain = "One row per (condition episode, explicitly linked surgical procedure). Every condition episode appears: an episode with no linked surgery contributes exactly one row with all surgery columns NULL. That null spine is a public contract — oa-cohorts absence rules depend on it."
+grain = "One row per (target diagnosis, performed procedure), including valid same-person child-to-root credit. Each target without performed surgery contributes exactly one null surgery row."
 logical_key = ["condition_episode_id", "surgery_occurrence_id"]
 logical_key_complete = true
 key_nullable_columns = ["surgery_occurrence_id"]
@@ -818,9 +577,7 @@ inputs = [
   { name = "procedure_occurrence", kind = "cdm_table", fan_out = "one_to_many", note = "outer join through episode_event on the procedure_occurrence_id discriminator; several surgeries per episode multiply, which is the intended grain" },
   { name = "surg_only concept set", kind = "vocabulary", fan_out = "filter", note = "descendants of surgical_procedure minus radiotherapy and radioisotope descendants" },
 ]
-fan_out_note = "Attribution is explicit Episode_Event linkage, so pipeline-runtime is the authority on which episode owns a surgery. There is no date-window fan-out here."
-known_violations = ["OC-M1", "OC-M3"]
-violation_note = "The catalogue described date-window attribution while the query uses explicit links; OC-4 must document the actual policy. mv_id is refresh-local."
+fan_out_note = "Recorded explicit procedure-typed links determine the owner. A valid progression/metastatic owner additionally credits its same-person episode-of-care parent, without date ranking. Duplicate root/child links collapse at target/source grain; historical observations are excluded."
 
 [constructs.radioisotope_mv]
 class_name = "RadioisotopeMV"
@@ -845,9 +602,7 @@ inputs = [
   { name = "procedure_occurrence", kind = "cdm_table", fan_out = "one_to_many", note = "outer join by person plus date window: 90 days before episode start through episode end, or 365 days after start when open-ended" },
   { name = "radioisotopes_only concept set", kind = "vocabulary", fan_out = "filter", note = "descendants of the radioisotope procedure ancestor" },
 ]
-fan_out_note = "Unlike surgery, attribution is by date window, so one radioisotope procedure attaches to every episode whose window contains it. This asymmetry with surgery is deliberate but must be named — see OC-M1."
-known_violations = ["OC-M1", "OC-M3"]
-violation_note = "Date-window attribution fans a single procedure across overlapping episodes; the attribution policy is undocumented."
+fan_out_note = "Unlike surgery, attribution is by date window, so one radioisotope procedure attaches to every episode whose window contains it. Surgery instead uses recorded episode ownership."
 
 [constructs.treatment_envelope_mv]
 class_name = "TreatmentEnvelopeMV"
@@ -864,7 +619,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-2 removes the condition-occurrence multiplication."
+concurrent_refresh_note = "Not eligible: several condition start dates can produce multiple rows for the same episode."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["dx_to_tx_window", "tx_to_death_window", "tx_concurrent"]
@@ -872,17 +627,16 @@ inputs = [
   { name = "modified_conditions_mv", kind = "construct", fan_out = "one_to_many", note = "spine at condition-occurrence grain; the DISTINCT includes condition_start_date, so several condition records in one episode with different start dates survive as several rows" },
   { name = "surgical_procedure_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated to episode grain by min/max surgery date" },
   { name = "sact_treatment_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated to episode grain by min/max exposure date" },
-  { name = "rt_course_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated to episode grain by min/max exposure date; see OC-0-N5, a NULL condition_episode_id here removes RT entirely" },
+  { name = "rt_course_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated by person and episode using min/max exposure dates; only validated treatment-regimen course parents supply RT activity" },
   { name = "death", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "outer join on person_id; Death is person-grain in OMOP" },
 ]
 fan_out_note = "The three modality windows are each pre-aggregated before joining, so they cannot multiply. The multiplier is the condition-occurrence spine. LEAST/GREATEST rely on PostgreSQL's NULL-skipping behaviour, which is intentional and documented in the query."
-known_violations = ["OC-H1", "OC-M3"]
-violation_note = "Described at episode grain but rooted in condition-occurrence rows with condition_start_date in the DISTINCT, so one episode can produce several envelope rows."
 
 [constructs.condition_treatment_episode_mv]
 class_name = "ConditionTreatmentEpisode"
 module = "omop_constructs.alchemy.episodes.treatment_summary_mv"
 family = "episodes"
+current_grain = "One row per condition occurrence × regimen/intent-concept × course/intent-concept combination. The N×M compatibility product and existing condition date spine remain."
 grain = "Declared: one row per (condition episode, regimen, course) treatment episode, carrying condition context alongside the regimen and course dates and concepts."
 logical_key = ["condition_episode_id", "regimen_id", "course_id"]
 logical_key_complete = true
@@ -892,7 +646,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible: the declared key is not unique today, and OC-2 will split this into separate regimen and course streams."
+concurrent_refresh_note = "Not eligible: regimen and course combinations can repeat the declared condition-episode key."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["tx_chemotherapy", "tx_radiotherapy"]
@@ -900,27 +654,27 @@ inputs = [
   { name = "condition_occurrence", kind = "cdm_table", fan_out = "one_to_one", note = "spine" },
   { name = "episode_event", kind = "cdm_table", fan_out = "one_to_many", note = "outer join on the condition_occurrence_id discriminator" },
   { name = "sact_treatment_mv", kind = "construct", fan_out = "one_to_many", note = "outer join on condition_episode_id after grouping by regimen and intent; several regimens multiply" },
+  { name = "cycle_mv", kind = "construct", fan_out = "aggregate", note = "count distinct drug_exposure_id per person/regimen before prescription/intent fan-out" },
+  { name = "fraction_mv", kind = "construct", fan_out = "aggregate", note = "count distinct procedure_occurrence_id per person/course before prescription/intent fan-out" },
   { name = "rt_course_mv", kind = "construct", fan_out = "one_to_many", note = "outer join on condition_episode_id after grouping by course and intent; several courses multiply, producing a regimen-by-course product" },
 ]
-fan_out_note = "Two independent one-to-many joins side by side: N regimens and M courses in one episode give N*M rows, not N+M. This is the clearest instance of OC-H1."
-known_violations = ["OC-H1", "OC-M3", "OC-0-N6", "OC-0-N7"]
-violation_note = "Regimen and course summaries are joined side by side, producing a Cartesian product. regimen_count and course_count are structurally always 1. Four duplicate person_id/condition_episode_id columns are materialised and never read."
+fan_out_note = "Independent N-regimen and M-course streams still produce N*M combinations per condition. Physical dose/procedure counts are distinct source counts before detail fan-out; regimen_count and course_count are distinct entity counts within each grouped entity. Legacy repeated person/episode context columns are also exposed by the SQL projection."
 
 [constructs.episode_treatment_mv]
 class_name = "TreatmentIntentMV"
 module = "omop_constructs.alchemy.episodes.modality_intent_mv"
 family = "episodes"
 grain = "One row per (treatment episode, treatment-intent measurement on that episode), with RT and SACT modality evidence flags derived from events linked directly to the episode."
-current_unique_on = "No published column combination is guaranteed unique: a treatment episode with two intent records of the same concept has two rows with the same `treatment_episode_id` and `treatment_intent_concept_id`."
-logical_key = ["treatment_episode_id", "treatment_intent_concept_id"]
-logical_key_complete = false
+current_unique_on = "treatment_episode_id, intent_measurement_id."
+logical_key = ["treatment_episode_id", "intent_measurement_id"]
+logical_key_complete = true
 key_nullable_columns = []
-unique_index_columns = ["treatment_episode_id", "treatment_intent_concept_id"]
+unique_index_columns = ["treatment_episode_id", "intent_measurement_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
-concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible: the complete logical key is not expressible from the projected columns."
+concurrent_refresh_eligible = true
+concurrent_refresh_note = "Source intent measurement identity is projected. Raw disease ownership is retained; hierarchy expansion occurs in condition_episode_intent_mv."
 public_api_1_0 = true
 lung_report_role = "dependency"
 oa_cohorts_rule_targets = []
@@ -929,39 +683,36 @@ inputs = [
   { name = "measurement (intent)", kind = "cdm_table", fan_out = "one_to_many", note = "inner join on the episode_id modifier field, restricted to treatment_intent concepts; several intent measurements multiply" },
   { name = "intent_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops rows whose intent concept is absent" },
   { name = "episode (regimen_or_parent)", kind = "cdm_table", fan_out = "many_to_one", note = "outer join on episode_parent_id; lifts a regimen's parent so intent attaches to the condition episode" },
-  { name = "drug_exposure via episode_event", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "DISTINCT ON episode_id, so the sact flag cannot multiply" },
-  { name = "procedure_occurrence via episode_event", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "DISTINCT ON episode_id, restricted to rt_procedures, so the rt flag cannot multiply" },
+  { name = "drug_exposure via episode_event", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "distinct person/episode directly linked drug evidence; no descendant inference" },
+  { name = "procedure_occurrence via episode_event", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "distinct person/episode directly linked RT evidence; no descendant inference" },
 ]
-known_violations = ["OC-H4", "OC-M3", "OC-0-N4"]
-violation_note = "The intent measurement identity is not projected, so the declared key is the widest one the current columns allow and is not guaranteed unique. Modality flags also inspect only directly linked events, omitting evidence on child cycle and fraction episodes."
+fan_out_note = "Modality flags describe directly linked same-person events; descendant activity is not inferred."
 
 [constructs.condition_episode_intent_mv]
 class_name = "ConditionTreatmentIntentMV"
 module = "omop_constructs.alchemy.episodes.modality_intent_mv"
 family = "episodes"
-grain = "Declared: one row per (condition episode, child treatment episode with a recorded intent), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL."
-current_grain = "One row per (condition episode, child treatment episode, treatment-intent record on it), with modality and concurrency flags. Condition episodes with no intent-bearing treatment episode contribute one row with the treatment columns NULL. An episode whose linked conditions start on more than one date repeats its rows once per start date."
-current_unique_on = "No published column combination is guaranteed unique: rows can repeat, and the intent record's own ID is not included."
-logical_key = ["episode_id", "treatment_episode_id", "treatment_intent_concept_id"]
-logical_key_complete = false
-key_nullable_columns = ["treatment_episode_id", "treatment_intent_concept_id"]
-unique_index_columns = ["episode_id", "treatment_episode_id", "treatment_intent_concept_id"]
+grain = "One row per (target diagnosis, treatment episode, intent measurement), plus one null-intent spine row for each diagnosis with no attributed intent."
+current_grain = "Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Envelope concurrency is reduced to one person/episode row before the join."
+current_unique_on = "episode_id, treatment_episode_id, intent_measurement_id (NULLS NOT DISTINCT)."
+logical_key = ["episode_id", "treatment_episode_id", "intent_measurement_id"]
+logical_key_complete = true
+key_nullable_columns = ["treatment_episode_id", "intent_measurement_id"]
+unique_index_columns = ["episode_id", "treatment_episode_id", "intent_measurement_id"]
 orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
-concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible: inherits both the incomplete intent key and the treatment_envelope_mv multiplication."
+concurrent_refresh_eligible = true
+concurrent_refresh_note = "Complete intent key; requires UNIQUE NULLS NOT DISTINCT for the no-intent spine."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["intent_sact", "intent_rt", "intent_concurrent_rt"]
 inputs = [
   { name = "condition_episode_mv", kind = "construct", fan_out = "one_to_one", note = "spine" },
-  { name = "episode_treatment_mv", kind = "construct", fan_out = "one_to_many", note = "outer join on treatment_episode_parent_id; several intent-bearing treatment episodes multiply, which is the intended grain" },
-  { name = "treatment_envelope_mv", kind = "construct", fan_out = "one_to_many", note = "outer join on condition_episode; multiplies again wherever the envelope has more than one row for the episode" },
+  { name = "episode_treatment_mv", kind = "construct", fan_out = "one_to_many", note = "same-person self/root attribution by recorded treatment_episode_parent_id; distinct intent measurement identities retained" },
+  { name = "treatment_envelope_mv", kind = "construct", fan_out = "one_to_many", note = "BOOL_OR reduction per person/condition episode before outer join; no condition-date multiplication" },
 ]
-fan_out_note = "Two multipliers stack here. The intended one is the treatment-episode join; the unintended one is the envelope join, which inherits OC-H1."
-known_violations = ["OC-H1", "OC-H4", "OC-M3", "OC-0-N4"]
-violation_note = "Multiplied by treatment_envelope_mv rows for the same episode, and inherits the incomplete intent key from episode_treatment_mv."
+fan_out_note = "Preserve distinct intent measurements. Same-person root attribution adds targets; grouped BOOL_OR concurrency removes the envelope condition-date multiplier. Modality flags describe directly linked events; descendant activity is not inferred."
 
 [constructs.consult_window_mv]
 class_name = "ConsultWindowMV"
@@ -993,8 +744,6 @@ inputs = [
   { name = "treatment_envelope_mv", kind = "construct", fan_out = "one_to_many", note = "outer join on condition_episode; the only multiplier in this query" },
 ]
 fan_out_note = "All five consult and visit inputs are pre-aggregated to episode grain, so they are safe. The envelope join is not."
-known_violations = ["OC-H1", "OC-M3"]
-violation_note = "Multiplied by treatment_envelope_mv rows for the same episode."
 
 # ===========================================================================
 # Event family
@@ -1004,7 +753,7 @@ violation_note = "Multiplied by treatment_envelope_mv rows for the same episode.
 # match event ID, Field-concept discriminator, episode, and person; those events
 # are anti-joined out of fallback. Unlinked events select one eligible episode
 # deterministically, and exact source-table/event/episode keys are distinct.
-# OC-2 still owns the matching database indexes and ORM identities.
+# Logical keys and ORM identities are recorded independently of database indexes.
 
 [constructs.dx_measurement_mv]
 class_name = "DxMeasurementMV"
@@ -1019,7 +768,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["meas_concept", "meas_value_concept"]
@@ -1031,8 +780,6 @@ inputs = [
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
 fan_out_note = "Explicit and fallback branches are mutually exclusive. Several valid explicit links intentionally produce several episode-grain rows; ranked fallback selects one episode."
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_observation_mv]
 class_name = "DxObservationMV"
@@ -1047,7 +794,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["obs_concept"]
@@ -1058,8 +805,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked observation selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_procedure_mv]
 class_name = "DxProcedureMV"
@@ -1074,7 +819,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["proc_concept"]
@@ -1085,8 +830,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked procedure selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dx_visit_mv]
 class_name = "DxRelevantVisitMV"
@@ -1112,9 +855,7 @@ inputs = [
   { name = "provider_concept", kind = "vocabulary", fan_out = "inner_lookup", note = "drops visits whose provider specialty concept is absent" },
   { name = "proximity ranking", kind = "window", fan_out = "filter", note = "keeps rows where the tier-1 test holds OR rank = 1; retains every tier-1 episode, so this is not a nearest-episode mapping" },
 ]
-fan_out_note = "The filter is `episode_prior = 1 OR rank = 1`, so a visit within 180 days of several episodes attaches to all of them. That fan-out is intended; the ordering that decides rank is not correct — see OC-H3."
-known_violations = ["OC-H3", "OC-M3"]
-violation_note = "Ranking orders by tier then SIGNED diff_days, so within the prior-only tier a visit 1000 days before an episode sorts ahead of one 200 days before it. The tier-1 test uses `abs(diff_days) < 180`, excluding the exact 180-day boundary."
+fan_out_note = "The filter is `episode_prior = 1 OR rank = 1`, so a visit within 180 days of several episodes attaches to all of them. Ranking orders by tier and signed day distance; the tier-1 test uses abs(diff_days) < 180, excluding the exact boundary."
 
 [constructs.person_demography_mv]
 class_name = "PersonDemography"
@@ -1131,7 +872,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "Not eligible until OC-2 ranks the three repeated-observation joins."
+concurrent_refresh_note = "Not eligible: repeated postcode, country-of-birth and language observations multiply person/episode rows."
 public_api_1_0 = true
 lung_report_role = "direct"
 oa_cohorts_rule_targets = ["demog_death"]
@@ -1144,9 +885,7 @@ inputs = [
   { name = "observation (country of birth)", kind = "cdm_table", fan_out = "one_to_many", note = "outer join, unranked; multiplies independently" },
   { name = "observation (language spoken)", kind = "cdm_table", fan_out = "one_to_many", note = "outer join, unranked; multiplies independently" },
 ]
-fan_out_note = "The three demographic observation joins are independent and unranked, so a person with N postcodes, M countries of birth, and K languages contributes N*M*K rows per episode."
-known_violations = ["OC-B4", "OC-M3"]
-violation_note = "Unranked repeated-observation joins produce an N*M*K product against the documented person/episode grain. Postcode is read from value_as_number, losing leading zeroes. The gender concept join is inner, so it can drop a person entirely."
+fan_out_note = "The three demographic observation joins are independent and unranked, so a person with N postcodes, M countries of birth, and K languages contributes N*M*K rows per episode. Postcode is read from a numeric observation value, so leading zeroes are not preserved."
 
 # ---------------------------------------------------------------------------
 # Concept-restricted measurement slices
@@ -1170,7 +909,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1182,8 +921,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.weight_change_dx_mv]
 class_name = "WeightChangeDxMV"
@@ -1198,7 +935,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1210,8 +947,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.height_dx_mv]
 class_name = "HeightDxMV"
@@ -1226,7 +961,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1238,8 +973,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.bsa_dx_mv]
 class_name = "BSADxMV"
@@ -1254,7 +987,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1266,8 +999,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.creatinine_clearance_dx_mv]
 class_name = "CreatinineClearanceDxMV"
@@ -1282,7 +1013,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1294,8 +1025,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.egfr_dx_mv]
 class_name = "EGFRDxMV"
@@ -1310,7 +1039,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1322,8 +1051,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.fev1_dx_mv]
 class_name = "FEV1DxMV"
@@ -1338,7 +1065,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1350,8 +1077,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.dtherm_dx_mv]
 class_name = "DistressThermometerDxMV"
@@ -1366,7 +1091,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1378,8 +1103,6 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."
 
 [constructs.ecog_dx_mv]
 class_name = "ECOGDxMV"
@@ -1394,7 +1117,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1406,8 +1129,7 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it. The underlying query also carries an unmapped value_as_concept_id column."
+fan_out_note = "The SQL projection also carries an unmapped value_as_concept_id column."
 
 [constructs.smoking_pyh_dx_mv]
 class_name = "SmokingPYHDxMV"
@@ -1422,7 +1144,7 @@ orm_primary_key = ["mv_id"]
 surrogate_kind = "refresh_local_row_number"
 surrogate_stable_across_refresh = false
 concurrent_refresh_eligible = false
-concurrent_refresh_note = "OC-1 establishes logical uniqueness; OC-2/OC-3 must declare and create the matching unique index."
+concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = false
 public_api_note = "No current consumer; oa-cohorts resolves meas_concept to dx_measurement_mv. Excluded from the 1.0 public surface."
 lung_report_role = "unused"
@@ -1434,5 +1156,3 @@ inputs = [
   { name = "condition_episode_mv (window)", kind = "construct", fan_out = "many_to_one", note = "an unlinked measurement selects one eligible episode of care: already-started first, then nearest start, then lowest episode_id" },
   { name = "episode_relevant_window", kind = "window", fan_out = "filter", note = "keeps explicit relationships; date-based relationships remain from 90 days before episode start through episode end, or 365 days after start for an open episode" },
 ]
-known_violations = ["OC-M3"]
-violation_note = "The exposed mv_id remains refresh-local until OC-2 replaces or relabels it."

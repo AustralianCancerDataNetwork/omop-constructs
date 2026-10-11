@@ -6,10 +6,12 @@ from ...semantics import registry
 
 intent_concept = so.aliased(Concept, name='intent_concept')
 regimen_or_parent = so.aliased(Episode, name='regimen_or_parent')
+intent_owner = so.aliased(Episode, name='intent_owner')
 
 modality_sact = (
     sa.select(
         sa.literal(True).label('sact'),
+        Drug_Exposure.person_id,
         Episode_Event.episode_id
     )
     .join(
@@ -19,13 +21,16 @@ modality_sact = (
             Episode_Event.episode_event_field_concept_id==runtime.modifiers.modifier_fields.drug_exposure_id
         )
     )
-    .distinct(Episode_Event.episode_id)
+    .join(Episode, sa.and_(Episode.episode_id == Episode_Event.episode_id,
+                          Episode.person_id == Drug_Exposure.person_id))
+    .distinct()
     .subquery()
 )
 
 modality_rt = (
     sa.select(
         sa.literal(True).label('rt'),
+        Procedure_Occurrence.person_id,
         Episode_Event.episode_id
     )
     .join(
@@ -38,13 +43,17 @@ modality_rt = (
     .filter(
         Procedure_Occurrence.procedure_concept_id.in_(list(registry['rt_procedures'].all_concepts))
     )
-    .distinct(Episode_Event.episode_id)
+    .join(Episode, sa.and_(Episode.episode_id == Episode_Event.episode_id,
+                          Episode.person_id == Procedure_Occurrence.person_id))
+    .distinct()
     .subquery()
 )
 
 episode_intent = (
     sa.select(
         Episode.episode_id,
+        Episode.person_id,
+        Measurement.measurement_id.label("intent_measurement_id"),
         Episode.episode_start_date,
         Episode.episode_end_date,
         sa.case(
@@ -61,11 +70,20 @@ episode_intent = (
         Measurement,
         sa.and_(
             Measurement.measurement_event_id==Episode.episode_id,
+            Measurement.person_id == Episode.person_id,
             Measurement.meas_event_field_concept_id==runtime.modifiers.modifier_fields.episode_id
         )
     )
     .join(intent_concept, intent_concept.concept_id==Measurement.measurement_concept_id)
-    .join(regimen_or_parent, regimen_or_parent.episode_id==Episode.episode_parent_id, isouter=True)
+    .join(regimen_or_parent, sa.and_(regimen_or_parent.episode_id == Episode.episode_parent_id,
+                                    regimen_or_parent.person_id == Episode.person_id))
+    .join(intent_owner, sa.and_(
+        intent_owner.episode_id == sa.case(
+            (regimen_or_parent.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen,
+             regimen_or_parent.episode_parent_id), else_=regimen_or_parent.episode_id),
+        intent_owner.person_id == Episode.person_id,
+        intent_owner.episode_concept_id.in_(runtime.types.disease_episode_types.ids),
+    ))
     .filter(
         Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
     )
@@ -75,6 +93,8 @@ episode_intent = (
 episode_join = (
     sa.select(
         sa.func.row_number().over().label("mv_id"),
+        episode_intent.c.person_id,
+        episode_intent.c.intent_measurement_id,
         episode_intent.c.episode_id.label('treatment_episode_id'),
         episode_intent.c.episode_start_date.label('treatment_episode_start_date'),
         episode_intent.c.episode_end_date.label('treatment_episode_end_date'),
@@ -88,6 +108,6 @@ episode_join = (
             sa.func.coalesce(modality_sact.c.sact, False)
         ).label("concurrent")
     )
-    .join(modality_rt, modality_rt.c.episode_id==episode_intent.c.episode_id, isouter=True)
-    .join(modality_sact, modality_sact.c.episode_id==episode_intent.c.episode_id, isouter=True)
+    .join(modality_rt, sa.and_(modality_rt.c.episode_id == episode_intent.c.episode_id, modality_rt.c.person_id == episode_intent.c.person_id), isouter=True)
+    .join(modality_sact, sa.and_(modality_sact.c.episode_id == episode_intent.c.episode_id, modality_sact.c.person_id == episode_intent.c.person_id), isouter=True)
 )

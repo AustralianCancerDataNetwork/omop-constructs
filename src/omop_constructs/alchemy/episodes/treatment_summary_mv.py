@@ -5,6 +5,8 @@ from datetime import date
 from .treatment_summary_joins import condition_treatment_join
 from .course_mv import RTCourseMV
 from .systemic_treatment_mv import SACTRegimenMV
+from .cycle_mv import CycleMV
+from .fraction_mv import FractionMV
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
@@ -17,7 +19,7 @@ class ConditionTreatmentEpisode(
     __mv_name__ = "condition_treatment_episode_mv"
     __mv_select__ = select_all_columns(condition_treatment_join)
     __mv_index__ = "condition_episode_id"
-    __deps__ = (RTCourseMV.__mv_name__, SACTRegimenMV.__mv_name__)
+    __deps__ = (RTCourseMV.__mv_name__, SACTRegimenMV.__mv_name__, CycleMV.__mv_name__, FractionMV.__mv_name__)
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
 

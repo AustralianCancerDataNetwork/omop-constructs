@@ -52,7 +52,7 @@ uv run --directory . omop-constructs contracts --verbose-contracts
 `test_mapper_warnings_are_errors.py` imports the full construct manifest in a
 subprocess with `SAWarning` promoted to an error. A clean single import is
 warning-free, so a new mapper identity conflict fails here rather than hiding
-among the reload warnings the rest of the suite produces (OC-M4).
+among the reload warnings the rest of the suite produces.
 
 The subprocess is deliberate: in-process the result would depend on whatever
 earlier tests had already imported, which is the state that generates those

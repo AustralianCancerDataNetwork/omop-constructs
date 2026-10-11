@@ -6,10 +6,11 @@ from omop_alchemy.cdm.model import Concept, Drug_Exposure, Episode, Episode_Even
 drug_concept = so.aliased(Concept, name='drug_concept')
 route_concept = so.aliased(Concept, name='route_concept')
 cycle_concept = so.aliased(Concept, name='cycle_concept')
+regimen = so.aliased(Episode, name="dose_regimen")
+owner = so.aliased(Episode, name="dose_diagnosis")
 
 cycle_join = (
     sa.select(
-        sa.func.row_number().over().label('mv_id'),
         Drug_Exposure.person_id,
         Drug_Exposure.drug_exposure_start_date,
         Drug_Exposure.drug_exposure_end_date,
@@ -33,6 +34,20 @@ cycle_join = (
             Episode_Event.episode_event_field_concept_id==runtime.modifiers.modifier_fields.drug_exposure_id
         )
     )
-    .join(Episode, Episode.episode_id==Episode_Event.episode_id)
+    .join(Episode, sa.and_(
+        Episode.episode_id == Episode_Event.episode_id,
+        Episode.person_id == Drug_Exposure.person_id,
+        Episode.episode_concept_id == runtime.types.treatment_episode_types.treatment_cycle,
+    ))
+    .join(regimen, sa.and_(regimen.episode_id == Episode.episode_parent_id,
+                          regimen.person_id == Episode.person_id,
+                          regimen.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen))
+    .join(owner, sa.and_(owner.episode_id == regimen.episode_parent_id,
+                        owner.person_id == regimen.person_id,
+                        owner.episode_concept_id.in_(runtime.types.disease_episode_types.ids)))
     .join(cycle_concept, cycle_concept.concept_id==Episode.episode_concept_id)
+    .distinct()
+    .subquery("distinct_doses")
 )
+
+cycle_join = sa.select(sa.func.row_number().over().label("mv_id"), *cycle_join.c)

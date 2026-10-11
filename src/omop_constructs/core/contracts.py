@@ -13,9 +13,10 @@ lung-report usage are release and catalogue policy that would otherwise leak
 into runtime classes. Keeping all of it in one file gives the coverage tests,
 the release comparison tools, and the rendered catalogue a single source.
 
-Declared keys are *intended* keys. Where a construct does not satisfy its
-declared key today, `known_violations` names the finding. Callers that need to
-know what the data actually looks like must measure it — see
+Declared keys are contract requirements. ``current_grain``, ``current_unique_on``
+and refresh eligibility describe output constraints; deployed uniqueness must be
+measured. Investigation tracking is maintained outside the shipped manifest.
+Optional finding fields remain supported for caller-supplied manifests. See
 `tools/release_validation/collect_key_metrics.py` — rather than trusting the declaration.
 
 The manifest is shipped inside the wheel so the public catalogue CLI works from

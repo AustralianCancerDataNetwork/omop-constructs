@@ -233,3 +233,10 @@
 - custom event factories can select an `EpisodeAttachmentPolicy` and `TemporalRankingSpec`; deprecated Boolean and direct-helper calls issue warnings that identify the policy-based replacement
 - ranked date-window fallback considers episodes of care only, so an unlinked event can no longer attach to a later-starting progression or metastatic episode; those episodes receive events only through valid explicit links. All-in-window and explicit-only policies are unchanged. Requires omop-alchemy>=1.2.1 for the separate explicit-link and fallback episode sources
 - deployments must rebuild the diagnosis-linked event views, leaf modifier views, `modified_conditions_mv`, `stage_modifier_mv`, and `person_demography_mv`, plus `consult_window_mv` and their dependent views in dependency order; ANALYZE each immediately after building. An in-place refresh does not replace a PostgreSQL materialized-view definition
+
+
+# 0.10.0
+- Credit treatment both their recorded disease owner and its valid same-person episode-of-care root. Reuse the existing one-level progression/metastatic relation; preserve direct child evidence and isolation between primaries.
+- Deduplicate physical dose/procedure links before counting, validate person and source-field identity throughout the treatment chain, and count distinct regimen/course entities before prescription/intent detail can multiply them.
+- Add `intent_id` to `fraction_mv`, `sact_treatment_mv` and `rt_course_mv`; add `person_id` and `intent_measurement_id` to `episode_treatment_mv`, and `intent_measurement_id` to `condition_episode_intent_mv`. Reduce envelope concurrency to person/episode grain before joining attributed intent.
+- Deployment: **rebuild**, then ANALYZE changed views and their dependent outputs in registry order. Refreshing existing definitions cannot apply this change.

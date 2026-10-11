@@ -33,3 +33,5 @@ class FractionMV(
     fraction_number: so.Mapped[int] = so.mapped_column(sa.Integer)
     course_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     fraction_name: so.Mapped[str] = so.mapped_column(sa.String)
+
+    intent_id: so.Mapped[int | None] = so.mapped_column(sa.Integer, nullable=True)

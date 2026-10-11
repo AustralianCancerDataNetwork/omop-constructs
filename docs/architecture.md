@@ -114,6 +114,59 @@ Visits are handled differently from observations and measurements.
 
 This design means a downstream measurable can filter `DxRelevantVisitMV` by `provider_specialty_concept_id` and treat the result as an event stream, with grouping, de-duplication, and timing composition handled by the measure engine.
 
+## Treatment attribution
+
+Recorded ownership determines which cancer receives treatment evidence. The recorded diagnosis keeps its evidence; an eligible nested diagnosis also contributes to its episode-of-care parent.
+
+```mermaid
+flowchart TD
+    subgraph activity["Physical treatment activity"]
+        dose["Drug exposure → cycle → regimen"]
+        fraction["RT procedure → fraction → course"]
+        surgery["Performed surgery"]
+    end
+
+    dose --> validate["Validate source type, person and recorded owner"]
+    fraction --> validate
+    surgery --> validate
+    validate --> count["Deduplicate physical links and count distinct sources
+    before prescription and intent joins"]
+    count --> owner["Recorded disease owner"]
+
+    intent["Intent measurement on a treatment episode"] --> rawIntent["Validate person and ownership;
+    retain measurement ID and raw recorded owner"]
+    rawIntent --> owner
+
+    owner --> direct["Credit the recorded diagnosis"]
+    owner --> parent{"Progression or metastatic diagnosis with a valid
+    same-person, one-level episode-of-care parent?"}
+    parent -- "Yes" --> root["Also credit the episode-of-care parent"]
+    parent -- "No" --> direct
+
+    direct --> targets["Deduplicate evidence per target diagnosis and source identity"]
+    root --> targets
+
+    targets --> detail["SACT / RT detail:
+    cycle or fraction × prescription × intent"]
+    targets --> performed["Surgery:
+    distinct performed procedures, or one null-surgery row"]
+    targets --> attributedIntent["Diagnosis-attributed intent:
+    preserve measurement IDs;
+    join concurrency once per person and episode"]
+    detail --> summary["Treatment summaries:
+    regimen × course combinations;
+    envelope and consult rows per condition date"]
+    performed --> summary
+    summary -- "Concurrency grouped by person and episode" --> attributedIntent
+    detail --> measures["oa-cohorts measurables:
+    apply criteria and timing to the attributed episode"]
+    performed --> measures
+    attributedIntent --> measures
+    summary --> measures
+```
+
+The attribution map uses SQL projections of `overarching_disease_episode` and disease episodes, keyed by `(person_id, owner_id, target_id)`. Modality flags reflect events linked directly to the measured treatment episode. Summary row counts are not patient or treatment counts; consumers use source identities and the published grains.
+
 ## Treatment Window And Consult Window Pattern
 
 The episode layer exposes two important scalar-style constructs:

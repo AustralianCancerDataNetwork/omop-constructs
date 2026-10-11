@@ -5,7 +5,7 @@
 Typical runtime usage assumes:
 
 - `oa-configurator` is installed and a shared OMOP stack config is available
-- `omop-alchemy>=1.2.2.dev0,<2` (the local Q4 wheel selected by `tool.uv.sources`), `omop-semantics`, and `orm-loader>=1.2.0,<2` are installed
+- `omop-alchemy>=1.2.2,<2`, `omop-semantics`, and `orm-loader>=1.2.0,<2` are installed
 - `omop-semantics` runtime value sets are available
 - a PostgreSQL database is available for materialized view creation and refresh
 
@@ -119,6 +119,38 @@ with engine.begin() as connection:
 ```
 
 Validate the rebuilt views in a side schema before replacing a populated clinical deployment. A selective rebuild is also possible, but the operator must drop downstream views before their inputs and recreate inputs before downstream views; the registry does not expose a selective cascade planner.
+
+### Rebuilding treatment views
+
+When treatment view definitions change, rebuild `cycle_mv`, `fraction_mv`,
+`sact_treatment_mv`, `rt_course_mv`, `surgical_procedure_mv`, `dx_treat_start_mv`,
+`episode_treatment_mv`, `condition_treatment_episode_mv`, `treatment_envelope_mv`
+and `condition_episode_intent_mv`, plus dependent outputs such as
+`consult_window_mv`, in registry dependency order. ANALYZE each after building.
+Use the rebuild procedure above and validate in a side schema before replacing
+an existing deployment.
+
+## Treatment On Nested Diagnoses
+
+Query treatment constructs using the diagnosis you want to report on. Treatment,
+intent and performed surgery recorded against a progression or metastatic
+diagnosis are available against both that diagnosis and its valid, same-person
+episode-of-care parent. This follows one recorded parent link.
+
+When using these views:
+
+- Count distinct source records at the [published grain](constructs/episodes.md),
+  rather than counting detail or summary rows. The same evidence can appear for
+  both a nested diagnosis and its parent.
+- Use performed procedures to identify surgery. Surgical history observations
+  do not establish surgery during the episode; a null-surgery row represents no
+  qualifying performed surgery.
+- Apply the indicator's configured dates and windows to the diagnosis being
+  measured. For example, child treatment more than 90 days after the root
+  diagnosis remains outside a diagnosis-relative 0..90-day window.
+
+See [Treatment attribution](architecture.md#treatment-attribution) for the
+attribution flow and source validation rules.
 
 ## CLI
 

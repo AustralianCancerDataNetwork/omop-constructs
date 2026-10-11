@@ -76,7 +76,30 @@ def get_episode_hierarchy_query(
         .subquery(name=name)        
     )
 
-def dx_treatment_window(name="dx_treat_window"):
+def diagnosis_attribution(episodes: sa.Subquery, roots: sa.Subquery) -> sa.Subquery:
+    """Distinct self and recorded, same-person child-to-root treatment targets."""
+    child = so.aliased(Episode, name="attribution_child")
+    own = sa.select(
+        episodes.c.person_id,
+        episodes.c.episode_id.label("owner_id"),
+        episodes.c.episode_id.label("target_id"),
+    )
+    inherited = (
+        sa.select(roots.c.person_id, child.episode_id, roots.c.episode_id)
+        .join(child, sa.and_(
+            child.episode_id == roots.c.extent_episode_id,
+            child.person_id == roots.c.person_id,
+            child.episode_parent_id == roots.c.episode_id,
+        ))
+        .where(child.episode_concept_id.in_([
+            runtime.types.disease_episode_types.disease_progression,
+            runtime.types.disease_episode_types.metastatic,
+        ]))
+    )
+    return own.union(inherited).subquery("diagnosis_attribution")
+
+
+def dx_treatment_window(attribution: sa.Subquery, name="dx_treat_window"):
     Diagnosis = Episode
     Regimen = so.aliased(Episode, name="regimen")
 
@@ -90,8 +113,15 @@ def dx_treatment_window(name="dx_treat_window"):
             sa.func.count(sa.distinct(Regimen.episode_id)).label("treatment_regimen_count"),
         )
         .join(
-            Regimen,
-            Regimen.episode_parent_id == Diagnosis.episode_id,
+            attribution,
+            sa.and_(attribution.c.target_id == Diagnosis.episode_id,
+                    attribution.c.person_id == Diagnosis.person_id),
+        )
+        .join(
+            Regimen, sa.and_(
+                Regimen.episode_parent_id == attribution.c.owner_id,
+                Regimen.person_id == attribution.c.person_id,
+            ),
         )
         .where(
             Diagnosis.episode_concept_id.in_(runtime.types.disease_episode_types.ids),
