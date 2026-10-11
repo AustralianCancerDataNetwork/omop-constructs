@@ -8,6 +8,7 @@ from ...core.sql import select_all_columns
 from .modality_intent_join import episode_join
 from .treatment_envelope_mv import TreatmentEnvelopeMV
 from .condition_episode_mv import ConditionEpisodeMV
+from .episode_joins import treatment_attribution
 
 @register_construct
 class TreatmentIntentMV(
@@ -24,6 +25,9 @@ class TreatmentIntentMV(
 
     mv_id: so.Mapped[int] = so.mapped_column(sa.Integer, primary_key=True)
 
+    person_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+    intent_measurement_id: so.Mapped[int] = so.mapped_column(sa.Integer)
+
     treatment_episode_id: so.Mapped[int] = so.mapped_column(sa.Integer)
     treatment_episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
     treatment_episode_end_date: so.Mapped[date] = so.mapped_column(sa.Date)
@@ -37,41 +41,50 @@ class TreatmentIntentMV(
     concurrent: so.Mapped[bool] = so.mapped_column(sa.Boolean)
 
 
+_attributed_intent = (
+    sa.select(*(c for c in TreatmentIntentMV.__table__.c if c.key != "mv_id"),
+              treatment_attribution.c.target_id)
+    .join(treatment_attribution, sa.and_(
+        treatment_attribution.c.owner_id == TreatmentIntentMV.treatment_episode_parent_id,
+        treatment_attribution.c.person_id == TreatmentIntentMV.person_id,
+    ))
+    .distinct().subquery("attributed_intent")
+)
+
+_episode_concurrency = (
+    sa.select(TreatmentEnvelopeMV.person_id, TreatmentEnvelopeMV.condition_episode,
+              sa.func.bool_or(sa.func.coalesce(TreatmentEnvelopeMV.concurrent_chemort, False)).label("concurrent_chemort"))
+    .group_by(TreatmentEnvelopeMV.person_id, TreatmentEnvelopeMV.condition_episode)
+    .subquery("episode_concurrency")
+)
+
 episode_summary_select = (
     sa.select(
         sa.func.row_number().over().label("mv_id"),
-        ConditionEpisodeMV.episode_id,
-        ConditionEpisodeMV.person_id,
-
-        ConditionEpisodeMV.episode_concept_id,
-        ConditionEpisodeMV.episode_label,
-
-        ConditionEpisodeMV.episode_start_date,
-        ConditionEpisodeMV.episode_end_date,
-
-        TreatmentIntentMV.treatment_episode_id,
-        TreatmentIntentMV.treatment_episode_start_date,
-        TreatmentIntentMV.treatment_episode_end_date,
-        TreatmentIntentMV.treatment_intent_concept_id,
-        TreatmentIntentMV.treatment_intent_name,
-
-        sa.func.coalesce(TreatmentIntentMV.rt, False).label("rt"),
-        sa.func.coalesce(TreatmentIntentMV.sact, False).label("sact"),
-        sa.func.coalesce(TreatmentIntentMV.concurrent, False).label("concurrent"),
-        sa.and_(
-            sa.func.coalesce(TreatmentIntentMV.rt, False),
-            sa.func.coalesce(TreatmentEnvelopeMV.concurrent_chemort, False)
-        ).label("concurrent_rt"),
+        ConditionEpisodeMV.episode_id, ConditionEpisodeMV.person_id,
+        ConditionEpisodeMV.episode_concept_id, ConditionEpisodeMV.episode_label,
+        ConditionEpisodeMV.episode_start_date, ConditionEpisodeMV.episode_end_date,
+        _attributed_intent.c.treatment_episode_id,
+        _attributed_intent.c.treatment_episode_start_date,
+        _attributed_intent.c.treatment_episode_end_date,
+        _attributed_intent.c.treatment_intent_concept_id,
+        _attributed_intent.c.treatment_intent_name,
+        _attributed_intent.c.intent_measurement_id,
+        sa.func.coalesce(_attributed_intent.c.rt, False).label("rt"),
+        sa.func.coalesce(_attributed_intent.c.sact, False).label("sact"),
+        sa.func.coalesce(_attributed_intent.c.concurrent, False).label("concurrent"),
+        sa.and_(sa.func.coalesce(_attributed_intent.c.rt, False),
+                sa.func.coalesce(_episode_concurrency.c.concurrent_chemort, False)).label("concurrent_rt"),
     )
-    .outerjoin(
-        TreatmentIntentMV,
-        TreatmentIntentMV.treatment_episode_parent_id
-        == ConditionEpisodeMV.episode_id
-    )
-    .outerjoin(
-        TreatmentEnvelopeMV,
-        TreatmentEnvelopeMV.condition_episode == ConditionEpisodeMV.episode_id
-    )
+    .select_from(ConditionEpisodeMV)
+    .outerjoin(_attributed_intent, sa.and_(
+        _attributed_intent.c.target_id == ConditionEpisodeMV.episode_id,
+        _attributed_intent.c.person_id == ConditionEpisodeMV.person_id,
+    ))
+    .outerjoin(_episode_concurrency, sa.and_(
+        _episode_concurrency.c.condition_episode == ConditionEpisodeMV.episode_id,
+        _episode_concurrency.c.person_id == ConditionEpisodeMV.person_id,
+    ))
 )
 
 @register_construct
@@ -100,6 +113,8 @@ class ConditionTreatmentIntentMV(
 
     episode_start_date: so.Mapped[date] = so.mapped_column(sa.Date)
     episode_end_date: so.Mapped[date] = so.mapped_column(sa.Date)
+
+    intent_measurement_id: so.Mapped[int | None] = so.mapped_column(sa.Integer, nullable=True)
 
     treatment_episode_id: so.Mapped[int | None] = so.mapped_column(sa.Integer, nullable=True)
     treatment_episode_start_date: so.Mapped[date | None] = so.mapped_column(sa.Date, nullable=True)

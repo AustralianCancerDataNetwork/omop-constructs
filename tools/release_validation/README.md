@@ -12,7 +12,7 @@ validation pack, or a scratch build.
 
 `_common.py` holds the shared database and output helpers. `_sql_normalise.py`
 makes definition checksums ignore the order of embedded concept-ID lists, which
-the package currently renders in hash-seed-dependent order (finding OC-0-N10);
+the package currently renders in hash-seed-dependent order;
 it can be retired once the package renders those lists in sorted order.
 
 The tools live outside the installed package on purpose. The SQL they generate

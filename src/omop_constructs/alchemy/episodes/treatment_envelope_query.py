@@ -23,11 +23,12 @@ from .course_mv import RTCourseMV
 # producing fractional-day results in downstream scalars.
 surg_window = (
     sa.select(
+        SurgicalProcedureMV.person_id,
         SurgicalProcedureMV.condition_episode_id,
         sa.func.min(sa.cast(SurgicalProcedureMV.surgery_datetime, sa.Date)).label('first_surgery'),
         sa.func.max(sa.cast(SurgicalProcedureMV.surgery_datetime, sa.Date)).label('last_surgery'),
     )
-    .group_by(SurgicalProcedureMV.condition_episode_id)
+    .group_by(SurgicalProcedureMV.person_id, SurgicalProcedureMV.condition_episode_id)
     .subquery(name='surg_window')
 )
 
@@ -40,11 +41,12 @@ surg_window = (
 # and downstream date arithmetic produces interval instead of integer days.
 sact_window = (
     sa.select(
+        SACTRegimenMV.person_id,
         SACTRegimenMV.condition_episode_id,
         sa.func.min(sa.cast(SACTRegimenMV.first_exposure_date, sa.Date)).label('first_sact_exposure'),
         sa.func.max(sa.cast(SACTRegimenMV.last_exposure_date, sa.Date)).label('last_sact_exposure'),
     )
-    .group_by(SACTRegimenMV.condition_episode_id)
+    .group_by(SACTRegimenMV.person_id, SACTRegimenMV.condition_episode_id)
     .subquery(name='sact_window')
 )
 
@@ -52,11 +54,12 @@ sact_window = (
 # Same timestamp-guard cast as sact_window above — see comment there.
 rt_window = (
     sa.select(
+        RTCourseMV.person_id,
         RTCourseMV.condition_episode_id,
         sa.func.min(sa.cast(RTCourseMV.first_exposure_date, sa.Date)).label('first_rt_exposure'),
         sa.func.max(sa.cast(RTCourseMV.last_exposure_date, sa.Date)).label('last_rt_exposure'),
     )
-    .group_by(RTCourseMV.condition_episode_id)
+    .group_by(RTCourseMV.person_id, RTCourseMV.condition_episode_id)
     .subquery(name='rt_window')
 )
 
@@ -98,9 +101,12 @@ treatment_window = (
         ).label('concurrent_chemort'),
     )
     .select_from(ModifiedCondition)
-    .join(surg_window, surg_window.c.condition_episode_id == ModifiedCondition.condition_episode, isouter=True)
-    .join(rt_window, rt_window.c.condition_episode_id == ModifiedCondition.condition_episode, isouter=True)
-    .join(sact_window, sact_window.c.condition_episode_id == ModifiedCondition.condition_episode, isouter=True)
+    .join(surg_window, sa.and_(surg_window.c.condition_episode_id == ModifiedCondition.condition_episode,
+                            surg_window.c.person_id == ModifiedCondition.person_id), isouter=True)
+    .join(rt_window, sa.and_(rt_window.c.condition_episode_id == ModifiedCondition.condition_episode,
+                            rt_window.c.person_id == ModifiedCondition.person_id), isouter=True)
+    .join(sact_window, sa.and_(sact_window.c.condition_episode_id == ModifiedCondition.condition_episode,
+                            sact_window.c.person_id == ModifiedCondition.person_id), isouter=True)
     .distinct()
     .subquery()
 )

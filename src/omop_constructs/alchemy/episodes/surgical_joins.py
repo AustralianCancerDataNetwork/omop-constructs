@@ -4,6 +4,7 @@ from omop_alchemy.cdm.model import Concept, Concept_Ancestor, Procedure_Occurren
 from omop_alchemy.cdm.model.structural import Episode_Event
 from omop_semantics.runtime.default_valuesets import runtime # type: ignore
 from .condition_episode_mv import ConditionEpisodeMV
+from .episode_joins import treatment_attribution
 from ..events.event_factories import (
     DEFAULT_EPISODE_WINDOW_DAYS_PRIOR,
     DEFAULT_EPISODE_OPEN_END_FALLBACK_DAYS,
@@ -136,9 +137,9 @@ all_cancer_relevant_surg = (
 # reliably represent the date of surgical treatment within the current episode.
 #
 # Surgery attribution is now driven by explicit Episode_Event links created by
-# pipeline-runtime. This makes the runtime the authority for choosing a single
-# diagnosis episode per surgery, avoiding the former person+window fan-out
-# across overlapping primaries.
+# pipeline-runtime. Recorded diagnosis ownership remains authoritative. Q3 adds
+# valid same-person child-to-root credit without date-window fan-out across
+# overlapping primaries; duplicate source/target evidence collapses below.
 #
 # SurgicalProcedureMV must still keep ConditionEpisodeMV as the spine so that
 # episodes with no linked surgery produce a single null-valued row. oa-cohorts
@@ -150,9 +151,10 @@ all_cancer_relevant_surg = (
 # here. Both refer to the same query; the distinction is purely structural.
 _surg_proc_sq = surgical_procedure_events.subquery(name="surgical_procedure_events")
 
-linked_surgical_procedure_events = (
+_surgical_owner_links = (
     sa.select(
-        Episode_Event.episode_id.label("condition_episode_id"),
+        Episode_Event.episode_id.label("owning_diagnosis_episode_id"),
+        treatment_attribution.c.target_id.label("condition_episode_id"),
         _surg_proc_sq.c.person_id,
         _surg_proc_sq.c.surgery_occurrence_id,
         _surg_proc_sq.c.surgery_concept_id,
@@ -166,11 +168,22 @@ linked_surgical_procedure_events = (
         _surg_proc_sq,
         _surg_proc_sq.c.surgery_occurrence_id == Episode_Event.event_id,
     )
+    .join(treatment_attribution, sa.and_(
+        treatment_attribution.c.owner_id == Episode_Event.episode_id,
+        treatment_attribution.c.person_id == _surg_proc_sq.c.person_id,
+    ))
     .where(
         Episode_Event.episode_event_field_concept_id
         == runtime.modifiers.modifier_fields.procedure_occurrence_id
     )
-    .subquery(name="linked_surgical_procedure_events")
+    .distinct()
+    .subquery(name="surgical_owner_links")
+)
+
+# Keep every original owner link privately; collapse only the public target/source key.
+linked_surgical_procedure_events = (
+    sa.select(*(c for c in _surgical_owner_links.c if c.key != "owning_diagnosis_episode_id"))
+    .distinct().subquery("linked_surgical_procedure_events")
 )
 
 cancer_relevant_surg_select = (
@@ -189,7 +202,8 @@ cancer_relevant_surg_select = (
     .select_from(ConditionEpisodeMV)
     .join(
         linked_surgical_procedure_events,
-        linked_surgical_procedure_events.c.condition_episode_id == ConditionEpisodeMV.episode_id,
+        sa.and_(linked_surgical_procedure_events.c.condition_episode_id == ConditionEpisodeMV.episode_id,
+                linked_surgical_procedure_events.c.person_id == ConditionEpisodeMV.person_id),
         # Outer join: every condition episode must appear in SurgicalProcedureMV,
         # including those with no linked surgery. oa-cohorts absence rules
         # (e.g. "no surgery") rely on WHERE surgery_concept_id IS NULL to identify

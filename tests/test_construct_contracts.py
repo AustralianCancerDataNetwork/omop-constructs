@@ -1,25 +1,14 @@
-"""Validate the D3 contract manifest against the shipped construct registry.
+"""Validate construct grains, keys and registry coverage.
 
-These are the OC-0 gate tests. They fail when the manifest and the registry
-disagree — a construct added without a declared grain, a construct removed
-without its contract, or a declared key naming a column that no longer exists.
-That last one is the point: OC-B3/B4/H1 cannot be worked on safely until every
-affected view has a key that is at least *executable* as a uniqueness
-assertion.
-
-What these tests deliberately do NOT check is whether a declared key actually
-holds against data. Declared keys are intended keys, and most of them are
-violated today by design — see each contract's ``known_violations``. Measuring
-the real duplicate counts needs a populated CDM and belongs to
-``tools/release_validation/collect_key_metrics.py``.
-
-Marked ``postgres`` because importing the construct manifest resolves the
-semantics registry against a live database at module scope (OC-H2). The
-vocabulary tables must exist; they do not need rows.
+These checks ensure that every registered construct has a contract and that key
+columns exist. They do not establish uniqueness on populated data; use the
+release-validation metrics for that. PostgreSQL fixtures provide the vocabulary
+tables needed when importing the semantics-backed registry.
 """
 
 from __future__ import annotations
 
+from dataclasses import replace
 import importlib
 import sys
 
@@ -29,6 +18,7 @@ from orm_loader.helpers import Base
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.contracts import (
     CONTRACTS_FILENAME,
+    Finding,
     find_contracts_path,
     get_contracts,
     load_contracts,
@@ -90,7 +80,7 @@ def contracts():
 #: Built once for this module. Every test below only reads registry metadata —
 #: names, classes, columns, dependencies — and the registry is a process-global,
 #: so rebuilding it per test would re-import every construct module against the
-#: live declarative base and multiply the OC-M4 warnings by the test count for
+#: live declarative base and multiply reload warnings by the test count for
 #: no added coverage.
 _REGISTRY_CACHE: list = []
 
@@ -110,7 +100,6 @@ def registry(pg_bootstrapped_engine):
 
 def test_manifest_parses_and_declares_its_schema_version(contracts):
     assert contracts.meta["schema_version"] == "1"
-    assert contracts.meta["milestone"] == "OC-0"
     assert len(contracts) > 0
 
 
@@ -126,32 +115,30 @@ def test_find_contracts_path_supports_an_installed_package_layout(tmp_path):
 
 
 def test_non_key_findings_do_not_mark_a_reviewed_key_unsatisfied(contracts):
-    """Findings cover more than uniqueness; key status has its own declaration."""
-    assert contracts.get("stage_modifier_mv").known_violations
-    assert contracts.get("stage_modifier_mv").satisfies_declared_key
+    """Optional external findings do not substitute for key eligibility."""
+    contract = replace(contracts.get("stage_modifier_mv"), known_violations=("label_quality",))
+    assert contract.satisfies_declared_key
     assert not contracts.get("dx_observation_mv").satisfies_declared_key
 
 
-def test_every_construct_scoped_finding_is_cited_by_a_contract(contracts):
-    """A construct-scoped finding with no citation is a stale entry.
+def test_optional_findings_filter_by_scope_and_affected_constructs(contracts):
+    contract = replace(contracts.get("stage_modifier_mv"), known_violations=("labels",))
+    labels = Finding("labels", "construct", "low", "external", "Label quality")
+    lifecycle = Finding("lifecycle", "package", "low", "external", "Lifecycle review")
+    manifest = replace(contracts, contracts={contract.name: contract},
+                       findings={"labels": labels, "lifecycle": lifecycle})
 
-    Package-scoped findings — schema lifecycle, import-time I/O, mapper
-    registration — have no single construct to attach to and are exempt.
-    """
-    uncited = [
-        finding.finding_id
-        for finding in contracts.construct_scoped_findings()
-        if not contracts.with_violation(finding.finding_id)
-    ]
-    assert not uncited, f"construct-scoped findings cited by no contract: {uncited}"
+    assert manifest.construct_scoped_findings() == (labels,)
+    assert manifest.with_violation("labels") == (contract,)
+    assert manifest.with_violation("lifecycle") == ()
 
 
 def test_nullable_key_columns_drive_the_nulls_not_distinct_requirement(contracts):
     """A key with a nullable column cannot use a plain PostgreSQL unique index.
 
     PostgreSQL treats NULLs as distinct by default, so a null-spine row would
-    never collide with itself. Any construct that OC-3 will build a unique index
-    for must therefore say so, because OC-3 reads the index columns from here.
+    never collide with itself. Any construct eligible for a unique index must therefore document this
+    requirement, because schema tools read the index columns from here.
 
     Restricted to concurrent-refresh-eligible constructs: an ineligible one has
     no index to build yet, and its note already explains what blocks it.
