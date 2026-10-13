@@ -37,7 +37,7 @@ def require_colocated_vocabulary(resolved: ResolvedCDMDatabase) -> None:
     """Reject split-vocabulary CDMs, which cannot support construct MVs."""
     colocated = (
         resolved.connection.name == resolved.vocab_connection.name
-        or resolved.connection.physical_key() == resolved.vocab_connection.physical_key()
+        or resolved.connection.addresses_same_database_as(resolved.vocab_connection)
     )
     if not colocated:
         raise ConfigurationError(
@@ -47,7 +47,9 @@ def require_colocated_vocabulary(resolved: ResolvedCDMDatabase) -> None:
         )
 
 
-def create_cdm_engines(stack: StackConfig | None = None) -> tuple[sa.Engine, sa.Engine]:
+def create_cdm_engines(
+    stack: StackConfig | None = None, *, register_claims: bool = False
+) -> tuple[sa.Engine, sa.Engine]:
     """Create the primary and vocabulary engines for the configured CDM.
 
     Runtime usage prefers the shared ``oa-configurator`` stack configuration.
@@ -61,6 +63,10 @@ def create_cdm_engines(stack: StackConfig | None = None) -> tuple[sa.Engine, sa.
     case is ordinary during a stack migration, when the file on disk and the
     installed oa-configurator disagree about the layout, and it should not
     deprive callers of the environment escape hatch.
+
+    ``register_claims`` defaults to ``False`` so opening the configured CDM for
+    runtime reads does not write schema-registry records. Set it to ``True``
+    only for an operation that intentionally registers schema claims.
     """
     if stack is None:
         try:
@@ -76,12 +82,14 @@ def create_cdm_engines(stack: StackConfig | None = None) -> tuple[sa.Engine, sa.
     config = resolver.resolve_package_config(OmopConstructsConfig)
     resolved = resolver.resolve_database(config.cdm_db)
     require_colocated_vocabulary(resolved)
-    return _create_cdm_engines(resolved)
+    return _create_cdm_engines(resolved, register_claims=register_claims)
 
 
-def create_cdm_engine(stack: StackConfig | None = None) -> sa.Engine:
+def create_cdm_engine(
+    stack: StackConfig | None = None, *, register_claims: bool = False
+) -> sa.Engine:
     """Compatibility wrapper returning the primary engine."""
-    return create_cdm_engines(stack)[0]
+    return create_cdm_engines(stack, register_claims=register_claims)[0]
 
 
 __all__ = [

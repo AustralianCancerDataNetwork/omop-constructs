@@ -93,7 +93,8 @@ def _create_empty_modifier_views(conn: sa.Connection) -> None:
     )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_modified_condition_keeps_only_validated_explicit_attachment(
     pg_bootstrapped_engine,
 ):

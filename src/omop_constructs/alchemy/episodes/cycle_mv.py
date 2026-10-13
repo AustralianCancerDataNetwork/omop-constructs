@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from datetime import date
 from .cycle_join import cycle_join
 from ...core.materialized import MaterializedViewMixin

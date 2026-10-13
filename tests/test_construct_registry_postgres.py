@@ -4,7 +4,8 @@ import importlib
 import sys
 
 import pytest
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
+from orm_loader.helpers.bootstrap import create_db
 
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.registry import materialized_view_exists
@@ -30,22 +31,33 @@ def _clear_construct_import_state() -> None:
             sys.modules.pop(module_name, None)
 
 
-@pytest.mark.postgres
-def test_full_construct_registry_compile_check_on_postgres(pg_bootstrapped_engine):
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
+def test_full_construct_registry_compile_check_on_postgres(pg_db):
     _clear_construct_import_state()
     registry = get_complete_construct_registry()
 
     report = registry.compile_check()
     assert "primary_diagnosis_condition_mv" in report
 
-    with pg_bootstrapped_engine.connect() as conn:
+    with pg_db.engine.connect() as conn:
         created = []
         try:
-            created = registry.create_missing(conn, with_data=False)
+            created = registry.create_missing(
+                conn, with_data=False, schema=pg_db.resolved.cdm_schema
+            )
             assert "primary_diagnosis_condition_mv" in created
             assert materialized_view_exists(
                 conn,
                 "primary_diagnosis_condition_mv",
+                schema=pg_db.resolved.cdm_schema,
             )
         finally:
             registry.drop_all(conn, cascade=True)
+
+
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
+def test_orm_loader_can_bootstrap_after_construct_import(pg_db):
+    get_complete_construct_registry()
+    create_db(pg_db.resolved, bindable=pg_db.engine)

@@ -118,6 +118,25 @@ def test_split_vocabulary_fails_before_engine_creation(monkeypatch, tmp_path: Pa
         create_cdm_engines(stack)
 
 
+def test_distinct_in_memory_connections_are_not_colocated(monkeypatch) -> None:
+    stack = StackConfig.for_session(
+        connections={
+            "primary": ConnectionConfig(dialect="sqlite", database_name=":memory:"),
+            "vocab": ConnectionConfig(dialect="sqlite", database_name=":memory:"),
+        },
+        databases={
+            "cdm_db": CDMDatabaseConfig(connection="primary", vocab_connection="vocab")
+        },
+    )
+    monkeypatch.setattr(
+        "omop_constructs.config._create_cdm_engines",
+        lambda *_args, **_kwargs: pytest.fail("engine creation must not run for split vocabulary"),
+    )
+
+    with pytest.raises(ConfigurationError, match="split-vocabulary deployments are unsupported"):
+        create_cdm_engines(stack)
+
+
 def test_materialized_view_ddl_translates_vocabulary_role() -> None:
     engine = sa.create_engine(
         "sqlite://",

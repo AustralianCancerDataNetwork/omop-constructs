@@ -48,13 +48,13 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
 }
 
-def get_registry_engine() -> sa.Engine:
+def get_registry_engine(*, register_claims: bool = False) -> sa.Engine:
     """Build the engine used for runtime resolver lookup.
 
     Resolver-backed modifier imports use the shared OMOP stack configuration
     managed by ``oa-configurator``.
     """
-    primary, _vocab = create_cdm_engines()
+    primary, _vocab = create_cdm_engines(register_claims=register_claims)
     return primary
 
 def get_runtime_resolvers(engine: sa.Engine) -> ConceptResolverRegistry:

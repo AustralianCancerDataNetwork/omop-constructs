@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from datetime import date
 from typing import Optional
 from .episode_joins import overarching_disease_episode, treatment_regimen_with_cycles, condition_episode_select, dx_window_select

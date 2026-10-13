@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from datetime import date
 from .treatment_summary_joins import condition_treatment_join
 from .course_mv import RTCourseMV

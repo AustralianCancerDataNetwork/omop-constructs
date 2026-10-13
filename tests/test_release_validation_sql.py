@@ -57,7 +57,8 @@ def synthetic_schemas(pg_bootstrapped_engine):
     yield engine
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_matview_columns_finds_materialized_view_columns(synthetic_schemas):
     """Materialized views are absent from information_schema.columns.
 
@@ -94,7 +95,8 @@ def test_matview_columns_finds_materialized_view_columns(synthetic_schemas):
     )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_measure_construct_counts_duplicates_and_null_keys(synthetic_schemas):
     """Hand-computed key metrics over a view with deliberate duplicates and NULLs.
 
@@ -142,7 +144,8 @@ def test_measure_construct_counts_duplicates_and_null_keys(synthetic_schemas):
     assert len(checksum) == 32, "pg_get_viewdef checksum should be an md5 hex digest"
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_except_all_detects_a_multiplicity_change(synthetic_schemas):
     """A row that appears twice instead of once must be reported as a difference.
 
@@ -205,7 +208,8 @@ def test_except_all_detects_a_multiplicity_change(synthetic_schemas):
     )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_comparison_counts_exactly_but_only_returns_bounded_rows(synthetic_schemas):
     """Metadata stays exact without loading an unbounded clinical result set."""
     engine = synthetic_schemas
@@ -249,7 +253,8 @@ def test_comparison_counts_exactly_but_only_returns_bounded_rows(synthetic_schem
     assert len(removed) == len(added) == len(persons) == 2
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_column_change_is_not_reported_as_row_identity(synthetic_schemas):
     """A shared-column match cannot conceal a changed output contract."""
     engine = synthetic_schemas
@@ -286,7 +291,8 @@ def test_column_change_is_not_reported_as_row_identity(synthetic_schemas):
     assert removed == added == persons == []
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_person_summary_attributes_deltas_to_the_right_people(synthetic_schemas):
     """Per-person added/removed counts over a known delta.
 
@@ -351,7 +357,8 @@ def test_person_summary_attributes_deltas_to_the_right_people(synthetic_schemas)
     assert by_person[4]["net_rows"] == 1
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_clinical_output_is_refused_inside_the_repository(tmp_path):
     """The path guard is the last line of defence against committing patient data."""
     repo_root = Path(__file__).resolve().parents[1]
@@ -442,7 +449,8 @@ def test_normalisation_handles_several_lists_and_odd_spacing():
     assert "c = 5" in normalised
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_real_construct_checksums_are_stable_across_hash_seeds(pg_bootstrapped_engine):
     """The normalised checksum of a real construct must not depend on hash seed.
 
@@ -588,7 +596,8 @@ def test_the_two_renderings_of_one_list_agree_after_normalisation():
     assert sql_checksum(compiled) == sql_checksum(deployed)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_unpopulated_views_are_reported_not_raised(synthetic_schemas):
     """A WITH NO DATA build is a legitimate first run against a new database.
 

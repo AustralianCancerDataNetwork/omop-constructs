@@ -66,6 +66,3 @@ unresolved-attribute = "ignore"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-    "postgres: requires a configured PostgreSQL database via ENGINE_CDM or ENGINE",
-]

@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from .condition_modifier_join import modified_conditions_join,  all_stage_join
 from ..episodes import OverarchingDiseaseEpisodeMV
 from ...core.materialized import MaterializedViewMixin
