@@ -58,7 +58,14 @@ def test_cli_verbose_flag_configures_logging(monkeypatch, tmp_path: Path) -> Non
 
 
 def test_create_cdm_engine_falls_back_to_environment(monkeypatch) -> None:
-    sentinel = object()
+    class Sentinel:
+        options = None
+
+        def execution_options(self, **options):
+            self.options = options
+            return self
+
+    sentinel = Sentinel()
     calls: list[tuple[str, bool]] = []
 
     def fake_load_stack_config() -> StackConfig:
@@ -74,6 +81,28 @@ def test_create_cdm_engine_falls_back_to_environment(monkeypatch) -> None:
 
     assert create_cdm_engine() is sentinel
     assert calls == [("sqlite:///:memory:", True)]
+    assert sentinel.options == {
+        "schema_translate_map": {"primary": None, "vocab": None}
+    }
+
+
+def test_environment_fallback_executes_vocabulary_and_primary_models(monkeypatch) -> None:
+    from omop_alchemy.cdm.model import Condition_Occurrence
+
+    def missing_config() -> StackConfig:
+        raise FileNotFoundError("missing config")
+
+    monkeypatch.setattr("omop_constructs.config.load_stack_config", missing_config)
+    monkeypatch.delenv("ENGINE_CDM", raising=False)
+    monkeypatch.setenv("ENGINE", "sqlite:///:memory:")
+
+    engine = create_cdm_engine()
+    Concept.__table__.create(engine)
+    Condition_Occurrence.__table__.create(engine)
+    with engine.connect() as connection:
+        connection.execute(sa.select(Concept.concept_id)).all()
+        connection.execute(sa.select(Condition_Occurrence.person_id)).all()
+    engine.dispose()
 
 
 def test_create_cdm_engine_resolves_configured_database_to_expected_url() -> None:

@@ -74,7 +74,9 @@ def create_cdm_engines(
         except (FileNotFoundError, ValueError):
             engine_url = os.getenv("ENGINE_CDM") or os.getenv("ENGINE")
             if engine_url:
-                engine = sa.create_engine(engine_url, future=True)
+                engine = sa.create_engine(engine_url, future=True).execution_options(
+                    schema_translate_map={"primary": None, "vocab": None}
+                )
                 return engine, engine
             raise
 
