@@ -136,6 +136,10 @@ resource is available and can record a package-specific `default_resource`
 override when `omop-constructs` should use a different CDM resource than
 `omop-alchemy`.
 
+## Hosting Requirements
+
+Clinical and vocabulary tables must be reachable through the same database connection. They may use separate schemas on that connection.
+
 The package CLI exposes operational helpers such as registry schema export:
 
 ```bash

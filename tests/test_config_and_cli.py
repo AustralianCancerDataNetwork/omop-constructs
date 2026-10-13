@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from oa_configurator import CDMDatabaseConfig, ConnectionConfig, StackConfig
+import pytest
+import sqlalchemy as sa
+from oa_configurator import CDMDatabaseConfig, ConfigurationError, ConnectionConfig, StackConfig
+from omop_alchemy.cdm.model.vocabulary.concept import Concept
 
 from omop_constructs.cli import main
-from omop_constructs.config import OmopConstructsConfig, create_cdm_engine
+from omop_constructs.config import OmopConstructsConfig, create_cdm_engine, create_cdm_engines
+from omop_constructs.core.ddl import CreateMaterializedView
 
 
 def test_config_defaults_to_the_shared_cdm_database_without_a_tool_section() -> None:
@@ -19,7 +23,7 @@ def test_config_defaults_to_the_shared_cdm_database_without_a_tool_section() -> 
             "cdm_db": ConnectionConfig(dialect="sqlite", database_name=":memory:")
         },
         databases={
-            "cdm_db": CDMDatabaseConfig(connection="cdm_db", schema_name="omop")
+            "cdm_db": CDMDatabaseConfig(connection="cdm_db")
         },
     )
 
@@ -83,13 +87,68 @@ def test_create_cdm_engine_resolves_configured_database_to_expected_url() -> Non
     """
     stack = StackConfig.for_session(
         connections={"cdm": ConnectionConfig(dialect="sqlite", database_name=":memory:")},
-        databases={"cdm_db": CDMDatabaseConfig(connection="cdm", schema_name="omop")},
+        databases={"cdm_db": CDMDatabaseConfig(connection="cdm")},
     )
 
     engine = create_cdm_engine(stack)
 
     assert engine.url.render_as_string(hide_password=False) == "sqlite:///:memory:"
     assert engine.dialect.name == "sqlite"
+
+
+def test_split_vocabulary_fails_before_engine_creation(monkeypatch, tmp_path: Path) -> None:
+    stack = StackConfig.for_session(
+        connections={
+            "primary": ConnectionConfig(dialect="sqlite", database_name=str(tmp_path / "primary.sqlite")),
+            "vocab": ConnectionConfig(dialect="sqlite", database_name=str(tmp_path / "vocab.sqlite")),
+        },
+        databases={
+            "cdm_db": CDMDatabaseConfig(connection="primary", vocab_connection="vocab")
+        },
+    )
+    monkeypatch.setattr(
+        "omop_constructs.config._create_cdm_engines",
+        lambda *_args, **_kwargs: pytest.fail("engine creation must not run for split vocabulary"),
+    )
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"Database entry 'cdm_db' configures vocab_connection='vocab'; split-vocabulary deployments are unsupported by omop-constructs\.",
+    ):
+        create_cdm_engines(stack)
+
+
+def test_materialized_view_ddl_translates_vocabulary_role() -> None:
+    engine = sa.create_engine(
+        "sqlite://",
+        execution_options={"schema_translate_map": {"primary": "clinical", "vocab": "vocabulary"}},
+    )
+    try:
+        ddl = str(
+            CreateMaterializedView(
+                "test_view",
+                sa.select(Concept.concept_id),
+                schema_translate_map=engine.get_execution_options()["schema_translate_map"],
+            ).compile(
+                dialect=engine.dialect,
+            )
+        )
+    finally:
+        engine.dispose()
+
+    assert "vocabulary.concept" in ddl
+    assert "vocab.concept" not in ddl
+    assert "primary." not in ddl
+    unqualified = str(
+        CreateMaterializedView(
+            "test_view",
+            sa.select(Concept.concept_id),
+            schema_translate_map={"primary": None, "vocab": None},
+        ).compile(dialect=engine.dialect)
+    )
+    assert "vocab." not in unqualified
+    assert "primary." not in unqualified
+    assert "FROM .concept" not in unqualified
 
 
 def test_create_cdm_engine_falls_back_when_config_file_is_schema_invalid(

@@ -14,12 +14,23 @@ jobs:
     uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/build-test-postgres.yml@main
     with:
       ty-src: src/omop_constructs
+      postgres-image: postgres:17
       postgres-db: omop_constructs_ci
-      # --test-only false is required, not incidental: OmopConstructsConfig.cdm_db is
-      # RefTo(CDMDatabaseConfig) with no is_test, and resolve_package_config rejects a
-      # non-test field pointing at a test_only connection. omop-alchemy's equivalent
-      # block uses --test-only true because its field is RefTo(..., is_test=True).
       setup-commands: |
+        sudo apt-get update
+        sudo apt-get install -y curl ca-certificates
+        sudo install -d /usr/share/postgresql-common/pgdg
+        sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        echo "Types: deb
+        URIs: https://apt.postgresql.org/pub/repos/apt
+        Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg
+        Architectures: $(dpkg --print-architecture)
+        Components: main
+        Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc" | sudo tee /etc/apt/sources.list.d/pgdg.sources
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client-17
+        echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+        pg_dump --version
         uv run omop-config connections add ci_pg \
           --dialect postgresql+psycopg \
           --host localhost \
@@ -28,8 +39,20 @@ jobs:
           --password test \
           --database-name omop_constructs_ci \
           --test-only false
-        uv run omop-config databases add cdm_db \
-          --kind cdm \
+        uv run omop-config connections add ci_pg_test \
+          --dialect postgresql+psycopg \
+          --host localhost \
+          --port 5432 \
+          --user test \
+          --password test \
+          --database-name omop_constructs_test_ci \
+          --test-only true
+        uv run omop-config databases add cdm cdm_db \
           --connection ci_pg \
-          --schema-name public \
+          --cdm-schema public
+        uv run omop-config databases add cdm test_cdm_db \
+          --connection ci_pg_test \
+          --cdm-schema public \
           --vocab-schema public
+        uv run omop-config configure omop_alchemy \
+          --test-cdm-db-pg test_cdm_db

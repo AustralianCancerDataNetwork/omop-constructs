@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from omop_alchemy.toolkit.core.concepts import ConceptResolverRegistry
 from omop_semantics.runtime.default_valuesets import runtime
 
-from ..config import create_cdm_engine
+from ..config import create_cdm_engines
 from .lookups import get_concept_resolver_registry, build_stage_resolver, build_parent_resolver
 
 DEFAULT_RESOLVER_BUILDERS = {
@@ -54,7 +54,8 @@ def get_registry_engine() -> sa.Engine:
     Resolver-backed modifier imports use the shared OMOP stack configuration
     managed by ``oa-configurator``.
     """
-    return create_cdm_engine()
+    primary, _vocab = create_cdm_engines()
+    return primary
 
 def get_runtime_resolvers(engine: sa.Engine) -> ConceptResolverRegistry:
     """

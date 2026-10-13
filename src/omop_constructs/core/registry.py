@@ -241,7 +241,9 @@ class ConstructRegistry:
             if with_counts and exists:
                 try:
                     count = bind.execute(
-                        sa.text(f"SELECT count(*) FROM {schema}.{cls.__mv_name__}")
+                        sa.select(sa.func.count()).select_from(
+                            sa.table(cls.__mv_name__, schema=schema)
+                        )
                     ).scalar()
                     row_info = f", rows={count:,}"
                 except Exception as e:
