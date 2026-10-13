@@ -107,21 +107,27 @@ def _seed_care(conn):
 
 
 @pytest.fixture
-def treatment_registry(pg_bootstrapped_engine):
-    with pg_bootstrapped_engine.begin() as conn:
+def treatment_registry(pg_db):
+    engine = pg_db.engine
+    schema = pg_db.resolved.cdm_schema
+    with engine.begin() as conn:
         # Real mapped CDM columns; corruption relaxation is confined to this disposable test DB.
         for source in collect_maintenance_tables():
             for constraint in source.table.constraints:
                 if isinstance(constraint, sa.ForeignKeyConstraint):
-                    conn.execute(sa.schema.DropConstraint(constraint))
-        conn.execute(sa.schema.DropConstraint(cdm.Episode_Event.__table__.primary_key))
+                    conn.execute(sa.schema.DropConstraint(constraint, if_exists=True))
+        conn.execute(sa.schema.DropConstraint(cdm.Episode_Event.__table__.primary_key, if_exists=True))
         _seed_vocabulary(conn)
         _seed_care(conn)
     _clear_construct_import_state()
     registry = get_complete_construct_registry()
-    with pg_bootstrapped_engine.begin() as conn:
-        registry.create_missing(conn)
-    return pg_bootstrapped_engine, registry
+    try:
+        with engine.begin() as conn:
+            registry.create_missing(conn, schema=schema)
+        yield engine, registry
+    finally:
+        with engine.begin() as conn:
+            registry.drop_all(conn, cascade=True)
 
 
 def _rows(fixture, sql):
@@ -129,13 +135,15 @@ def _rows(fixture, sql):
         return conn.execute(sa.text(sql)).all()
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_child_rollup_keeps_direct_credit_and_isolates_second_primary(treatment_registry):
     assert _rows(treatment_registry, "SELECT dx_episode_id,treatment_regimen_count FROM dx_treat_start_mv ORDER BY 1") == [(100, 3), (101, 2)]
     assert _rows(treatment_registry, "SELECT DISTINCT condition_episode_id,regimen_id FROM sact_treatment_mv ORDER BY 1,2") == [(100, 1000), (100, 2000), (101, 1000)]
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_activity_counts_do_not_follow_prescription_or_intent_multiplicity(treatment_registry):
     assert _rows(treatment_registry, "SELECT count(*) FROM sact_treatment_mv WHERE regimen_id=1000") == [(12,)]
     assert _rows(treatment_registry, "SELECT DISTINCT exposure_count FROM sact_treatment_mv") == [(1,)]
@@ -143,12 +151,14 @@ def test_activity_counts_do_not_follow_prescription_or_intent_multiplicity(treat
     assert _rows(treatment_registry, "SELECT DISTINCT fraction_count,course_count FROM condition_treatment_episode_mv WHERE course_id IS NOT NULL") == [(3, 1)]
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_performed_surgery_deduplicates_root_child_links_and_keeps_null_spine(treatment_registry):
     assert _rows(treatment_registry, "SELECT condition_episode_id,surgery_occurrence_id FROM surgical_procedure_mv ORDER BY 1") == [(100, 8001), (101, 8001), (200, None)]
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_intent_source_identity_survives_same_concept_and_envelope_date_spine(treatment_registry):
     assert _rows(treatment_registry, "SELECT intent_measurement_id FROM condition_episode_intent_mv WHERE episode_id=100 ORDER BY 1") == [(9301,), (9302,), (9401,)]
     assert _rows(treatment_registry, "SELECT count(*) FROM treatment_envelope_mv WHERE condition_episode=100") == [(2,)]
@@ -156,14 +166,16 @@ def test_intent_source_identity_survives_same_concept_and_envelope_date_spine(tr
     assert _rows(treatment_registry, "SELECT intent_id FROM fraction_mv WHERE procedure_occurrence_id=6101 ORDER BY 1") == [(9201,), (9202,)]
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_invalid_source_person_and_discriminator_cannot_supply_care(treatment_registry):
     assert _rows(treatment_registry, "SELECT drug_exposure_id FROM cycle_mv ORDER BY 1") == [(5001,), (5002,), (5003,)]
     assert _rows(treatment_registry, "SELECT DISTINCT intent_id FROM sact_treatment_mv WHERE regimen_id=1000 ORDER BY 1") == [(9001,), (9002,), (9003,)]
     assert _rows(treatment_registry, "SELECT intent_id FROM fraction_mv WHERE procedure_occurrence_id=6102") == [(None,)]
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_added_columns_work_through_mapped_classes_and_keep_rt_timestamp(treatment_registry):
     engine, registry = treatment_registry
     intent = registry.get("condition_episode_intent_mv")

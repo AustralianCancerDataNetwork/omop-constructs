@@ -8,10 +8,10 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "oa-configurator>=1.2.1,<2",
-    "omop-alchemy[postgres]>=1.2.2,<2",
-    "omop-semantics>=0.6.0",
-    "orm-loader>=1.2.0,<2",
+    "oa-configurator>=2.0,<3",
+    "omop-alchemy[postgres]>=2.0,<3",
+    "omop-semantics>=0.6.2",
+    "orm-loader>=2.0,<3",
     "sqlalchemy>=2.0.45",
 ]
 
@@ -66,6 +66,3 @@ unresolved-attribute = "ignore"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-    "postgres: requires a configured PostgreSQL database via ENGINE_CDM or ENGINE",
-]

@@ -4,11 +4,11 @@
 
 ```bash
 # Unit tests only
-uv run --extra dev python -m pytest -m "not postgres"
+uv run --extra dev python -m pytest -m "not postgresql"
 
 # PostgreSQL integration test
 export ENGINE_CDM='postgresql+psycopg://user:pass@localhost:5432/dbname'
-uv run --extra dev python -m pytest -m postgres -v
+uv run --extra dev python -m pytest -m postgresql -v
 
 # Registry schema snapshot artifact
 uv run --directory . omop-constructs schema-snapshot tests/artifacts/construct_registry_schema.csv
@@ -18,7 +18,7 @@ python -m omop_constructs.core.schema_snapshot tests/artifacts/construct_registr
 
 # Regenerate the checked-in full-registry artifact using the Postgres fixture
 UPDATE_REGISTRY_SCHEMA_SNAPSHOT=1 \
-uv run --extra dev python -m pytest tests/test_registry_schema_artifact_postgres.py -m postgres -q
+uv run --extra dev python -m pytest tests/test_registry_schema_artifact_postgres.py -m postgresql -q
 ```
 
 ## Construct contract tests

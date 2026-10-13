@@ -30,7 +30,7 @@ import sys
 
 import pytest
 import sqlalchemy.orm as so
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 
 # Mirrors oa_cohorts/measurables/tx_measurables.py, dx_measurables.py,
 # ev_measureables.py and pr_measurables.py. Keep in step with those.
@@ -116,7 +116,8 @@ def _import_from(module_name: str, attr: str):
     return getattr(module, attr)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_consumed_exports_resolve_without_the_manifest(narrow_import_env) -> None:
     """Each name imports from its subpackage without bootstrapping the registry."""
     missing: list[str] = []
@@ -129,7 +130,8 @@ def test_consumed_exports_resolve_without_the_manifest(narrow_import_env) -> Non
     assert not missing, "downstream-consumed exports no longer resolve:\n" + "\n".join(missing)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_consumed_exports_are_mapped_and_declare_their_own_module(narrow_import_env) -> None:
     """A construct must be a mapped class, and must come from its own module.
 
@@ -146,7 +148,8 @@ def test_consumed_exports_are_mapped_and_declare_their_own_module(narrow_import_
             )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_consumed_columns_are_present(narrow_import_env) -> None:
     for (module_name, name), columns in CONSUMED_COLUMNS.items():
         obj = _import_from(module_name, name)
@@ -155,7 +158,8 @@ def test_consumed_columns_are_present(narrow_import_env) -> None:
         assert not absent, f"{name} no longer exposes {absent}"
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_consumed_constructs_can_be_subclassed_and_mappers_configure(narrow_import_env) -> None:
     """Downstream packages subclass these as mapped classes.
 

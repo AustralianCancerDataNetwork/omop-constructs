@@ -8,7 +8,8 @@ import pytest
 import sqlalchemy as sa
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_unstaged_condition_survives_all_stage_join(pg_bootstrapped_engine):
     """Optional episode, stage, and stage-label evidence preserves the spine.
 

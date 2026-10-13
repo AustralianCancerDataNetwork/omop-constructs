@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from .modifier_joins import (
     t_stage_select, 
     n_stage_select, 

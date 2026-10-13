@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.schema_snapshot import write_registry_schema_snapshot
@@ -37,7 +37,8 @@ def _clear_construct_import_state() -> None:
             sys.modules.pop(module_name, None)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_registry_schema_snapshot_matches_checked_in_artifact(
     pg_bootstrapped_engine,
     tmp_path,

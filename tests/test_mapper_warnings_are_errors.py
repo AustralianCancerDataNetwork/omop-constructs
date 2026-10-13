@@ -57,7 +57,8 @@ CLEAN_IMPORT_PROGRAM = textwrap.dedent(
 )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_clean_construct_import_emits_no_mapper_warnings(pg_bootstrapped_engine):
     """Importing every construct once must not emit a single SAWarning.
 
@@ -86,7 +87,8 @@ def test_clean_construct_import_emits_no_mapper_warnings(pg_bootstrapped_engine)
     assert result.stdout.strip().startswith("OK "), result.stdout
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_the_warning_filter_in_that_program_actually_bites(pg_bootstrapped_engine):
     """Guard the guard: prove the promoted filter fails on a real conflict.
 

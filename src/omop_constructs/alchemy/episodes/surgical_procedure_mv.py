@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from datetime import date
 from typing import Optional
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns

@@ -8,7 +8,7 @@ import types
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -169,6 +169,13 @@ def test_primary_diagnosis_condition_mv_is_registered(monkeypatch):
     registry = constructs.get_construct_registry()
 
     assert registry.get(module.PrimaryDiagnosisConditionMV.__mv_name__) is module.PrimaryDiagnosisConditionMV
+    assert module.PrimaryDiagnosisConditionMV.__table__.metadata is Base.metadata
+
+
+def test_construct_metadata_is_separate_from_omop_metadata():
+    from orm_loader.helpers import Base as OmopBase
+
+    assert Base.metadata is not OmopBase.metadata
 
 
 def test_primary_diagnosis_condition_mv_compile_check_passes(monkeypatch):

@@ -13,7 +13,7 @@ import importlib
 import sys
 
 import pytest
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 
 from omop_constructs import get_complete_construct_registry
 from omop_constructs.core.contracts import (
@@ -289,7 +289,8 @@ inputs = [{ name = "thing", kind = "cdm_table", fan_out = "one_to_one" }]
 # Registry coverage and key-column validation
 # ---------------------------------------------------------------------------
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_every_registered_construct_has_a_contract(registry, contracts):
     """A construct with no declared grain must not reach a release candidate."""
     registered = {item.name for item in registry.plan()}
@@ -300,7 +301,8 @@ def test_every_registered_construct_has_a_contract(registry, contracts):
     )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_every_contract_names_a_registered_construct(registry, contracts):
     """Catches a contract left behind after a construct was removed or renamed."""
     registered = {item.name for item in registry.plan()}
@@ -310,7 +312,8 @@ def test_every_contract_names_a_registered_construct(registry, contracts):
     )
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_contract_class_and_module_match_the_registered_construct(registry, contracts):
     mismatches: list[str] = []
     for item in registry.plan():
@@ -329,7 +332,8 @@ def test_contract_class_and_module_match_the_registered_construct(registry, cont
     assert not mismatches, "\n".join(mismatches)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 @pytest.mark.parametrize(
     "field_name",
     ["logical_key", "unique_index_columns", "orm_primary_key"],
@@ -368,7 +372,8 @@ def test_declared_key_columns_exist_on_the_mapper_and_the_selectable(
     assert not problems, "\n".join(problems)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_declared_orm_primary_key_matches_the_mapper(registry, contracts):
     """The contract records the real ORM key so OC-B3 contradictions stay visible.
 
@@ -388,7 +393,8 @@ def test_declared_orm_primary_key_matches_the_mapper(registry, contracts):
     assert not mismatches, "\n".join(mismatches)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_contract_input_dependencies_are_declared_registry_dependencies(
     registry,
     contracts,
@@ -422,7 +428,8 @@ def test_contract_input_dependencies_are_declared_registry_dependencies(
     assert not problems, "\n".join(problems)
 
 
-@pytest.mark.postgres
+@pytest.mark.postgresql
+@pytest.mark.db_dialect
 def test_downstream_consumed_constructs_are_in_the_public_surface(registry, contracts):
     """Every class oa-cohorts imports must be public in the 1.0 contract."""
     by_class = {contracts.get(item.name).class_name: item.name for item in registry.plan()}

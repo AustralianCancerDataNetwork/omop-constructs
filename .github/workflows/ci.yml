@@ -11,14 +11,11 @@ jobs:
     with:
       ty-src: src/omop_constructs
   build-test-postgres:
-    uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/build-test-postgres.yml@main
+    uses: AustralianCancerDataNetwork/cava-devops/.github/workflows/build-test-postgres-v2.yml@main
     with:
       ty-src: src/omop_constructs
+      postgres-image: postgres:17
       postgres-db: omop_constructs_ci
-      # --test-only false is required, not incidental: OmopConstructsConfig.cdm_db is
-      # RefTo(CDMDatabaseConfig) with no is_test, and resolve_package_config rejects a
-      # non-test field pointing at a test_only connection. omop-alchemy's equivalent
-      # block uses --test-only true because its field is RefTo(..., is_test=True).
       setup-commands: |
         uv run omop-config connections add ci_pg \
           --dialect postgresql+psycopg \
@@ -28,8 +25,20 @@ jobs:
           --password test \
           --database-name omop_constructs_ci \
           --test-only false
-        uv run omop-config databases add cdm_db \
-          --kind cdm \
+        uv run omop-config connections add ci_pg_test \
+          --dialect postgresql+psycopg \
+          --host localhost \
+          --port 5432 \
+          --user test \
+          --password test \
+          --database-name omop_constructs_test_ci \
+          --test-only true
+        uv run omop-config databases add cdm cdm_db \
           --connection ci_pg \
-          --schema-name public \
+          --cdm-schema public
+        uv run omop-config databases add cdm test_cdm_db \
+          --connection ci_pg_test \
+          --cdm-schema public \
           --vocab-schema public
+        uv run omop-config configure omop_alchemy \
+          --test-cdm-db-pg test_cdm_db

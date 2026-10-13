@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from orm_loader.helpers import Base
+from omop_constructs.core.orm_base import ConstructORMBase as Base
 from .treatment_envelope_query import treatment_envelope_with_scalars
 from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct

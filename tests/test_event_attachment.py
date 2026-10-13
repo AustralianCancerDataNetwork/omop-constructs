@@ -601,7 +601,10 @@ def test_default_source_extends_with_the_cdm_hierarchy(child_end, factory, spec,
     for model in (Concept, Episode_Event):
         sa.Table(model.__tablename__, metadata,
                  *(sa.Column(c.key, c.type) for c in model.__table__.c))
-    engine = sa.create_engine("sqlite://")
+    engine = sa.create_engine(
+        "sqlite://",
+        execution_options={"schema_translate_map": {"primary": None, "vocab": None}},
+    )
     metadata.create_all(engine)
     with engine.begin() as connection:
         connection.execute(cdm.insert(), [
