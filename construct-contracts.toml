@@ -797,7 +797,7 @@ concurrent_refresh_eligible = false
 concurrent_refresh_note = "Logical rows satisfy the declared key; concurrent refresh requires a matching database unique index."
 public_api_1_0 = true
 lung_report_role = "direct"
-oa_cohorts_rule_targets = ["obs_concept"]
+oa_cohorts_rule_targets = ["obs_concept", "obs_value_concept"]
 inputs = [
   { name = "observation", kind = "cdm_table", fan_out = "one_to_one", note = "spine; unlinked_only is False here" },
   { name = "observation_concept", kind = "vocabulary", fan_out = "many_to_one", note = "outer join; supplies event_label" },
