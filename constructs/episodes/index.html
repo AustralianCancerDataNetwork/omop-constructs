@@ -1382,8 +1382,13 @@ typed radiotherapy courses (32940) remain separate compatibility work.</p>
 </tr>
 <tr>
 <td><code>concurrent_chemort</code></td>
-<td>Boolean / Null</td>
-<td>True when SACT and RT windows overlap within the episode. Null when either modality is absent. Same-day starts are treated as concurrent.</td>
+<td>Boolean</td>
+<td>True when a recorded SACT drug exposure starts within an individual RT course on the same attributed condition episode. The first and last exposure days of the course are both included.</td>
+</tr>
+<tr>
+<td><code>first_concurrent_rt_start</code></td>
+<td>Date / Null</td>
+<td>First exposure date of the earliest qualifying RT course. Null when no course qualifies.</td>
 </tr>
 <tr>
 <td><code>death_datetime</code></td>
@@ -1396,9 +1401,9 @@ typed radiotherapy courses (32940) remain separate compatibility work.</p>
 <ul>
 <li><code>RuleTarget.dx_to_tx_window</code> — the <code>days_from_dx_to_treatment</code> scalar, anchored temporally to <code>condition_start_date</code>.</li>
 <li><code>RuleTarget.tx_to_death_window</code> — the <code>treatment_days_before_death</code> scalar, anchored temporally to <code>condition_start_date</code>.</li>
-<li><code>RuleTarget.tx_concurrent</code> — the <code>concurrent_chemort</code> predicate, anchored temporally to <code>condition_start_date</code>.</li>
+<li><code>RuleTarget.tx_concurrent</code> — the <code>concurrent_chemort</code> predicate, anchored to <code>first_concurrent_rt_start</code> by default and for <code>dt_concurrent</code>.</li>
 </ul>
-<p>Note that all three window measurables use <code>condition_start_date</code> as their <code>event_date_attr</code>. The temporal anchor in oa-cohorts is the row's condition start date, not the treatment date itself; the numeric or predicate value carries the timing information.</p>
+<p>A recorded exposure in a later cycle can qualify a course. The construct uses the drug exposures linked to attributed SACT cycles as its evidence. Drug eligibility and diagnosis windows can be specified by individual indicators.</p>
 <hr />
 <h2 id="treatmentregimencyclemv"><code>TreatmentRegimenCycleMV</code><a class="headerlink" href="#treatmentregimencyclemv" title="Permanent link">&para;</a></h2>
 <p>Treatment regimen rows with optional linked cycle episodes. Provides a hierarchical view of regimen → cycle without joining to condition context.</p>
@@ -1421,11 +1426,15 @@ Do not count wide rows as treatments or patients.</p>
 <code>intent_measurement_id</code>. <code>ConditionTreatmentIntentMV</code> additionally credits valid
 roots and carries <code>intent_measurement_id</code>; it preserves one null-intent row when
 none exists. Prescription-procedure intent is separate detail in the SACT/RT views.
-Concurrency is reduced to one person/episode value before this join, so multiple
-condition start dates do not multiply intent. Modality flags still require events
-linked directly to the measured treatment episode; activity on descendants is
-not inferred.</p>
-<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.intent_sact</code> and <code>RuleTarget.intent_rt</code>.</p>
+The raw <code>TreatmentIntentMV.concurrent</code> flag describes both modalities linked
+directly to the same treatment episode. In <code>ConditionTreatmentIntentMV</code>,
+<code>concurrent</code> identifies either treatment episode in a qualifying CRT pair and
+<code>concurrent_rt</code> identifies only the paired RT course. Pairing uses the person,
+attributed diagnosis and treatment episode, so multiple condition start dates
+do not multiply intent. The direct <code>rt</code> and <code>sact</code> flags describe events linked
+directly to the measured treatment episode.</p>
+<p><strong>oa-cohorts:</strong> Accessed via <code>RuleTarget.intent_sact</code>, <code>RuleTarget.intent_rt</code> and
+<code>RuleTarget.intent_concurrent_rt</code>.</p>
 <hr />
 <h2 id="consultwindowmv"><code>ConsultWindowMV</code><a class="headerlink" href="#consultwindowmv" title="Permanent link">&para;</a></h2>
 <p>Episode-of-care consult and referral window scalars. Provides <code>referral_to_specialist</code> (days from initial GP referral to specialist) and <code>referral_to_tx</code> (days from referral to first treatment).</p>
@@ -1524,7 +1533,7 @@ not inferred.</p>
 <p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
 <h3 id="contract-condition_episode_intent_mv"><code>ConditionTreatmentIntentMV</code><a class="headerlink" href="#contract-condition_episode_intent_mv" title="Permanent link">&para;</a></h3>
 <p>View: <code>condition_episode_intent_mv</code></p>
-<p><strong>Rows:</strong> Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Envelope concurrency is reduced to one person/episode row before the join.</p>
+<p><strong>Rows:</strong> Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Concurrent treatment is matched by person, target diagnosis and treatment episode.</p>
 <p><strong>Unique on:</strong> episode_id, treatment_episode_id, intent_measurement_id (NULLS NOT DISTINCT).</p>
 <p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
 <h3 id="contract-consult_window_mv"><code>ConsultWindowMV</code><a class="headerlink" href="#contract-consult_window_mv" title="Permanent link">&para;</a></h3>
@@ -1574,7 +1583,7 @@ not inferred.</p>
 <p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
 <h3 id="contract-treatment_envelope_mv"><code>TreatmentEnvelopeMV</code><a class="headerlink" href="#contract-treatment_envelope_mv" title="Permanent link">&para;</a></h3>
 <p>View: <code>treatment_envelope_mv</code></p>
-<p><strong>Rows:</strong> One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date.</p>
+<p><strong>Rows:</strong> One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the CRT flag and first concurrent RT start, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date.</p>
 <p><strong>Unique on:</strong> <code>condition_episode</code>, <code>condition_start_date</code>.</p>
 <p><strong>Row IDs:</strong> Numbered afresh on every refresh. Do not store them or join on them across refreshes.</p>
 <h3 id="contract-episode_treatment_mv"><code>TreatmentIntentMV</code><a class="headerlink" href="#contract-episode_treatment_mv" title="Permanent link">&para;</a></h3>
