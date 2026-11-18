@@ -9,6 +9,7 @@ validation pack, or a scratch build.
 |---|---|
 | `collect_key_metrics.py` | Does each construct in one schema satisfy its declared key in `construct-contracts.toml`? |
 | `compare_schemas.py` | Which rows differ between two schemas, construct by construct and person by person? |
+| `compare_concurrent_crt.sql` | How does the CRT rule change the legacy overlap classes and the lung 13 SQL cross-check? |
 
 `_common.py` holds the shared database and output helpers. `_sql_normalise.py`
 makes definition checksums ignore the order of embedded concept-ID lists, which
@@ -36,6 +37,22 @@ Every tool writes into two subdirectories of `--output-dir`:
 
 `clinical/` is created only when row-level output is requested, and writing it
 inside the repository working tree is refused.
+
+## Compare CRT before and after
+
+Run `compare_concurrent_crt.sql` with `psql` inside the secure CDM. Supply
+`baseline_schema`, `candidate_schema`, and `vocab_schema` as psql variables and
+use builds from the same CDM snapshot. The SQL returns masked aggregates only.
+
+The first result preserves the original A/B/C classes and reports which cases
+the candidate still flags. Class B can remain concurrent if a dose was recorded
+in the late RT course. The final column applies the legacy 180 day audit cutoff
+to the candidate RT date. The second result is a SQL cross-check of report 1,
+indicator 13, against the locked config dated 2026-11-18.
+
+For official counts, run report 1 with the locked config on both builds using
+their matching oa-cohorts versions. Compare only the indicator 13 aggregate
+numerator and denominator. Mask counts of 1–4 before returning them.
 
 ## Measure a schema against the contracts
 

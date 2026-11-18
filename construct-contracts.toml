@@ -608,8 +608,8 @@ fan_out_note = "Unlike surgery, attribution is by date window, so one radioisoto
 class_name = "TreatmentEnvelopeMV"
 module = "omop_constructs.alchemy.episodes.treatment_envelope_mv"
 family = "episodes"
-grain = "Declared: one row per condition episode, carrying earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars."
-current_grain = "One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date."
+grain = "Declared: one row per condition episode, carrying earliest and latest treatment across surgery, SACT, and RT, the CRT flag and first concurrent RT start, death, and the derived day-count scalars."
+current_grain = "One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the CRT flag and first concurrent RT start, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date."
 current_unique_on = "`condition_episode`, `condition_start_date`."
 logical_key = ["condition_episode"]
 logical_key_complete = true
@@ -626,11 +626,12 @@ oa_cohorts_rule_targets = ["dx_to_tx_window", "tx_to_death_window", "tx_concurre
 inputs = [
   { name = "modified_conditions_mv", kind = "construct", fan_out = "one_to_many", note = "spine at condition-occurrence grain; the DISTINCT includes condition_start_date, so several condition records in one episode with different start dates survive as several rows" },
   { name = "surgical_procedure_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated to episode grain by min/max surgery date" },
-  { name = "sact_treatment_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated to episode grain by min/max exposure date" },
-  { name = "rt_course_mv", kind = "construct", fan_out = "aggregate", note = "pre-aggregated by person and episode using min/max exposure dates; only validated treatment-regimen course parents supply RT activity" },
+  { name = "sact_treatment_mv", kind = "construct", fan_out = "aggregate", note = "episode min/max exposure dates and distinct attributed cycle keys for CRT" },
+  { name = "rt_course_mv", kind = "construct", fan_out = "aggregate", note = "dated fractions grouped by person, target and course; course windows supply episode RT dates and the inclusive CRT interval" },
+  { name = "cycle_mv", kind = "construct", fan_out = "aggregate", note = "recorded drug exposure starts joined by person, regimen and attributed cycle; the first matched RT start is reduced per person and target" },
   { name = "death", kind = "cdm_table", fan_out = "one_to_zero_or_one", note = "outer join on person_id; Death is person-grain in OMOP" },
 ]
-fan_out_note = "The three modality windows are each pre-aggregated before joining, so they cannot multiply. The multiplier is the condition-occurrence spine. LEAST/GREATEST rely on PostgreSQL's NULL-skipping behaviour, which is intentional and documented in the query."
+fan_out_note = "The modality windows and first concurrent RT start each reduce to person and target before joining. The multiplier is the condition-occurrence spine. LEAST/GREATEST rely on PostgreSQL's NULL-skipping behaviour."
 
 [constructs.condition_treatment_episode_mv]
 class_name = "ConditionTreatmentEpisode"
@@ -693,7 +694,7 @@ class_name = "ConditionTreatmentIntentMV"
 module = "omop_constructs.alchemy.episodes.modality_intent_mv"
 family = "episodes"
 grain = "One row per (target diagnosis, treatment episode, intent measurement), plus one null-intent spine row for each diagnosis with no attributed intent."
-current_grain = "Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Envelope concurrency is reduced to one person/episode row before the join."
+current_grain = "Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Concurrent treatment is matched by person, target diagnosis and treatment episode."
 current_unique_on = "episode_id, treatment_episode_id, intent_measurement_id (NULLS NOT DISTINCT)."
 logical_key = ["episode_id", "treatment_episode_id", "intent_measurement_id"]
 logical_key_complete = true
@@ -710,9 +711,11 @@ oa_cohorts_rule_targets = ["intent_sact", "intent_rt", "intent_concurrent_rt"]
 inputs = [
   { name = "condition_episode_mv", kind = "construct", fan_out = "one_to_one", note = "spine" },
   { name = "episode_treatment_mv", kind = "construct", fan_out = "one_to_many", note = "same-person self/root attribution by recorded treatment_episode_parent_id; distinct intent measurement identities retained" },
-  { name = "treatment_envelope_mv", kind = "construct", fan_out = "one_to_many", note = "BOOL_OR reduction per person/condition episode before outer join; no condition-date multiplication" },
+  { name = "rt_course_mv", kind = "construct", fan_out = "aggregate", note = "RT course dates for the same person and target" },
+  { name = "sact_treatment_mv", kind = "construct", fan_out = "aggregate", note = "distinct SACT regimen and cycle keys for the same person and target" },
+  { name = "cycle_mv", kind = "construct", fan_out = "aggregate", note = "recorded drug exposure starts within the course window produce paired treatment episodes" },
 ]
-fan_out_note = "Preserve distinct intent measurements. Same-person root attribution adds targets; grouped BOOL_OR concurrency removes the envelope condition-date multiplier. Modality flags describe directly linked events; descendant activity is not inferred."
+fan_out_note = "Preserve distinct intent measurements. Same-person root attribution adds targets. CRT pairs reduce to one row per person, target and treatment episode before the join. The direct RT and SACT flags still describe directly linked events."
 
 [constructs.consult_window_mv]
 class_name = "ConsultWindowMV"

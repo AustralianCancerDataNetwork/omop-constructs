@@ -64,6 +64,11 @@ CONSUMED_COLUMNS: dict[tuple[str, str], tuple[str, ...]] = {
         "condition_episode",
         "condition_start_date",
         "treatment_days_before_death",
+        "first_concurrent_rt_start",
+    ),
+    ("omop_constructs.alchemy.events", "DxObservationMV"): (
+        "event_concept_id",
+        "value_concept_id",
     ),
 }
 

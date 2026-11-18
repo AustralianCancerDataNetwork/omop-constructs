@@ -1,9 +1,9 @@
 import sqlalchemy as sa
 from omop_alchemy.cdm.model import Death
 from ..modifiers.condition_modifier_mv import ModifiedCondition
+from .concurrent_treatment_query import concurrent_treatment_pairs, rt_course_windows
 from .surgical_procedure_mv import SurgicalProcedureMV
 from .systemic_treatment_mv import SACTRegimenMV
-from .course_mv import RTCourseMV
 
 
 # ---------------------------------------------------------------------------
@@ -50,17 +50,25 @@ sact_window = (
     .subquery(name='sact_window')
 )
 
-# RT window.
-# Same timestamp-guard cast as sact_window above — see comment there.
 rt_window = (
     sa.select(
-        RTCourseMV.person_id,
-        RTCourseMV.condition_episode_id,
-        sa.func.min(sa.cast(RTCourseMV.first_exposure_date, sa.Date)).label('first_rt_exposure'),
-        sa.func.max(sa.cast(RTCourseMV.last_exposure_date, sa.Date)).label('last_rt_exposure'),
+        rt_course_windows.c.person_id,
+        rt_course_windows.c.condition_episode_id,
+        sa.func.min(rt_course_windows.c.rt_start).label('first_rt_exposure'),
+        sa.func.max(rt_course_windows.c.rt_end).label('last_rt_exposure'),
     )
-    .group_by(RTCourseMV.person_id, RTCourseMV.condition_episode_id)
+    .group_by(rt_course_windows.c.person_id, rt_course_windows.c.condition_episode_id)
     .subquery(name='rt_window')
+)
+
+first_concurrent_rt = (
+    sa.select(
+        concurrent_treatment_pairs.c.person_id,
+        concurrent_treatment_pairs.c.condition_episode_id,
+        sa.func.min(concurrent_treatment_pairs.c.rt_start).label("first_concurrent_rt_start"),
+    )
+    .group_by(concurrent_treatment_pairs.c.person_id, concurrent_treatment_pairs.c.condition_episode_id)
+    .subquery("first_concurrent_rt")
 )
 
 
@@ -78,27 +86,7 @@ treatment_window = (
         sact_window.c.last_sact_exposure,
         rt_window.c.first_rt_exposure,
         rt_window.c.last_rt_exposure,
-        # concurrent_chemort: True when the start of one modality falls within
-        # the treatment window of the other, indicating overlapping SACT and RT.
-        # Uses >= / <= so that same-day starts — the most common chemoradiation
-        # pattern — are correctly classified as concurrent. 
-        # NULL when either modality is absent for the episode.
-        sa.case(
-            (
-                (sact_window.c.first_sact_exposure.isnot(None) & rt_window.c.first_rt_exposure.isnot(None)),
-                sa.or_(
-                    sa.and_(
-                        sact_window.c.first_sact_exposure >= rt_window.c.first_rt_exposure,
-                        sact_window.c.first_sact_exposure <= rt_window.c.last_rt_exposure,
-                    ),
-                    sa.and_(
-                        rt_window.c.first_rt_exposure >= sact_window.c.first_sact_exposure,
-                        rt_window.c.first_rt_exposure <= sact_window.c.last_sact_exposure,
-                    ),
-                ),
-            ),
-            else_=None,
-        ).label('concurrent_chemort'),
+        first_concurrent_rt.c.first_concurrent_rt_start,
     )
     .select_from(ModifiedCondition)
     .join(surg_window, sa.and_(surg_window.c.condition_episode_id == ModifiedCondition.condition_episode,
@@ -107,6 +95,10 @@ treatment_window = (
                             rt_window.c.person_id == ModifiedCondition.person_id), isouter=True)
     .join(sact_window, sa.and_(sact_window.c.condition_episode_id == ModifiedCondition.condition_episode,
                             sact_window.c.person_id == ModifiedCondition.person_id), isouter=True)
+    .outerjoin(first_concurrent_rt, sa.and_(
+        first_concurrent_rt.c.condition_episode_id == ModifiedCondition.condition_episode,
+        first_concurrent_rt.c.person_id == ModifiedCondition.person_id,
+    ))
     .distinct()
     .subquery()
 )
@@ -127,7 +119,8 @@ treatment_envelope = (
         treatment_window.c.person_id,
         treatment_window.c.condition_episode,
         treatment_window.c.condition_start_date,
-        treatment_window.c.concurrent_chemort,
+        treatment_window.c.first_concurrent_rt_start.is_not(None).label("concurrent_chemort"),
+        treatment_window.c.first_concurrent_rt_start,
         # earliest_treatment: first treatment event across all modalities.
         # All three inputs are Date (cast explicitly in each of surg_window,
         # sact_window, and rt_window), so LEAST returns a Date and the
