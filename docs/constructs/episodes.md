@@ -104,16 +104,17 @@ Treatment timing for each condition episode across all modalities (surgery, SACT
 | `latest_treatment` | Date | Last treatment event across all modalities for the episode |
 | `days_from_dx_to_treatment` | Integer | Calendar days from `condition_start_date` to `earliest_treatment`. Null when either is absent. |
 | `treatment_days_before_death` | Integer | Calendar days from `latest_treatment` to death. Null when either is absent. Negative values indicate a data quality issue (treatment recorded after death) and are surfaced intentionally for downstream handling. |
-| `concurrent_chemort` | Boolean / Null | True when SACT and RT windows overlap within the episode. Null when either modality is absent. Same-day starts are treated as concurrent. |
+| `concurrent_chemort` | Boolean | True when a recorded SACT drug exposure starts within an individual RT course on the same attributed condition episode. The first and last exposure days of the course are both included. |
+| `first_concurrent_rt_start` | Date / Null | First exposure date of the earliest qualifying RT course. Null when no course qualifies. |
 | `death_datetime` | DateTime | From the OMOP Death table. |
 
 **oa-cohorts:** Three `RuleTarget` entries draw from this view:
 
 - `RuleTarget.dx_to_tx_window` — the `days_from_dx_to_treatment` scalar, anchored temporally to `condition_start_date`.
 - `RuleTarget.tx_to_death_window` — the `treatment_days_before_death` scalar, anchored temporally to `condition_start_date`.
-- `RuleTarget.tx_concurrent` — the `concurrent_chemort` predicate, anchored temporally to `condition_start_date`.
+- `RuleTarget.tx_concurrent` — the `concurrent_chemort` predicate, anchored to `first_concurrent_rt_start` by default and for `dt_concurrent`.
 
-Note that all three window measurables use `condition_start_date` as their `event_date_attr`. The temporal anchor in oa-cohorts is the row's condition start date, not the treatment date itself; the numeric or predicate value carries the timing information.
+A recorded exposure in a later cycle can qualify a course. The construct uses the drug exposures linked to attributed SACT cycles as its evidence. Drug eligibility and diagnosis windows can be specified by individual indicators.
 
 ---
 
@@ -150,12 +151,16 @@ Treatment intent measurements recorded directly against treatment episodes.
 `intent_measurement_id`. `ConditionTreatmentIntentMV` additionally credits valid
 roots and carries `intent_measurement_id`; it preserves one null-intent row when
 none exists. Prescription-procedure intent is separate detail in the SACT/RT views.
-Concurrency is reduced to one person/episode value before this join, so multiple
-condition start dates do not multiply intent. Modality flags still require events
-linked directly to the measured treatment episode; activity on descendants is
-not inferred.
+The raw `TreatmentIntentMV.concurrent` flag describes both modalities linked
+directly to the same treatment episode. In `ConditionTreatmentIntentMV`,
+`concurrent` identifies either treatment episode in a qualifying CRT pair and
+`concurrent_rt` identifies only the paired RT course. Pairing uses the person,
+attributed diagnosis and treatment episode, so multiple condition start dates
+do not multiply intent. The direct `rt` and `sact` flags describe events linked
+directly to the measured treatment episode.
 
-**oa-cohorts:** Accessed via `RuleTarget.intent_sact` and `RuleTarget.intent_rt`.
+**oa-cohorts:** Accessed via `RuleTarget.intent_sact`, `RuleTarget.intent_rt` and
+`RuleTarget.intent_concurrent_rt`.
 
 ---
 
@@ -221,7 +226,7 @@ View: `condition_treatment_episode_mv`
 
 View: `condition_episode_intent_mv`
 
-**Rows:** Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Envelope concurrency is reduced to one person/episode row before the join.
+**Rows:** Own diagnosis evidence and valid same-person child-to-root evidence, without sibling propagation. Concurrent treatment is matched by person, target diagnosis and treatment episode.
 
 **Unique on:** episode_id, treatment_episode_id, intent_measurement_id (NULLS NOT DISTINCT).
 
@@ -321,7 +326,7 @@ View: `surgical_procedure_mv`
 
 View: `treatment_envelope_mv`
 
-**Rows:** One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the concurrent-chemoradiotherapy flag, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date.
+**Rows:** One row per (condition episode, condition start date), carrying the episode's earliest and latest treatment across surgery, SACT, and RT, the CRT flag and first concurrent RT start, death, and the derived day-count scalars. An episode whose linked conditions start on different dates has one row per start date.
 
 **Unique on:** `condition_episode`, `condition_start_date`.
 

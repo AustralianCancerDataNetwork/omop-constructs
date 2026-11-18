@@ -6,9 +6,12 @@ from ...core.materialized import MaterializedViewMixin
 from ...core.constructs import register_construct
 from ...core.sql import select_all_columns
 from .modality_intent_join import episode_join
-from .treatment_envelope_mv import TreatmentEnvelopeMV
+from .concurrent_treatment_query import concurrent_treatment_pairs
+from .course_mv import RTCourseMV
+from .cycle_mv import CycleMV
 from .condition_episode_mv import ConditionEpisodeMV
 from .episode_joins import treatment_attribution
+from .systemic_treatment_mv import SACTRegimenMV
 
 @register_construct
 class TreatmentIntentMV(
@@ -42,7 +45,7 @@ class TreatmentIntentMV(
 
 
 _attributed_intent = (
-    sa.select(*(c for c in TreatmentIntentMV.__table__.c if c.key != "mv_id"),
+    sa.select(*(c for c in TreatmentIntentMV.__table__.c if c.key not in {"mv_id", "concurrent"}),
               treatment_attribution.c.target_id)
     .join(treatment_attribution, sa.and_(
         treatment_attribution.c.owner_id == TreatmentIntentMV.treatment_episode_parent_id,
@@ -51,11 +54,34 @@ _attributed_intent = (
     .distinct().subquery("attributed_intent")
 )
 
-_episode_concurrency = (
-    sa.select(TreatmentEnvelopeMV.person_id, TreatmentEnvelopeMV.condition_episode,
-              sa.func.bool_or(sa.func.coalesce(TreatmentEnvelopeMV.concurrent_chemort, False)).label("concurrent_chemort"))
-    .group_by(TreatmentEnvelopeMV.person_id, TreatmentEnvelopeMV.condition_episode)
-    .subquery("episode_concurrency")
+_paired_episodes = sa.union_all(
+    sa.select(
+        concurrent_treatment_pairs.c.person_id,
+        concurrent_treatment_pairs.c.condition_episode_id,
+        concurrent_treatment_pairs.c.course_id.label("treatment_episode_id"),
+        sa.true().label("rt"),
+    ),
+    sa.select(
+        concurrent_treatment_pairs.c.person_id,
+        concurrent_treatment_pairs.c.condition_episode_id,
+        concurrent_treatment_pairs.c.regimen_id,
+        sa.false(),
+    ),
+).subquery("paired_episodes")
+
+_treatment_concurrency = (
+    sa.select(
+        _paired_episodes.c.person_id,
+        _paired_episodes.c.condition_episode_id,
+        _paired_episodes.c.treatment_episode_id,
+        sa.func.bool_or(_paired_episodes.c.rt).label("concurrent_rt"),
+    )
+    .group_by(
+        _paired_episodes.c.person_id,
+        _paired_episodes.c.condition_episode_id,
+        _paired_episodes.c.treatment_episode_id,
+    )
+    .subquery("treatment_concurrency")
 )
 
 episode_summary_select = (
@@ -72,18 +98,18 @@ episode_summary_select = (
         _attributed_intent.c.intent_measurement_id,
         sa.func.coalesce(_attributed_intent.c.rt, False).label("rt"),
         sa.func.coalesce(_attributed_intent.c.sact, False).label("sact"),
-        sa.func.coalesce(_attributed_intent.c.concurrent, False).label("concurrent"),
-        sa.and_(sa.func.coalesce(_attributed_intent.c.rt, False),
-                sa.func.coalesce(_episode_concurrency.c.concurrent_chemort, False)).label("concurrent_rt"),
+        _treatment_concurrency.c.treatment_episode_id.is_not(None).label("concurrent"),
+        sa.func.coalesce(_treatment_concurrency.c.concurrent_rt, False).label("concurrent_rt"),
     )
     .select_from(ConditionEpisodeMV)
     .outerjoin(_attributed_intent, sa.and_(
         _attributed_intent.c.target_id == ConditionEpisodeMV.episode_id,
         _attributed_intent.c.person_id == ConditionEpisodeMV.person_id,
     ))
-    .outerjoin(_episode_concurrency, sa.and_(
-        _episode_concurrency.c.condition_episode == ConditionEpisodeMV.episode_id,
-        _episode_concurrency.c.person_id == ConditionEpisodeMV.person_id,
+    .outerjoin(_treatment_concurrency, sa.and_(
+        _treatment_concurrency.c.condition_episode_id == ConditionEpisodeMV.episode_id,
+        _treatment_concurrency.c.person_id == ConditionEpisodeMV.person_id,
+        _treatment_concurrency.c.treatment_episode_id == _attributed_intent.c.treatment_episode_id,
     ))
 )
 
@@ -98,7 +124,9 @@ class ConditionTreatmentIntentMV(
     __deps__ = (
         ConditionEpisodeMV.__mv_name__,
         TreatmentIntentMV.__mv_name__,
-        TreatmentEnvelopeMV.__mv_name__,
+        RTCourseMV.__mv_name__,
+        SACTRegimenMV.__mv_name__,
+        CycleMV.__mv_name__,
     )
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}

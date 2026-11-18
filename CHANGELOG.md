@@ -240,3 +240,9 @@
 - Deduplicate physical dose/procedure links before counting, validate person and source-field identity throughout the treatment chain, and count distinct regimen/course entities before prescription/intent detail can multiply them.
 - Add `intent_id` to `fraction_mv`, `sact_treatment_mv` and `rt_course_mv`; add `person_id` and `intent_measurement_id` to `episode_treatment_mv`, and `intent_measurement_id` to `condition_episode_intent_mv`. Reduce envelope concurrency to person/episode grain before joining attributed intent.
 - Deployment: **rebuild**, then ANALYZE changed views and their dependent outputs in registry order. Refreshing existing definitions cannot apply this change.
+
+# 0.12.1
+
+- Match concurrent chemoradiotherapy per RT course against recorded systemic therapy dose dates on the same cancer episode. A dose during the course qualifies, including later cycles and treatment credited from progression. Apply diagnosis windows in the indicators that need them.
+- Add `first_concurrent_rt_start` to `treatment_envelope_mv` and compute `concurrent_rt` for the matching RT course in `condition_episode_intent_mv`.
+- Rebuild the changed materialized views and their dependents before using oa-cohorts 0.14.0.

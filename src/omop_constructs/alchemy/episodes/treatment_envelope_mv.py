@@ -9,6 +9,7 @@ from ..modifiers.condition_modifier_mv import ModifiedCondition
 from .surgical_procedure_mv import SurgicalProcedureMV
 from .systemic_treatment_mv import SACTRegimenMV
 from .course_mv import RTCourseMV
+from .cycle_mv import CycleMV
 
 
 @register_construct
@@ -24,6 +25,7 @@ class TreatmentEnvelopeMV(
         SurgicalProcedureMV.__mv_name__, 
         SACTRegimenMV.__mv_name__, 
         RTCourseMV.__mv_name__,
+        CycleMV.__mv_name__,
     )
     __tablename__ = __mv_name__
     __table_args__ = {"extend_existing": True}
@@ -38,4 +40,5 @@ class TreatmentEnvelopeMV(
     # Date - Date arithmetic in PostgreSQL produces integer days directly.
     treatment_days_before_death = sa.Column(sa.Integer)
     days_from_dx_to_treatment = sa.Column(sa.Integer)
-    concurrent_chemort = sa.Column(sa.Boolean)
+    concurrent_chemort = sa.Column(sa.Boolean, nullable=False)
+    first_concurrent_rt_start = sa.Column(sa.Date)
