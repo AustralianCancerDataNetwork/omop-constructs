@@ -8,10 +8,10 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "oa-configurator>=2.0,<3",
-    "omop-alchemy[postgres]>=2.0,<3",
-    "omop-semantics>=0.6.2",
-    "orm-loader>=2.0,<3",
+    "oa-configurator>=2.1.0,<3",
+    "omop-alchemy[postgres]>=3.0.1,<4",
+    "omop-semantics>=0.8,<0.9",
+    "orm-loader>=3.0.0,<4",
     "sqlalchemy>=2.0.45",
 ]
 

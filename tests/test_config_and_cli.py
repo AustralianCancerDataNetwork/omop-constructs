@@ -31,7 +31,7 @@ def test_config_defaults_to_the_shared_cdm_database_without_a_tool_section() -> 
 
     engine = create_cdm_engine(stack)
 
-    assert engine.url.render_as_string(hide_password=False) == "sqlite:///:memory:"
+    assert engine.url == sa.URL.create("sqlite", database=":memory:")
 
 
 def test_cli_verbose_flag_configures_logging(monkeypatch, tmp_path: Path) -> None:
@@ -111,8 +111,10 @@ def test_create_cdm_engine_resolves_configured_database_to_expected_url() -> Non
     The oa-configurator 1.x migration deleted the whole resource API and the
     per-tool default-resource cascade, so the tests that asserted on those were
     rewritten or dropped with it. The engine URL is the part that had to survive:
-    the fixture below was rebuilt on the 1.x models while this assertion stayed
-    byte-identical. A different URL would have meant the migration repointed the CDM.
+    the fixture below was rebuilt on the 1.x models. oa-configurator 2.1 builds the
+    URL with ``URL.create``, which renders ``:memory:`` percent-encoded, so the URL
+    is compared as an object. A different URL would have meant the migration
+    repointed the CDM.
     """
     stack = StackConfig.for_session(
         connections={"cdm": ConnectionConfig(dialect="sqlite", database_name=":memory:")},
@@ -121,7 +123,7 @@ def test_create_cdm_engine_resolves_configured_database_to_expected_url() -> Non
 
     engine = create_cdm_engine(stack)
 
-    assert engine.url.render_as_string(hide_password=False) == "sqlite:///:memory:"
+    assert engine.url == sa.URL.create("sqlite", database=":memory:")
     assert engine.dialect.name == "sqlite"
 
 
