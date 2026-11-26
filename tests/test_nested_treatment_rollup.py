@@ -7,18 +7,24 @@ import sqlalchemy as sa
 from omop_alchemy.cdm import model as cdm
 from omop_alchemy.maintenance.tables import collect_maintenance_tables
 from omop_constructs import get_complete_construct_registry
+from omop_semantics.links import field_concept_id
 from test_construct_registry_postgres import _clear_construct_import_state
 
 
 START = date(2024, 1, 1)
 SURGERY, RT, DRUG, PRESCRIPTION, CONDITION, ROUTE = range(2_100_000_001, 2_100_000_007)
 INTENT = 4179711
+EPISODE_FIELD_CONCEPT_ID = field_concept_id("episode")
+PROCEDURE_FIELD_CONCEPT_ID = field_concept_id("procedure_occurrence")
+DRUG_FIELD_CONCEPT_ID = field_concept_id("drug_exposure")
+CONDITION_FIELD_CONCEPT_ID = field_concept_id("condition_occurrence")
 
 
 def _seed_vocabulary(conn):
     identifiers = {0, 32533, 32949, 32944, 32531, 32532, INTENT, SURGERY, RT, DRUG,
                    PRESCRIPTION, CONDITION, ROUTE, 4301351, 1242725, 4161415, 1340204,
-                   756290, 1147082, 1147707, 1147127}
+                   EPISODE_FIELD_CONCEPT_ID, PROCEDURE_FIELD_CONCEPT_ID,
+                   DRUG_FIELD_CONCEPT_ID, CONDITION_FIELD_CONCEPT_ID}
     conn.execute(cdm.Concept.__table__.insert(), [dict(
         concept_id=i, concept_name=f"Synthetic {i}", domain_id="Procedure", vocabulary_id="Synthetic",
         concept_class_id="Synthetic", standard_concept="S", concept_code=str(i),
@@ -50,10 +56,10 @@ def _procedure(conn, identifier, concept, owner, person=1):
         procedure_occurrence_id=identifier, procedure_concept_id=concept, person_id=person,
         procedure_date=START + timedelta(days=40),
         procedure_datetime=datetime(2024, 1, 1, 12) + timedelta(days=40), procedure_type_concept_id=0))
-    _link(conn, owner, identifier, 1147082)
+    _link(conn, owner, identifier, PROCEDURE_FIELD_CONCEPT_ID)
 
 
-def _intent(conn, identifier, event, field=756290, person=1):
+def _intent(conn, identifier, event, field=EPISODE_FIELD_CONCEPT_ID, person=1):
     conn.execute(cdm.Measurement.__table__.insert().values(
         measurement_id=identifier, person_id=person, measurement_concept_id=INTENT,
         measurement_date=START, measurement_type_concept_id=0, measurement_event_id=event,
@@ -73,34 +79,34 @@ def _seed_care(conn):
         conn.execute(cdm.Condition_Occurrence.__table__.insert().values(
             condition_occurrence_id=identifier, condition_concept_id=CONDITION, person_id=1,
             condition_start_date=START + timedelta(days=offset), condition_type_concept_id=0))
-        _link(conn, owner, identifier, 1147127)
+        _link(conn, owner, identifier, CONDITION_FIELD_CONCEPT_ID)
     for identifier, cycle, person in ((5001, 1100, 1), (5002, 1101, 1), (5003, 2100, 1),
                                      (5004, 1100, 2), (5005, 1200, 2), (5006, 4100, 2)):
         conn.execute(cdm.Drug_Exposure.__table__.insert().values(
             drug_exposure_id=identifier, person_id=person, drug_concept_id=DRUG, route_concept_id=ROUTE,
             drug_exposure_start_date=START + timedelta(days=40), drug_exposure_end_date=START + timedelta(days=41),
             drug_type_concept_id=0))
-        _link(conn, cycle, identifier, 1147707)
-    _link(conn, 1100, 5001, 1147707)  # deliberate duplicate in fixture-only relaxed table
+        _link(conn, cycle, identifier, DRUG_FIELD_CONCEPT_ID)
+    _link(conn, 1100, 5001, DRUG_FIELD_CONCEPT_ID)  # deliberate duplicate in fixture-only relaxed table
     for procedure, owner in ((7001, 1000), (7002, 1000), (7003, 2000), (7004, 3000)):
         _procedure(conn, procedure, PRESCRIPTION, owner)
     _procedure(conn, 7005, PRESCRIPTION, 1000, person=2)
     for measurement, procedure in ((9001, 7001), (9002, 7001), (9003, 7002), (9004, 7003), (9005, 7004)):
-        _intent(conn, measurement, procedure, 1147082)
+        _intent(conn, measurement, procedure, PROCEDURE_FIELD_CONCEPT_ID)
     for procedure, fraction in ((6101, 3100), (6102, 3101), (6103, 3102)):
         _procedure(conn, procedure, RT, fraction)
     for identifier in (9201, 9202):
-        _intent(conn, identifier, 6101, 1147082)
+        _intent(conn, identifier, 6101, PROCEDURE_FIELD_CONCEPT_ID)
     for identifier, episode in ((9301, 1100), (9302, 1100), (9401, 1000)):
         _intent(conn, identifier, episode)
-    _intent(conn, 9901, 7001, 1147082, person=2)
+    _intent(conn, 9901, 7001, PROCEDURE_FIELD_CONCEPT_ID, person=2)
     _intent(conn, 9902, 1100, person=2)
-    _intent(conn, 9903, 6102, 1147082, person=2)  # foreign-only intent must retain the fraction
+    _intent(conn, 9903, 6102, PROCEDURE_FIELD_CONCEPT_ID, person=2)  # foreign-only intent must retain the fraction
     _procedure(conn, 8001, SURGERY, 101)
-    _link(conn, 100, 8001, 1147082)
-    _link(conn, 101, 8001, 1147082)
+    _link(conn, 100, 8001, PROCEDURE_FIELD_CONCEPT_ID)
+    _link(conn, 101, 8001, PROCEDURE_FIELD_CONCEPT_ID)
     _procedure(conn, 5001, SURGERY, 1100)  # same number as a drug, different source table
-    _link(conn, 101, 5001, 1147707)  # cannot supply surgery evidence
+    _link(conn, 101, 5001, DRUG_FIELD_CONCEPT_ID)  # cannot supply surgery evidence
     conn.execute(cdm.Observation.__table__.insert().values(
         observation_id=8002, person_id=1, observation_concept_id=1340204, value_as_concept_id=SURGERY,
         observation_date=START, observation_type_concept_id=0))
