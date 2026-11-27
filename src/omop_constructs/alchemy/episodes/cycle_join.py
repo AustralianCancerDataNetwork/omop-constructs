@@ -44,7 +44,7 @@ cycle_join = (
                           regimen.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen))
     .join(owner, sa.and_(owner.episode_id == regimen.episode_parent_id,
                         owner.person_id == regimen.person_id,
-                        owner.episode_concept_id.in_(runtime.types.disease_episode_types.ids)))
+                        owner.episode_concept_id.in_(runtime.types.disease_episode_types.exact_ids)))
     .join(cycle_concept, cycle_concept.concept_id==Episode.episode_concept_id)
     .distinct()
     .subquery("distinct_doses")

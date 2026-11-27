@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 from omop_alchemy.cdm.model import Concept, Concept_Ancestor, Procedure_Occurrence, Observation
 from omop_alchemy.cdm.model.structural import Episode_Event
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 from .condition_episode_mv import ConditionEpisodeMV
 from .episode_joins import treatment_attribution
 from ..events.event_factories import (

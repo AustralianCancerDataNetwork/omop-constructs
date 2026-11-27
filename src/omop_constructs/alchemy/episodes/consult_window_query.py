@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import ColumnElement
 
 from omop_alchemy.cdm.model import Episode
-from omop_semantics.runtime.default_valuesets import runtime  # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 
 from ..events.dx_linked_obs_mv import DxObservationMV
 from ..events.dx_linked_visit_mv import DxRelevantVisitMV
@@ -39,7 +39,7 @@ episode_of_care = (
     )
     .where(
         Episode.episode_concept_id
-        == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
+        == runtime.types.disease_episode_types.episode_of_care
     )
     .subquery(name="episode_of_care")
 )
@@ -48,7 +48,7 @@ episode_of_care_obs = (
     sa.select(*DxObservationMV.__table__.c)
     .where(
         DxObservationMV.episode_concept_id
-        == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
+        == runtime.types.disease_episode_types.episode_of_care
     )
     .subquery(name="episode_of_care_obs")
 )
@@ -63,8 +63,8 @@ first_specialist = (
     .where(
         episode_of_care_obs.c.event_concept_id.in_(
             [
-                runtime.cancer_procedures.cancer_consult_types.medonc,  # type: ignore[attr-defined]
-                runtime.cancer_procedures.cancer_consult_types.clinonc,  # type: ignore[attr-defined]
+                runtime.cancer_procedures.cancer_consult_types.medonc,
+                runtime.cancer_procedures.cancer_consult_types.clinonc,
             ]
         )
     )
@@ -83,7 +83,7 @@ gp_referral = (
     )
     .where(
         episode_of_care_obs.c.event_concept_id
-        == runtime.cancer_procedures.cancer_consult_types.oncology_referral  # type: ignore[attr-defined]
+        == runtime.cancer_procedures.cancer_consult_types.oncology_referral
     )
     .group_by(
         episode_of_care_obs.c.person_id,
@@ -100,7 +100,7 @@ pall_care_referral = (
     )
     .where(
         episode_of_care_obs.c.event_concept_id
-        == runtime.cancer_procedures.cancer_consult_types.pall_care_referral  # type: ignore[attr-defined]
+        == runtime.cancer_procedures.cancer_consult_types.pall_care_referral
     )
     .group_by(
         episode_of_care_obs.c.person_id,
@@ -118,9 +118,9 @@ specialist_visit = (
     .where(
         DxRelevantVisitMV.provider_specialty_concept_id.in_(
             [
-                runtime.cancer_procedures.encounter_provider_specialty.radonc,  # type: ignore[attr-defined]
-                runtime.cancer_procedures.encounter_provider_specialty.medonc,  # type: ignore[attr-defined]
-                runtime.cancer_procedures.encounter_provider_specialty.haematologist,  # type: ignore[attr-defined]
+                runtime.cancer_procedures.encounter_provider_specialty.radonc,
+                runtime.cancer_procedures.encounter_provider_specialty.medonc,
+                runtime.cancer_procedures.encounter_provider_specialty.haematologist,
             ]
         )
     )
@@ -139,7 +139,7 @@ pall_care_visit = (
     )
     .where(
         DxRelevantVisitMV.provider_specialty_concept_id
-        == runtime.cancer_procedures.encounter_provider_specialty.pall_care  # type: ignore[attr-defined]
+        == runtime.cancer_procedures.encounter_provider_specialty.pall_care
     )
     .group_by(
         DxRelevantVisitMV.person_id,

@@ -1,5 +1,5 @@
 from omop_alchemy.cdm.model import Measurement
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 from .event_factories import (
     EVENT_CONSTRUCT_ATTACHMENT_POLICY,
     episode_relevant_window,
@@ -7,70 +7,70 @@ from .event_factories import (
 )
 
 weight_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.body_size_measurements.weight], # type: ignore
+    concept_ids=[runtime.measurements_numeric.body_size_measurements.weight],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="weight",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 weight_change_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.body_size_measurements.weight_change],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.body_size_measurements.weight_change],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="weight_change",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 height_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.body_size_measurements.height],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.body_size_measurements.height],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="height",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 bsa_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.body_size_measurements.bsa],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.body_size_measurements.bsa],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="bsa",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 creatinine_clearance_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.lab_measurements.creatinine_clearance],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.lab_measurements.creatinine_clearance],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="creatinine_clearance",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 est_gfr_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.lab_measurements.egfr],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.lab_measurements.egfr],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="egfr",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 fev1_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.lab_measurements.fev1],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.lab_measurements.fev1],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="fev1",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 distress_thermometer_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.proms_numeric.distress_thermometer],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.proms_numeric.distress_thermometer],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="dtherm",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 ecog_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.performance_status_measurements.ecog_performance_status],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.performance_status_measurements.ecog_performance_status],
     include_cols=[Measurement.value_as_number, Measurement.value_as_concept_id, Measurement.unit_concept_id],
     name="ecog",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,
 )
 
 smoking_pyh_query = measurement_attached_to_condition_episode(
-    concept_ids=[runtime.measurements_numeric.smoking_numeric.pyh],  # type: ignore
+    concept_ids=[runtime.measurements_numeric.smoking_numeric.pyh],
     include_cols=[Measurement.value_as_number, Measurement.unit_concept_id],
     name="smoking_pyh",
     policy=EVENT_CONSTRUCT_ATTACHMENT_POLICY,

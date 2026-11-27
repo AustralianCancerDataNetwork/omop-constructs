@@ -28,12 +28,12 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
     "metastatic_disease": lambda session: build_parent_resolver(
         session,
-        parent_list=[runtime.condition_modifiers.condition_modifier_values.metastatic_disease], # type: ignore
+        parent_list=[runtime.condition_modifiers.condition_modifier_values.metastatic_disease],
         resolver_name="metastatic_disease",
     ),  
     "tumor_grade": lambda session: build_parent_resolver(
         session,
-        parent_list=list(runtime.condition_modifiers.tumor_grade.ids),
+        parent_list=list(runtime.condition_modifiers.tumor_grade.exact_ids),
         resolver_name="tumor_grade",
     ),
     "rt_procedures": lambda session: build_parent_resolver(
@@ -43,7 +43,7 @@ DEFAULT_RESOLVER_BUILDERS = {
     ),
     "country_of_birth": lambda session: build_parent_resolver(
         session,
-        parent_list=[runtime.observations.demography_concepts.country_of_birth], # type: ignore
+        parent_list=[runtime.observations.demography_concepts.country_of_birth],
         resolver_name="country_of_birth",
     ),
 }

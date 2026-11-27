@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "oa-configurator>=2.1.0,<3",
     "omop-alchemy[postgres]>=3.0.1,<4",
-    "omop-semantics>=0.8,<0.9",
+    "omop-semantics>=0.8,<0.11",
     "orm-loader>=3.0.0,<4",
     "sqlalchemy>=2.0.45",
 ]
@@ -61,7 +61,6 @@ extend-select = ["B006", "PIE810"]
 [tool.ty.rules]
 # todo: these shouldn't remain here long term - for cicd initial deployment for now
 invalid-argument-type = "ignore"
-unused-type-ignore-comment = "ignore"
 unresolved-attribute = "ignore"
 
 [tool.pytest.ini_options]

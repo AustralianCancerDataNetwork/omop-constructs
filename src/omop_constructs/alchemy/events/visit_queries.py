@@ -10,7 +10,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as so
 
 from omop_alchemy.cdm.model import Concept, Episode, Provider, Visit_Occurrence
-from omop_semantics.runtime.default_valuesets import runtime  # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 
 
 provider_concept = so.aliased(Concept, name="provider_concept")
@@ -23,7 +23,7 @@ episode_of_care = (
     )
     .where(
         Episode.episode_concept_id
-        == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
+        == runtime.types.disease_episode_types.episode_of_care
     )
     .subquery(name="episode_of_care")
 )

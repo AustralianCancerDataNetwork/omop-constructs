@@ -1,13 +1,13 @@
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 from .episode_factories import get_episode_query, get_episode_hierarchy_query, dx_treatment_window, diagnosis_attribution
 
 episode_of_care_select = get_episode_query(
-        [runtime.types.disease_episode_types.episode_of_care],  # type: ignore
+        [runtime.types.disease_episode_types.episode_of_care],
         name="episode_of_care"
     )
 
 disease_extent_select = get_episode_query(
-        [runtime.types.disease_episode_types.disease_progression, runtime.types.disease_episode_types.metastatic],  # type: ignore
+        [runtime.types.disease_episode_types.disease_progression, runtime.types.disease_episode_types.metastatic],
         name="disease_extent"
     )
 
@@ -18,17 +18,17 @@ overarching_disease_episode = get_episode_hierarchy_query(
 )
 
 condition_episode_select = get_episode_query(
-    [runtime.types.disease_episode_types.disease_progression, runtime.types.disease_episode_types.metastatic, runtime.types.disease_episode_types.episode_of_care],  # type: ignore
+    [runtime.types.disease_episode_types.disease_progression, runtime.types.disease_episode_types.metastatic, runtime.types.disease_episode_types.episode_of_care],
     name="condition_episode",
 )
 
 treatment_regimen_select = get_episode_query(
-    [runtime.types.treatment_episode_types.treatment_regimen],  # type: ignore
+    [runtime.types.treatment_episode_types.treatment_regimen],
     name="treatment_regimen",
 )
 
 treatment_cycle_select = get_episode_query(
-    [runtime.types.treatment_episode_types.treatment_cycle],  # type: ignore
+    [runtime.types.treatment_episode_types.treatment_cycle],
     name="treatment_cycle",
 )
 
