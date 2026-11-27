@@ -6,7 +6,7 @@ from omop_alchemy.cdm.model import (
     Concept
 )
 
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 
 episode_concept = so.aliased(Concept, name="episode_concept")
 
@@ -124,8 +124,8 @@ def dx_treatment_window(attribution: sa.Subquery, name="dx_treat_window"):
             ),
         )
         .where(
-            Diagnosis.episode_concept_id.in_(runtime.types.disease_episode_types.ids),
-            Regimen.episode_concept_id.in_(runtime.types.treatment_episode_types.ids),
+            Diagnosis.episode_concept_id.in_(runtime.types.disease_episode_types.exact_ids),
+            Regimen.episode_concept_id.in_(runtime.types.treatment_episode_types.exact_ids),
         )
         .group_by(
             Diagnosis.episode_id,

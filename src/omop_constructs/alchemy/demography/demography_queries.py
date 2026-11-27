@@ -5,7 +5,7 @@ from ..episodes.condition_episode_mv import ConditionEpisodeMV
 from ...semantics import registry
 
 
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 
 person_postcode = (
     sa.select(

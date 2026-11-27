@@ -5,7 +5,7 @@ from typing import List
 from omop_alchemy.cdm.model.structural import Episode_Event
 from ..modifiers.condition_modifier_mv import ModifiedCondition
 from .condition_episode_mv import ConditionEpisodeMV   # wherever you defined it
-from omop_semantics.runtime.default_valuesets import runtime # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 
 
 class ConditionEpisodeObject(ConditionEpisodeMV):

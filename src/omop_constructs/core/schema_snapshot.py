@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 import sqlalchemy as sa
+from sqlalchemy.engine.default import DefaultDialect
 from sqlalchemy.exc import CompileError
 
 from ..bootstrap import get_complete_construct_registry
@@ -30,7 +31,7 @@ SNAPSHOT_HEADERS = (
 
 def _column_type_name(column: sa.Column) -> str:
     try:
-        compiled = column.type.compile(dialect=sa.engine.default.DefaultDialect()) # type: ignore
+        compiled = column.type.compile(dialect=DefaultDialect())
     except CompileError:
         compiled = 'UNKNOWN'
     return str(compiled)
@@ -49,7 +50,7 @@ def registry_schema_rows(
         mv_index = getattr(cls, "__mv_index__", "") or ""
         mv_pk = "|".join(getattr(cls, "__mv_pk__", ()) or ())
 
-        for position, column in enumerate(cls.__table__.columns, start=1): # type: ignore
+        for position, column in enumerate(cls.__table__.columns, start=1):
             rows.append(
                 {
                     "construct_name": construct_name,
@@ -82,7 +83,7 @@ def write_registry_schema_snapshot(
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=SNAPSHOT_HEADERS)
         writer.writeheader()
-        writer.writerows(registry_schema_rows(registry)) # type: ignore
+        writer.writerows(registry_schema_rows(registry))
 
     return path
 

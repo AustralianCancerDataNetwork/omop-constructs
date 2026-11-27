@@ -1340,7 +1340,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'" },
     { name = "oa-configurator", specifier = ">=2.1.0,<3" },
     { name = "omop-alchemy", extras = ["postgres"], specifier = ">=3.0.1,<4" },
-    { name = "omop-semantics", specifier = ">=0.8,<0.9" },
+    { name = "omop-semantics", specifier = ">=0.8,<0.11" },
     { name = "orm-loader", specifier = ">=3.0.0,<4" },
     { name = "pygments", marker = "extra == 'dev'", specifier = ">=2.20.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
@@ -1354,7 +1354,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "omop-semantics"
-version = "0.8.0"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "linkml" },
@@ -1364,9 +1364,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/9d/854a073862b748ccfe0aa4eb423f5697369c77fb5ed291508f4a2562c49a/omop_semantics-0.8.0.tar.gz", hash = "sha256:4f54ef79308ac0277c168c17a228846130c63e849740c5fff84cc2ca7659f162", size = 208361, upload-time = "2026-11-26T14:05:38.361Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/28/19c8d0fc1ae2bc2d7957a9a91d60e1689740b8cf38078aba05df19868dc3/omop_semantics-0.10.0.tar.gz", hash = "sha256:39b772e8ad26fef7bc1b8d35abadd1358bdddc43caaa2e4361dda34225520686", size = 214171, upload-time = "2026-11-27T10:30:07.679Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/ef/b97b670c733b71cf2dc1b63a032f174037ccfec1f5b55949b0e5b8b9cff7/omop_semantics-0.8.0-py3-none-any.whl", hash = "sha256:67b187de37724faee6be5621117a645544857557528f836079beb420b0f42783", size = 71667, upload-time = "2026-11-26T14:05:37.043Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/70/766d7299d5eec4d4aaa13242470c152d5229cfbc11db20f09becd35280e6/omop_semantics-0.10.0-py3-none-any.whl", hash = "sha256:4365b98d3dfad62290ddbbb9cfa1a686aa9d809674061670ad36ea71a996d704", size = 75123, upload-time = "2026-11-27T10:30:06.367Z" },
 ]
 
 [[package]]

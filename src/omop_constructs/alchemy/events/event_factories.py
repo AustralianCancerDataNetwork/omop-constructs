@@ -7,7 +7,7 @@ from typing import Any, Iterable, Sequence, TypeAlias
 
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from omop_semantics.runtime.default_valuesets import runtime  # type: ignore
+from omop_semantics.runtime.default_valuesets import runtime
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.selectable import FromClause, SelectBase
@@ -245,7 +245,7 @@ def _fallback_episodes(
         )
         .where(
             episodes.c.episode_concept_id
-            == runtime.types.disease_episode_types.episode_of_care  # type: ignore[attr-defined]
+            == runtime.types.disease_episode_types.episode_of_care
         )
         .subquery("episode_of_care_candidates")
     )

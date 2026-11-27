@@ -26,7 +26,7 @@ modified_procedure_join = (
         sa.and_(
             Measurement.modifier_of_field_concept_id==runtime.modifiers.modifier_fields.procedure_occurrence_id,
             Procedure_Occurrence.procedure_occurrence_id==Measurement.modifier_of_event_id,
-            Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
+            Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.exact_ids)
         ),
         isouter=True
     )

@@ -82,10 +82,10 @@ episode_intent = (
             (regimen_or_parent.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen,
              regimen_or_parent.episode_parent_id), else_=regimen_or_parent.episode_id),
         intent_owner.person_id == Episode.person_id,
-        intent_owner.episode_concept_id.in_(runtime.types.disease_episode_types.ids),
+        intent_owner.episode_concept_id.in_(runtime.types.disease_episode_types.exact_ids),
     ))
     .filter(
-        Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.ids)
+        Measurement.measurement_concept_id.in_(runtime.treatment_modifiers.treatment_intent.exact_ids)
     )
     .subquery()
 )

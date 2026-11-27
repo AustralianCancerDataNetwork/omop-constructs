@@ -34,7 +34,7 @@ fraction_join = (
                          course.episode_concept_id == runtime.types.treatment_episode_types.treatment_regimen))
     .join(owner, sa.and_(owner.episode_id == course.episode_parent_id,
                         owner.person_id == course.person_id,
-                        owner.episode_concept_id.in_(runtime.types.disease_episode_types.ids)))
+                        owner.episode_concept_id.in_(runtime.types.disease_episode_types.exact_ids)))
     .join(fraction_concept, fraction_concept.concept_id==Episode.episode_object_concept_id)
     .filter(guarded_procedures.c.procedure_concept_id.in_(list(registry['rt_procedures'].all_concepts)))
     .distinct()
