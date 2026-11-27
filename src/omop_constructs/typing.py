@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Any
+from typing import Any, ClassVar, Protocol, runtime_checkable
 import sqlalchemy as sa
 
 @runtime_checkable
@@ -6,10 +6,11 @@ class SupportsMaterializedView(Protocol):
     """
     Protocol for ORM classes backed by materialized view definitions.
     """
-    __mv_name__: str
-    __mv_select__: sa.sql.Select
-    __deps__: tuple[str, ...]
-    __construct__: Any
+    __mv_name__: ClassVar[str]
+    __mv_select__: ClassVar[sa.sql.Select]
+    __deps__: ClassVar[tuple[str, ...]]
+    __construct__: ClassVar[Any]
+    __table__: ClassVar[sa.Table]
 
     @classmethod
     def create_mv(cls, bind, *, with_data: bool = True) -> None: ...

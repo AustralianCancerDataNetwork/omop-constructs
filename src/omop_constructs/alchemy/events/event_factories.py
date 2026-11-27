@@ -87,16 +87,23 @@ def _as_from_clause(source: AttachmentSource, *, name: str) -> FromClause:
 
 
 def _episode_source(source: AttachmentSource | type[ConditionEpisodeMV]) -> FromClause:
-    if isinstance(source, type):
-        return sa.select(
-            source.episode_id,
-            source.person_id,
-            source.episode_concept_id,
-            source.episode_label,
-            source.episode_start_date,
-            source.episode_end_date,
-        ).subquery("condition_episodes")
-    return _as_from_clause(source, name="condition_episodes")
+    if isinstance(source, (FromClause, SelectBase)):
+        return _as_from_clause(source, name="condition_episodes")
+    return sa.select(
+        source.episode_id,
+        source.person_id,
+        source.episode_concept_id,
+        source.episode_label,
+        source.episode_start_date,
+        source.episode_end_date,
+    ).subquery("condition_episodes")
+
+
+def _column_name(column: ColumnElement[Any]) -> str:
+    name = column.key or column.name
+    if name is None:
+        raise ValueError("event columns must have a key or name")
+    return name
 
 
 def _require_columns(source: FromClause, names: Sequence[str], *, role: str) -> None:
@@ -118,9 +125,9 @@ def _canonicalize_legacy_events(
     if all(column in event_source.c for column in _CANONICAL_REQUIRED):
         return event_source
 
-    event_id_name = event_id_col.key
-    date_name = date_col.key
-    person_name = person_col.key
+    event_id_name = _column_name(event_id_col)
+    date_name = _column_name(date_col)
+    person_name = _column_name(person_col)
     _require_columns(
         event_source,
         (person_name, event_id_name, date_name, "event_concept_id"),
@@ -476,7 +483,7 @@ def _canonical_event_core(
     model: type[Any],
     *,
     concept_model: Any,
-    concept_column: ColumnElement[Any],
+    concept_column: SQLExpr,
     concept_ids: Iterable[int] | None,
     include_cols: Sequence[SQLExpr],
     name: str,

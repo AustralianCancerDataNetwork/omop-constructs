@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import sys
 
 import pytest
 import sqlalchemy as sa
@@ -11,17 +10,6 @@ from oa_configurator.testing import isolated_test_database, scoped_test_schema
 from omop_alchemy.config import OmopAlchemyConfig
 from omop_alchemy.maintenance.tables import select_omop_tables
 from orm_loader.helpers import create_tables
-
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-SEMANTICS_SRC = ROOT.parent / "omop-semantics" / "src"
-
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-if str(SEMANTICS_SRC) not in sys.path:
-    sys.path.insert(0, str(SEMANTICS_SRC))
 
 
 @pytest.fixture

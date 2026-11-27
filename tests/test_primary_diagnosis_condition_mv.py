@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 import importlib
 import sys
 import types
@@ -9,15 +8,6 @@ import types
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from omop_constructs.core.orm_base import ConstructORMBase as Base
-
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-SEMANTICS_SRC = ROOT.parent / "omop-semantics" / "src"
-
-for path in (SRC, SEMANTICS_SRC):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
 
 
 def _load_primary_dx_module(monkeypatch):

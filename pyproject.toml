@@ -58,10 +58,5 @@ cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true 
 [tool.ruff.lint]
 extend-select = ["B006", "PIE810"]
 
-[tool.ty.rules]
-# todo: these shouldn't remain here long term - for cicd initial deployment for now
-invalid-argument-type = "ignore"
-unresolved-attribute = "ignore"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
