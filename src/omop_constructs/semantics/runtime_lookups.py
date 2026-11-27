@@ -31,11 +31,6 @@ DEFAULT_RESOLVER_BUILDERS = {
         parent_list=[runtime.condition_modifiers.condition_modifier_values.metastatic_disease],
         resolver_name="metastatic_disease",
     ),  
-    "tumor_grade": lambda session: build_parent_resolver(
-        session,
-        parent_list=list(runtime.condition_modifiers.tumor_grade.exact_ids),
-        resolver_name="tumor_grade",
-    ),
     "rt_procedures": lambda session: build_parent_resolver(
         session,
         parent_list=list(runtime.cancer_procedures.radiotherapy.parent_ids),

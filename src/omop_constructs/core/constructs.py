@@ -1,11 +1,11 @@
 
-from typing import Type, Dict, TypeVar
+from typing import Any, TypeVar, cast
 from .registry import ConstructRegistry
 from ..typing import SupportsMaterializedView
 
-T = TypeVar("T", bound=Type[SupportsMaterializedView])
+T = TypeVar("T", bound=type[Any])
 
-_CONSTRUCTS: Dict[str, Type[SupportsMaterializedView]] = {}
+_CONSTRUCTS: dict[str, type[SupportsMaterializedView]] = {}
 
 def register_construct(cls: T) -> T:
     """
@@ -24,7 +24,7 @@ def register_construct(cls: T) -> T:
     if name in _CONSTRUCTS:
         raise ValueError(f"Duplicate construct registration for '{name}'")
 
-    _CONSTRUCTS[name] = cls
+    _CONSTRUCTS[name] = cast(type[SupportsMaterializedView], cls)
     return cls
 
 def get_construct_registry() -> ConstructRegistry:

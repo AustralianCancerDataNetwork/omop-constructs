@@ -15,6 +15,7 @@ Expected values are written as literals on purpose. Deriving them from
 """
 
 from omop_semantics.runtime.default_valuesets import runtime
+from omop_constructs.semantics.runtime_lookups import DEFAULT_RESOLVER_BUILDERS
 
 
 # Group-backed staging units. ``parent_ids`` is the supported accessor; ``ids``
@@ -54,3 +55,7 @@ def test_radiotherapy_group_excludes_non_radiotherapy_procedure_types() -> None:
     governed = set(runtime.cancer_procedures.radiotherapy.parent_ids)
     for label in ("rn_procedure", "rt_course"):
         assert getattr(procedure_types, label) not in governed
+
+
+def test_tumor_grade_resolver_is_not_registered() -> None:
+    assert "tumor_grade" not in DEFAULT_RESOLVER_BUILDERS

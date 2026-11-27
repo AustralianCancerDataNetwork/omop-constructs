@@ -26,7 +26,6 @@ The default resolver set includes:
 - `tnm_m_stage`
 - `tnm_group_stage`
 - `metastatic_disease`
-- `tumor_grade`
 - `rt_procedures`
 - `country_of_birth`
 

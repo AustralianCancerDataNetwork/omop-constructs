@@ -1,12 +1,12 @@
 from typing import Type
 import sqlalchemy as sa
 from sqlalchemy.sql.type_api import TypeEngine
-from typing import Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, runtime_checkable
 
 @runtime_checkable
 class HasPersonIdModel(Protocol):
-    person_id: sa.Column
-    __table__: sa.Table
+    person_id: ClassVar[Any]
+    __table__: ClassVar[sa.Table]
 
 def make_source_lookup(
     *,

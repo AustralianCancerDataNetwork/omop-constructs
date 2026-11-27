@@ -1,12 +1,12 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from typing import Type
-from .source_factories import make_source_lookup
+from typing import Any
 from sqlalchemy.sql.type_api import TypeEngine
+from .source_factories import HasPersonIdModel, make_source_lookup
 
 def map_lookup_view(
     *,
-    base: Type,
+    base: type[Any],
     subquery: sa.Subquery,
     name: str,
     pk_cols: list[str],
@@ -38,9 +38,9 @@ def map_lookup_view(
 
 def make_and_map_lookup_view(
     *,
-    base: Type,
+    base: type[Any],
     name: str,
-    model: Type,
+    model: type[HasPersonIdModel],
     source_column: sa.Column,
     source_label: str,
     cast_to: TypeEngine | None = None,

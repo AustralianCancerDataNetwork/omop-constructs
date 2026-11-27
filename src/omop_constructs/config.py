@@ -83,6 +83,10 @@ def create_cdm_engines(
     resolver = Resolver(stack)
     config = resolver.resolve_package_config(OmopConstructsConfig)
     resolved = resolver.resolve_database(config.cdm_db)
+    if not isinstance(resolved, ResolvedCDMDatabase):
+        raise ConfigurationError(
+            f"Database entry {config.cdm_db!r} is not configured as a CDM database."
+        )
     require_colocated_vocabulary(resolved)
     return _create_cdm_engines(resolved, register_claims=register_claims)
 
